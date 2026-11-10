@@ -1882,6 +1882,157 @@
     .f-order .o-typing i,
     .f-order .o-voice-toggle .o-equalizer i { animation: none; }
   }
+  /* Звук записи блока «Как это работает» (#f-process): кнопка в верхней полосе окна. */
+/* Звук записи — компактная латунная табличка в верхней полосе. */
+#f-process .p-screen-top {
+  min-width: 0;
+}
+
+#f-process .p-dots {
+  flex: none;
+}
+
+#f-process .p-title {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#f-process .p-expand {
+  margin-left: 0;
+}
+
+#f-process .p-sound {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 44px;
+  min-height: 30px;
+  margin: -5px 0;
+  padding: 2px 8px 2px 3px;
+  border: 1px solid var(--plate-rule);
+  border-radius: 8px;
+  background: var(--plate);
+  color: var(--plate-ink);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--shade) 16%, transparent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: box-shadow 200ms ease;
+}
+
+/* Высота поля нажатия — 44 px, сама табличка ниже. */
+#f-process .p-sound::before {
+  content: "";
+  position: absolute;
+  inset: -7px 0;
+  min-height: 44px;
+}
+
+#f-process .p-sound[hidden] {
+  display: none;
+}
+
+#f-process .p-sound:hover {
+  box-shadow: 0 4px 13px color-mix(in srgb, var(--shade) 26%, transparent);
+}
+
+#f-process .p-sound:focus-visible {
+  outline: 2px solid var(--plate-ink);
+  outline-offset: 3px;
+}
+
+#f-process .p-sound-dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--brass);
+  border-radius: 50%;
+  background: var(--plate);
+}
+
+#f-process .p-sound-dot svg {
+  width: 15px;
+  height: 15px;
+}
+
+#f-process .p-sound-dot::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--brass);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#f-process[data-sound="off"] .p-sound-dot::after {
+  animation: p-sound-pulse 2.6s ease-out infinite;
+}
+
+#f-process .p-sound-mute,
+#f-process[data-sound="on"] .p-sound-wave {
+  display: none;
+}
+
+#f-process[data-sound="on"] .p-sound-mute {
+  display: inline;
+}
+
+#f-process[data-sound="loading"] .p-sound {
+  cursor: progress;
+}
+
+@keyframes p-sound-pulse {
+  0% { transform: scale(1); opacity: .55; }
+  70%, 100% { transform: scale(1.45); opacity: 0; }
+}
+
+/* Заголовок уступает место кнопке, подпись звука не обрезается. */
+@media (max-width: 599px) {
+  #f-process .p-screen-top {
+    gap: 7px;
+    padding-inline: 10px;
+  }
+
+  #f-process .p-dots {
+    gap: 4px;
+  }
+
+  #f-process .p-dots i {
+    width: 6px;
+    height: 6px;
+  }
+
+  #f-process .p-sound {
+    gap: 5px;
+    padding-right: 6px;
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #f-process .p-sound-dot::after {
+    animation: none;
+  }
+
+  #f-process .p-sound {
+    transition: none;
+  }
+}
 </style>
 <style id="examples-ac-css">
 /* Общая секция и акт 1. Глобальные токены и .shell не переопределяются. */
@@ -4453,7 +4604,231 @@
   let width = innerWidth;
   const now = { pane: null, sofa: "PL-028", chip: chip.textContent, card: false, thumb: 0, shot: 0 };
 
+  // Звук загружаем только по нажатию. Буферы остаются для повторного рассказа.
+  const phrases = { plan: [0, 1, 2, 3, 4, 7, 8, 9, 10], photo: [0, 1, 2, 3] };
+  const effects = ["click", "pop", "whoosh", "slide", "transform", "ding"];
+  const voiceURL = (name, scene) => `process/voice/${name}-${String(scene).padStart(2, "0")}.mp3`;
+  const effectURL = (name) => `process/sfx/${name}.mp3`;
+  const buffers = new Map();
+  const downloads = new Map();
+  const sources = new Map();
+  const spoken = new Set();
+  const soundButton = document.createElement("button");
+  soundButton.type = "button";
+  soundButton.className = "p-sound";
+  soundButton.innerHTML = '<span class="p-sound-dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4Z"/><path class="p-sound-wave" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="p-sound-mute" d="m16 9 5 6m0-6-5 6"/></svg></span><span class="p-sound-label"></span>';
+  block.querySelector(".p-screen-top").insertBefore(soundButton, block.querySelector(".p-expand"));
+  let ctx = null;
+  let master = null;
+  let voiceGain = null;
+  let soundState = "off";
+  let soundTurn = 0;
+  let voiceEnd = 0;
+  let finishTimer = 0;
+  let fadeUntil = 0;
+  let warned = false;
+
+  function soundStatus(state) {
+    soundState = state;
+    block.dataset.sound = state;
+    const label = {
+      off: "Включить звук",
+      loading: "Включаем…",
+      on: "Выключить звук",
+      done: "Послушать ещё раз",
+    }[state];
+    soundButton.querySelector(".p-sound-label").textContent = label;
+    soundButton.setAttribute("aria-label", label);
+    soundButton.setAttribute("aria-pressed", String(state === "on"));
+    if (state === "loading") soundButton.setAttribute("aria-busy", "true");
+    else soundButton.removeAttribute("aria-busy");
+    soundButton.hidden = reduceMotion.matches;
+  }
+
+  // Будущие звуки отменяем сразу, уже звучащие гасим за четверть секунды.
+  function silence(state = "off") {
+    ++soundTurn;
+    clearTimeout(finishTimer);
+    finishTimer = 0;
+    if (ctx && master) {
+      const time = ctx.currentTime;
+      master.gain.cancelScheduledValues(time);
+      master.gain.setValueAtTime(master.gain.value, time);
+      master.gain.linearRampToValueAtTime(0, time + .25);
+      fadeUntil = time + .25;
+      for (const [source, when] of sources) {
+        try {
+          source.stop(when > time ? time : time + .25);
+        } catch {
+          // Источник мог уже закончиться.
+        }
+      }
+      sources.clear();
+    }
+    voiceEnd = 0;
+    spoken.clear();
+    soundStatus(state);
+  }
+
+  function soundFailure(error) {
+    if (!warned) {
+      warned = true;
+      console.warn("Не удалось включить звук истории Avelio.", error);
+    }
+    silence();
+  }
+
+  function loadBuffer(url) {
+    if (buffers.has(url)) return Promise.resolve(buffers.get(url));
+    if (downloads.has(url)) return downloads.get(url);
+    const promise = fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`${response.status}: ${url}`);
+        return response.arrayBuffer();
+      })
+      // Старый Safari декодирует только с колбэками, новый — промисом; берём что ответит первым.
+      .then((buffer) => new Promise((resolve, reject) => {
+        const decoded = ctx.decodeAudioData(buffer, resolve, reject);
+        if (decoded && decoded.then) decoded.then(resolve, reject);
+      }))
+      .then((buffer) => {
+        buffers.set(url, buffer);
+        downloads.delete(url);
+        return buffer;
+      }, (error) => {
+        downloads.delete(url);
+        throw error;
+      });
+    downloads.set(url, promise);
+    return promise;
+  }
+
+  function playBuffer(url, gain, when = ctx.currentTime, voice = false) {
+    const buffer = buffers.get(url);
+    if (soundState !== "on" || !buffer) return null;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const bus = voice ? voiceGain : ctx.createGain();
+    if (!voice) {
+      bus.gain.value = gain;
+      bus.connect(master);
+    }
+    source.connect(bus);
+    sources.set(source, when);
+    source.onended = () => {
+      sources.delete(source);
+      source.disconnect();
+      if (!voice) bus.disconnect();
+    };
+    source.start(when);
+    return buffer;
+  }
+
+  function sfx(name, gain, when) {
+    if (soundState !== "on" || !moving()) return;
+    playBuffer(effectURL(name), gain, when);
+  }
+
+  // Конец рассказа считаем по часам контекста, не по длительности сцены.
+  function finishAt(time, token) {
+    const check = () => {
+      if (token !== soundTurn || soundState !== "on") return;
+      const left = (time - ctx.currentTime) * 1000;
+      if (left > 0) finishTimer = setTimeout(check, Math.max(20, left));
+      else silence("done");
+    };
+    check();
+  }
+
+  function narrate(scene) {
+    if (soundState !== "on" || !phrases[track].includes(scene) || spoken.has(scene)) return;
+    const start = ctx.currentTime;
+    const buffer = playBuffer(voiceURL(track, scene), 1, start, true);
+    if (!buffer) return;
+    spoken.add(scene);
+    voiceEnd = start + buffer.duration;
+    if (scene === tracks[track].scenes.length - 1) {
+      sfx("ding", .45, start + (track === "plan" ? 7.86 : 1.98));
+      finishAt(voiceEnd + 1.2, soundTurn);
+    }
+  }
+
+  async function startStory(resumed = Promise.resolve()) {
+    const token = ++soundTurn;
+    const name = track;
+    soundStatus("loading");
+    try {
+      await Promise.all([
+        resumed,
+        ...phrases[name].map((scene) => loadBuffer(voiceURL(name, scene))),
+        ...effects.map((effect) => loadBuffer(effectURL(effect))),
+      ]);
+      // При быстрой смене дорожки не поднимаем громкость ещё гаснущих источников.
+      const fading = Math.max(0, (fadeUntil - ctx.currentTime) * 1000);
+      if (fading) await new Promise((resolve) => setTimeout(resolve, fading));
+      if (token !== soundTurn || name !== track) return;
+      if (!visible || reduceMotion.matches || document.hidden || (dialog && dialog.open)) {
+        silence();
+        return;
+      }
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setValueAtTime(1, ctx.currentTime);
+      spoken.clear();
+      voiceEnd = 0;
+      soundStatus("on");
+      calm();
+      render(0);
+    } catch (error) {
+      if (token === soundTurn) soundFailure(error);
+    }
+  }
+
+  soundStatus("off");
+  soundButton.addEventListener("click", () => {
+    if (reduceMotion.matches) return;
+    if (soundState === "on" || soundState === "loading") {
+      silence();
+      return;
+    }
+    try {
+      // Создание, resume и пустой отсчёт остаются внутри настоящего жеста.
+      if (!ctx) {
+        const Audio = window.AudioContext || window.webkitAudioContext;
+        if (!Audio) throw new Error("Web Audio недоступен");
+        ctx = new Audio();
+        master = ctx.createGain();
+        master.gain.value = 0;
+        master.connect(ctx.destination);
+        voiceGain = ctx.createGain();
+        voiceGain.gain.value = 1;
+        voiceGain.connect(master);
+      }
+      const resumed = ctx.resume();
+      const empty = ctx.createBufferSource();
+      empty.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      empty.connect(voiceGain);
+      empty.onended = () => empty.disconnect();
+      empty.start(ctx.currentTime);
+      void startStory(resumed);
+    } catch (error) {
+      soundFailure(error);
+    }
+  });
+
   const wait = (ms, action) => timers.push(setTimeout(action, ms));
+  // Следующую фразу не начинаем поверх предыдущей. Сцены 5 и 6 идут без ожидания.
+  function waitNext(ms) {
+    const next = (index + 1) % tracks[track].scenes.length;
+    wait(ms, () => {
+      const left = soundState === "on" && phrases[track].includes(next)
+        ? (voiceEnd + .35 - ctx.currentTime) * 1000
+        : 0;
+      // Ждём короткими шагами: выключили звук — запись идёт дальше сразу, а не после конца фразы.
+      if (left > 0) wait(Math.min(left, 250), () => waitNext(0));
+      else render(next);
+    });
+  }
+
   // Отложенная подпись не теряется: остановка, новая сцена или нажатие человека ставят её сразу.
   const clear = () => {
     timers.forEach(clearTimeout);
@@ -4547,7 +4922,7 @@
     return null;
   }
 
-  // Мягкая дуга вверх, у бокового края — внутрь кадра. Разгон и торможение без рывка.
+  // Мягкая дуга вверх, у бокового края — внутрь кадра. Разгон и торможение без рывков.
   // Новый путь начинается от последней нарисованной точки, а не от прежней цели.
   function fly([x, y], instant) {
     let [x0, y0] = cursorAt;
@@ -4596,6 +4971,7 @@
   }
   // Мягкое нажатие: сжатие до 0,86 и возврат за 460 мс.
   function press() {
+    sfx("click", .55);
     if (moving()) cursor.animate({ scale: [1, .86, 1] }, { duration: 460, easing: "cubic-bezier(.45, 0, .55, 1)" });
     restart(cursor, "tap");
   }
@@ -4695,8 +5071,8 @@
     from.style.zIndex = ++layer;
     from.style.transformOrigin = `${x}px ${y}px`;
     to.style.transformOrigin = `${x}px ${y}px`;
-    from.animate({ transform: ["none", "scale(2.6)"], opacity: [1, 0] }, { duration: 1100, easing: inOut, fill: "forwards" });
     to.animate({ transform: ["scale(1.22)", "none"] }, { duration: 1600, easing: soft });
+    from.animate({ transform: ["none", "scale(2.6)"], opacity: [1, 0] }, { duration: 1100, easing: inOut, fill: "forwards" });
     return [1600, chipTime(.65) * 1100];
   }
   // Шторка: мебель ложится на присланный чертёж слева направо, по краю идёт линия.
@@ -4815,6 +5191,20 @@
 
   function act(scene, { how, at, hand = false } = {}) {
     const cut = how === "cut";
+    // Звуки относятся к действию, а не к подготовке скрытых слоёв.
+    if (!cut && !hand && moving()) {
+      if (scene.pane !== now.pane) {
+        if (how === "wipe") sfx("slide", .5);
+        else if (how === "reveal") sfx("whoosh", .4);
+        else if (how === "dive") sfx("transform", .5);
+      }
+      if (scene.tap === "sofa" && scene.sofa !== now.sofa) sfx("pop", .5);
+      if (scene.tap === "plate" && scene.card && !now.card) sfx("pop", .5);
+      if (track === "photo" && scene.tap === "spot") {
+        if (scene.after) sfx("transform", .5);
+        else if (scene.zoom) sfx("whoosh", .4);
+      }
+    }
     const caption = showPane(scene.pane, how, at, scene.chip);
     if (caption > 0) {
       chipDue = scene.chip;
@@ -4857,8 +5247,11 @@
     clear();
     const scenes = tracks[track].scenes;
     index = next;
+    block.dataset.track = track;
+    block.dataset.scene = String(index);
     const scene = scenes[index];
     const still = instant || !playing();
+    if (!still) narrate(index);
     steps(scenes, scene, still);
     if (scene.reveal) thumbs().forEach((item, i) => item.classList.toggle("shown", i < scene.reveal));
     const go = () => {
@@ -4877,12 +5270,12 @@
         press();
         go();
         // От нажатия до следующей сцены — scene.ms − 800, но не меньше 1600 мс.
-        wait(Math.max(1600, scene.ms - 800), () => render((index + 1) % scenes.length));
+        waitNext(Math.max(1600, scene.ms - 800));
       });
     } else {
       if (index === 0) fly(aim(scene));
       go();
-      wait(scene.ms, () => render((index + 1) % scenes.length));
+      waitNext(scene.ms);
     }
   }
 
@@ -4912,6 +5305,7 @@
   }
   // Нажал человек: запись встаёт, курсор прячется, видны все миниатюры.
   function hand() {
+    silence();
     manual = true;
     clear();
     cursor.classList.add("off");
@@ -4947,11 +5341,15 @@
 
   block.querySelectorAll(".p-track").forEach((button) => button.addEventListener("click", () => {
     if (button.dataset.track === track) return;
+    const retell = soundState === "on" || soundState === "loading";
+    silence();
     calm();
     choose(button.dataset.track);
     render(first(), reduceMotion.matches);
+    if (retell && !reduceMotion.matches) void startStory();
   }));
   block.querySelectorAll(".p-steps button").forEach((button) => button.addEventListener("click", () => {
+    silence();
     calm();
     render(Number(button.dataset.scene), reduceMotion.matches);
   }));
@@ -4990,6 +5388,13 @@
     handAct(next);
   });
 
+  // Любое нажатие в записи, кроме её звука, отдаёт звук человеку.
+  screen.addEventListener("click", (event) => {
+    if (!soundButton.contains(event.target)) silence();
+  }, true);
+  const headerSound = document.getElementById("sound-toggle");
+  if (headerSound) headerSound.addEventListener("click", () => silence());
+
   // Фото ждём целиком, чтобы запись не началась с недогруженного кадра. Скрытые слои браузер сам
   // не грузит, поэтому загрузку включаем здесь; контуры и фото диванов для карточки — тоже.
   function prepare() {
@@ -5027,6 +5432,7 @@
   new IntersectionObserver(([entry]) => { if (entry.isIntersecting) prepare(); }, { rootMargin: "600px 0px" }).observe(screen);
   new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
+    if (!visible && (soundState === "on" || soundState === "loading")) silence();
     // Ушёл блок с экрана — ручной режим сброшен: вернутся — запись идёт дальше с того, что на экране.
     if (!visible && manual) {
       calm();
@@ -5036,11 +5442,17 @@
     sync();
   }, { threshold: .35 }).observe(screen);
   reduceMotion.addEventListener("change", () => {
+    if (reduceMotion.matches) silence();
+    soundButton.hidden = reduceMotion.matches;
     calm();
     render(first(), true);
   });
-  document.addEventListener("visibilitychange", sync);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && (soundState === "on" || soundState === "loading")) silence();
+    sync();
+  });
   if (dialog) new MutationObserver(() => {
+    if (dialog.open && (soundState === "on" || soundState === "loading")) silence();
     sync();
     rest();
   }).observe(dialog, { attributes: true, attributeFilter: ["open"] });
