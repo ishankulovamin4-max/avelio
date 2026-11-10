@@ -1,15 +1,15 @@
-/* До is-ready исходный первый экран остаётся нетронутым. */
+/* На телефоне is-shell включает раскладку до готовности сцены. */
 .founder-stage {
   display: none;
 }
 
-.founders.is-ready {
+.founders:is(.is-ready, .is-shell) {
   position: relative;
   height: 300svh;
   background: #fffdf8;
 }
 
-.founders.is-ready .founders-pin {
+.founders:is(.is-ready, .is-shell) .founders-pin {
   position: sticky;
   top: 0;
   height: 100svh;
@@ -18,7 +18,7 @@
   background: #fffdf8;
 }
 
-.founders.is-ready #hero {
+.founders:is(.is-ready, .is-shell) #hero {
   --founder-content-h: min(calc(100svh - 96px), 840px);
 
   box-sizing: border-box;
@@ -47,13 +47,13 @@
   padding-right: max(32px, env(safe-area-inset-right, 0px));
 }
 
-.founders.is-ready #hero .hero-stage,
-.founders.is-ready #hero .founder-track,
-.founders.is-ready #hero .founder-group {
+.founders:is(.is-ready, .is-shell) #hero .hero-stage,
+.founders:is(.is-ready, .is-shell) #hero .founder-track,
+.founders:is(.is-ready, .is-shell) #hero .founder-group {
   display: contents;
 }
 
-.founders.is-ready #hero .hero-copy {
+.founders:is(.is-ready, .is-shell) #hero .hero-copy {
   position: relative;
   z-index: 5;
   grid-area: copy;
@@ -65,7 +65,7 @@
   container-type: inline-size;
 }
 
-.founders.is-ready #hero .hero-copy h1 {
+.founders:is(.is-ready, .is-shell) #hero .hero-copy h1 {
   max-width: none;
   font-size: clamp(36px, 6cqw, 48px);
   font-weight: 600;
@@ -74,7 +74,7 @@
   text-wrap: balance;
 }
 
-.founders.is-ready #hero .hero-copy p {
+.founders:is(.is-ready, .is-shell) #hero .hero-copy p {
   max-width: none;
   margin-top: 10px;
   font-size: clamp(14px, 2.1cqw, 17px);
@@ -83,7 +83,7 @@
   text-wrap: pretty;
 }
 
-.founders.is-ready #hero .video-column {
+.founders:is(.is-ready, .is-shell) #hero .video-column {
   position: relative;
   z-index: 6;
   grid-area: video;
@@ -94,25 +94,25 @@
   isolation: isolate;
 }
 
-.founders.is-ready #hero .video-column::before {
+.founders:is(.is-ready, .is-shell) #hero .video-column::before {
   content: none;
 }
 
-.founders.is-ready #hero .video-frame {
+.founders:is(.is-ready, .is-shell) #hero .video-frame {
   width: 100%;
   max-width: none;
   margin: 0;
   background: var(--paper);
 }
 
-.founders.is-ready #hero #hero-video {
+.founders:is(.is-ready, .is-shell) #hero #hero-video {
   width: 100%;
   height: auto;
   aspect-ratio: var(--video-ratio);
   object-fit: contain;
 }
 
-.founders.is-ready #hero .hero-actions {
+.founders:is(.is-ready, .is-shell) #hero .hero-actions {
   position: relative;
   z-index: 5;
   grid-area: actions;
@@ -124,47 +124,47 @@
   background: #fffdf8;
 }
 
-.founders.is-ready #hero .hero-action-content {
+.founders:is(.is-ready, .is-shell) #hero .hero-action-content {
   width: 100%;
   max-width: 410px;
 }
 
-.founders.is-ready #hero #hero-cta {
+.founders:is(.is-ready, .is-shell) #hero #hero-cta {
   width: 100%;
   min-height: 54px;
   border-radius: 3px;
   box-shadow: 0 8px 24px rgb(38 30 18 / 9%);
 }
 
-.founders.is-ready #hero .hero-plan-link {
+.founders:is(.is-ready, .is-shell) #hero .hero-plan-link {
   display: flex;
   justify-content: flex-start;
   width: 100%;
   min-height: 40px;
 }
 
-.founders.is-ready #hero .hero-facts {
+.founders:is(.is-ready, .is-shell) #hero .hero-facts {
   font-size: 12px;
   line-height: 1.4;
   text-align: left;
   color: var(--muted);
 }
 
-.founders.is-ready #hero .hero-facts span {
+.founders:is(.is-ready, .is-shell) #hero .hero-facts span {
   display: inline;
 }
 
-.founders.is-ready #hero .hero-facts span + span {
+.founders:is(.is-ready, .is-shell) #hero .hero-facts span + span {
   margin-left: .4em;
 }
 
-.founders.is-ready #hero #hero-aside {
+.founders:is(.is-ready, .is-shell) #hero #hero-aside {
   display: none;
 }
 
 /* W × H — полный прямоугольник строки scene.
    Абсолютные слои и подписи не участвуют в расчёте строк сетки. */
-.founders.is-ready .founder-stage {
+.founders:is(.is-ready, .is-shell) .founder-stage {
   --fr-frame: #e6d3b5;
   --fr-frame-edge: rgba(142, 116, 83, 0.52);
   --fr-frame-inner: rgba(142, 116, 83, 0.32);
@@ -443,7 +443,7 @@
 }
 
 /* Горизонтальный исходник не меняет порядок правой колонки. */
-.founders.is-ready #hero.is-landscape {
+.founders:is(.is-ready, .is-shell) #hero.is-landscape {
   grid-template-columns: minmax(0, 44%) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
@@ -452,11 +452,11 @@
     "video actions";
 }
 
-.founders.is-ready #hero.is-landscape .video-column {
+.founders:is(.is-ready, .is-shell) #hero.is-landscape .video-column {
   align-self: center;
 }
 
-.founders.is-ready #hero.is-landscape .video-frame {
+.founders:is(.is-ready, .is-shell) #hero.is-landscape .video-frame {
   max-width: none;
 }
 
@@ -529,7 +529,7 @@
 /* Телефон: заголовок → строка → ролик → локально закрепляемая группа.
    Высоту группы определяет содержимое: 356 + 12 + 52 + 40 + 32 + 12. */
 @media (max-width: 699px) {
-  .founders.is-ready {
+  .founders:is(.is-ready, .is-shell) {
     /* Высоты шапки и CTA без safe-area; уточняются по замерам страницы. */
     --fh-header: 44px;
     --fh-cta: 68px;
@@ -540,7 +540,7 @@
     height: auto;
   }
 
-  .founders.is-ready .founders-pin {
+  .founders:is(.is-ready, .is-shell) .founders-pin {
     position: relative;
     top: auto;
     height: auto;
@@ -548,8 +548,8 @@
   }
 
   /* Новый порядок: ролик → текст → прежняя сцена основателей. */
-  .founders.is-ready #hero,
-  .founders.is-ready #hero.is-landscape {
+  .founders:is(.is-ready, .is-shell) #hero,
+  .founders:is(.is-ready, .is-shell) #hero.is-landscape {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
     grid-template-areas:
@@ -569,13 +569,13 @@
     overflow: visible;
   }
 
-  .founders.is-ready #hero .hero-copy {
+  .founders:is(.is-ready, .is-shell) #hero .hero-copy {
     box-sizing: border-box;
     padding: 32px max(24px, env(safe-area-inset-right, 0px))
       24px max(24px, env(safe-area-inset-left, 0px));
   }
 
-  .founders.is-ready #hero .hero-copy h1 {
+  .founders:is(.is-ready, .is-shell) #hero .hero-copy h1 {
     max-width: 15ch;
     margin: 0;
     font-size: 36px;
@@ -584,15 +584,15 @@
     letter-spacing: -.045em;
   }
 
-  .founders.is-ready #hero .hero-copy p {
+  .founders:is(.is-ready, .is-shell) #hero .hero-copy p {
     max-width: 45ch;
     margin: 12px 0 0;
     font-size: 14px;
     line-height: 1.5;
   }
 
-  .founders.is-ready #hero .video-column,
-  .founders.is-ready #hero.is-landscape .video-column {
+  .founders:is(.is-ready, .is-shell) #hero .video-column,
+  .founders:is(.is-ready, .is-shell) #hero.is-landscape .video-column {
     align-self: start;
     margin: 0;
     padding: 0;
@@ -601,8 +601,8 @@
     box-shadow: none;
   }
 
-  .founders.is-ready #hero .video-frame,
-  .founders.is-ready #hero.is-landscape .video-frame {
+  .founders:is(.is-ready, .is-shell) #hero .video-frame,
+  .founders:is(.is-ready, .is-shell) #hero.is-landscape .video-frame {
     box-sizing: border-box;
     position: relative;
     width: 100%;
@@ -617,7 +617,7 @@
     box-shadow: none;
   }
 
-  .founders.is-ready #hero #hero-video {
+  .founders:is(.is-ready, .is-shell) #hero #hero-video {
     box-sizing: border-box;
     display: block;
     width: 100%;
@@ -640,8 +640,8 @@
   }
 
   /* На обычном телефоне плашка занимает только свободный низ кадра. */
-  .founders.is-ready #hero #sound-toggle.sound-plate,
-  .founders.is-ready #hero #sound-off {
+  .founders:is(.is-ready, .is-shell) #hero #sound-toggle.sound-plate,
+  .founders:is(.is-ready, .is-shell) #hero #sound-off {
     box-sizing: border-box;
     position: absolute;
     z-index: 2;
@@ -681,26 +681,26 @@
   }
 
   @supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
-    .founders.is-ready #hero #sound-toggle.sound-plate,
-    .founders.is-ready #hero #sound-off {
+    .founders:is(.is-ready, .is-shell) #hero #sound-toggle.sound-plate,
+    .founders:is(.is-ready, .is-shell) #hero #sound-off {
       background: rgb(20 20 20 / 62%);
       -webkit-backdrop-filter: blur(12px);
       backdrop-filter: blur(12px);
     }
   }
 
-  .founders.is-ready #hero #sound-toggle[hidden],
-  .founders.is-ready #hero #sound-off[hidden] {
+  .founders:is(.is-ready, .is-shell) #hero #sound-toggle[hidden],
+  .founders:is(.is-ready, .is-shell) #hero #sound-off[hidden] {
     display: none;
   }
 
-  .founders.is-ready #hero #sound-toggle:focus-visible,
-  .founders.is-ready #hero #sound-off:focus-visible {
+  .founders:is(.is-ready, .is-shell) #hero #sound-toggle:focus-visible,
+  .founders:is(.is-ready, .is-shell) #hero #sound-off:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
   }
 
-  .founders.is-ready #hero #sound-off span {
+  .founders:is(.is-ready, .is-shell) #hero #sound-off span {
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -710,7 +710,7 @@
     font: inherit;
   }
 
-  .founders.is-ready #hero .sound-dot {
+  .founders:is(.is-ready, .is-shell) #hero .sound-dot {
     width: 24px;
     height: 24px;
     border: 1px solid rgb(255 255 255 / 45%);
@@ -718,31 +718,31 @@
     color: inherit;
   }
 
-  .founders.is-ready #hero .sound-dot::after {
+  .founders:is(.is-ready, .is-shell) #hero .sound-dot::after {
     content: none;
     display: none;
     animation: none;
   }
 
-  .founders.is-ready #hero .sound-dot svg {
+  .founders:is(.is-ready, .is-shell) #hero .sound-dot svg {
     width: 14px;
     height: 14px;
   }
 
-  .founders.is-ready #hero .sound-lab {
+  .founders:is(.is-ready, .is-shell) #hero .sound-lab {
     flex: 0 1 auto;
     min-width: 0;
     white-space: nowrap;
     overflow-wrap: normal;
   }
 
-  .founders.is-ready #hero #sound-time {
+  .founders:is(.is-ready, .is-shell) #hero #sound-time {
     color: rgb(255 255 255 / 78%);
     font-size: 12px;
     white-space: nowrap;
   }
 
-  .founders.is-ready #hero .founder-track {
+  .founders:is(.is-ready, .is-shell) #hero .founder-track {
     box-sizing: border-box;
     position: relative;
     display: block;
@@ -760,7 +760,7 @@
     overflow: visible;
   }
 
-  .founders.is-ready #hero .founder-group {
+  .founders:is(.is-ready, .is-shell) #hero .founder-group {
     box-sizing: border-box;
     position: sticky;
     top: max(56px, calc((100svh - 504px) / 2));
@@ -774,7 +774,7 @@
     background: #fffdf8;
   }
 
-  .founders.is-ready .founder-stage {
+  .founders:is(.is-ready, .is-shell) .founder-stage {
     box-sizing: border-box;
     width: 100%;
     height: 356px;
@@ -798,13 +798,13 @@
     line-height: 14px;
   }
 
-  .founders.is-ready #hero .hero-actions {
+  .founders:is(.is-ready, .is-shell) #hero .hero-actions {
     display: block;
     margin: 12px 0 0;
     padding: 0;
   }
 
-  .founders.is-ready #hero .hero-action-content {
+  .founders:is(.is-ready, .is-shell) #hero .hero-action-content {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -816,7 +816,7 @@
     padding: 0;
   }
 
-  .founders.is-ready #hero #hero-cta {
+  .founders:is(.is-ready, .is-shell) #hero #hero-cta {
     box-sizing: border-box;
     display: flex;
     flex: none;
@@ -832,7 +832,7 @@
     text-align: center;
   }
 
-  .founders.is-ready #hero .hero-plan-link {
+  .founders:is(.is-ready, .is-shell) #hero .hero-plan-link {
     box-sizing: border-box;
     display: flex;
     flex: none;
@@ -848,7 +848,7 @@
     text-align: center;
   }
 
-  .founders.is-ready #hero .hero-facts {
+  .founders:is(.is-ready, .is-shell) #hero .hero-facts {
     box-sizing: border-box;
     display: block;
     flex: none;
@@ -860,61 +860,74 @@
     text-align: center;
   }
 
-  .founders.is-ready #hero .hero-facts span {
+  .founders:is(.is-ready, .is-shell) #hero .hero-facts span {
     display: block;
     margin: 0;
   }
 
-  .founders.is-ready #hero .hero-facts span + span {
+  .founders:is(.is-ready, .is-shell) #hero .hero-facts span + span {
     margin-left: 0;
   }
 
-  .founders.is-ready.is-static #hero .founder-track,
-  .founders.is-ready.is-reduced #hero .founder-track {
+  .founders:is(.is-ready, .is-shell).is-static #hero .founder-track,
+  .founders:is(.is-ready, .is-shell).is-reduced #hero .founder-track {
     height: auto;
   }
 
-  .founders.is-ready.is-static #hero .founder-group,
-  .founders.is-ready.is-reduced #hero .founder-group {
+  .founders:is(.is-ready, .is-shell).is-static #hero .founder-group,
+  .founders:is(.is-ready, .is-shell).is-reduced #hero .founder-group {
     position: static;
     top: auto;
+  }
+
+  /* После ошибки обёртки сцены удалены; кнопки остаются в той же колонке. */
+  .founders.is-shell.is-scene-unavailable #hero .hero-actions {
+    box-sizing: border-box;
+    grid-area: track;
+    width: calc(
+      100% - max(16px, env(safe-area-inset-left, 0px))
+      - max(16px, env(safe-area-inset-right, 0px))
+    );
+    margin: 12px max(16px, env(safe-area-inset-right, 0px))
+      0 max(16px, env(safe-area-inset-left, 0px));
+    padding: 0 0 12px;
   }
 }
 
 @media (max-width: 699px) and (max-height: 700px) {
-  .founders.is-ready #hero .hero-copy h1 {
+  .founders:is(.is-ready, .is-shell) #hero .hero-copy h1 {
     max-width: 17ch;
     font-size: 30px;
     line-height: 1.1;
   }
 
-  .founders.is-ready #hero .hero-copy p {
+  .founders:is(.is-ready, .is-shell) #hero .hero-copy p {
     font-size: 14px;
     line-height: 1.5;
   }
 
-  .founders.is-ready #hero .hero-facts {
+  .founders:is(.is-ready, .is-shell) #hero .hero-facts {
     font-size: 10px;
   }
 }
 
 /* С 600 точек шапка 52px, а .sticky-cta страница не показывает (phone = max-width 599px). */
 @media (min-width: 600px) and (max-width: 699px) {
-  .founders.is-ready {
+  .founders:is(.is-ready, .is-shell) {
     --fh-header: 52px;
     --fh-cta: 0px;
   }
 }
 
 @media (max-width: 699px) and (min-aspect-ratio: 239/500) {
-  .founders.is-ready {
+  .founders:is(.is-ready, .is-shell) {
     --fh-sound-row: 76px;
   }
 
   /* Резерв под видео: 8px + кнопка 44px + 24px.
      Обе кнопки занимают одно место, независимо от состояния звука. */
-  .founders.is-ready #hero #sound-toggle.sound-plate,
-  .founders.is-ready #hero #sound-off {
+  .founders:is(.is-ready, .is-shell) #hero #sound-toggle.sound-plate,
+  .founders:is(.is-ready, .is-shell) #hero #sound-off {
     bottom: 24px;
     background: #252525;
     -webkit-backdrop-filter: none;
@@ -926,16 +939,19 @@
    Без :has остаются исходные шапка в потоке и расчёт высоты ролика. */
 @supports selector(:has(*)) {
   @media (max-width: 699px) {
-    #avelio-start:has(.founders.is-ready) {
+    #avelio-start:has(.founders.is-ready),
+    #avelio-start.is-founders-shell {
       position: relative;
     }
 
-    #avelio-start:has(.founders.is-ready) .founders.is-ready {
+    #avelio-start:has(.founders.is-ready) .founders.is-ready,
+    #avelio-start.is-founders-shell .founders.is-shell {
       --fh-header: 0px;
       --fh-header-safe: 0px;
     }
 
-    #avelio-start:has(.founders.is-ready) > .site-header {
+    #avelio-start:has(.founders.is-ready) > .site-header,
+    #avelio-start.is-founders-shell > .site-header {
       position: absolute;
       z-index: 10;
       top: 0;
@@ -955,7 +971,8 @@
       transition: opacity 180ms ease, visibility 0s linear;
     }
 
-    #avelio-start:has(.founders.is-ready) > .site-header::before {
+    #avelio-start:has(.founders.is-ready) > .site-header::before,
+    #avelio-start.is-founders-shell > .site-header::before {
       content: "";
       position: absolute;
       z-index: -1;
@@ -973,26 +990,32 @@
     }
 
     #avelio-start:has(.founders.is-ready) > .site-header .brand,
-    #avelio-start:has(.founders.is-ready) > .site-header .catalog-link {
+    #avelio-start:has(.founders.is-ready) > .site-header .catalog-link,
+    #avelio-start.is-founders-shell > .site-header .brand,
+    #avelio-start.is-founders-shell > .site-header .catalog-link {
       color: #fff;
     }
 
-    #avelio-start:has(.founders.is-ready) > .site-header .brand svg {
+    #avelio-start:has(.founders.is-ready) > .site-header .brand svg,
+    #avelio-start.is-founders-shell > .site-header .brand svg {
       filter: drop-shadow(0 1px 6px rgb(0 0 0 / 28%));
     }
 
-    #avelio-start:has(.founders.is-ready) > .site-header .catalog-link {
+    #avelio-start:has(.founders.is-ready) > .site-header .catalog-link,
+    #avelio-start.is-founders-shell > .site-header .catalog-link {
       text-decoration-line: underline;
       text-decoration-color: currentColor;
       text-decoration-thickness: 1px;
       text-underline-offset: 5px;
     }
 
-    #avelio-start:has(.founders.is-ready) > .site-header :focus-visible {
+    #avelio-start:has(.founders.is-ready) > .site-header :focus-visible,
+    #avelio-start.is-founders-shell > .site-header :focus-visible {
       outline-color: #fff;
     }
 
-    #avelio-start:has(.founders.is-ready) > .site-header.is-chrome-hidden {
+    #avelio-start:has(.founders.is-ready) > .site-header.is-chrome-hidden,
+    #avelio-start.is-founders-shell > .site-header.is-chrome-hidden {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
@@ -1002,7 +1025,9 @@
 
   @media (max-width: 699px) and (prefers-reduced-motion: reduce) {
     #avelio-start:has(.founders.is-ready) > .site-header,
-    #avelio-start:has(.founders.is-ready) > .site-header.is-chrome-hidden {
+    #avelio-start:has(.founders.is-ready) > .site-header.is-chrome-hidden,
+    #avelio-start.is-founders-shell > .site-header,
+    #avelio-start.is-founders-shell > .site-header.is-chrome-hidden {
       transition: none;
     }
   }
@@ -1176,21 +1201,21 @@
 }
 
 /* Без движения — статичный результат; биографии остаются доступны. */
-.founders.is-ready.is-reduced {
+.founders:is(.is-ready, .is-shell).is-reduced {
   height: auto;
 }
 
-.founders.is-ready.is-reduced .founders-pin {
+.founders:is(.is-ready, .is-shell).is-reduced .founders-pin {
   position: relative;
   top: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .founders.is-ready {
+  .founders:is(.is-ready, .is-shell) {
     height: auto;
   }
 
-  .founders.is-ready .founders-pin {
+  .founders:is(.is-ready, .is-shell) .founders-pin {
     position: relative;
     top: auto;
   }
@@ -1201,11 +1226,11 @@
 }
 
 @media (max-width: 699px) and (prefers-reduced-motion: reduce) {
-  .founders.is-ready #hero .founder-track {
+  .founders:is(.is-ready, .is-shell) #hero .founder-track {
     height: auto;
   }
 
-  .founders.is-ready #hero .founder-group {
+  .founders:is(.is-ready, .is-shell) #hero .founder-group {
     position: static;
     top: auto;
   }

@@ -14,11 +14,24 @@
   // Цвета рамки и теней задаёт founders.css переменными --fr-* на .founder-stage.
 
   const root = document.getElementById("founders");
+  const phoneQuery = matchMedia("(max-width: 699px)");
+
+  // Раскладка телефона не ждёт данных и картинок.
+  function syncShellClass() {
+    if (!root) return;
+    root.classList.toggle("is-shell", phoneQuery.matches);
+    const start = document.getElementById("avelio-start");
+    if (start && start.contains(root)) {
+      start.classList.toggle("is-founders-shell", phoneQuery.matches);
+    }
+  }
+
+  syncShellClass();
+
   const hero = document.getElementById("hero");
   const pin = root && root.querySelector(".founders-pin");
   const actions = hero && hero.querySelector(".hero-actions");
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
-  const phoneQuery = matchMedia("(max-width: 699px)");
   const tabletQuery = matchMedia("(min-width: 700px) and (max-width: 1099px)");
 
   const ROOM_DIR = "founders/room/";
@@ -260,6 +273,8 @@
   let variantStyle;
 
   let ready = false;
+  let sceneFailed = false;
+  let shellResizeObserver;
   let visible = false;
   let forced = null;
   let p = 0;
@@ -529,23 +544,40 @@
     return { w, h };
   }
 
+  // Две повторные попытки, включая ошибки чтения JSON и декодирования.
+  async function retryLoad(load) {
+    const delays = [1500, 4000];
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await load();
+      } catch (error) {
+        if (attempt >= delays.length) throw error;
+        await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+      }
+    }
+  }
+
   async function fetchJSON(url) {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
-    return response.json();
+    return retryLoad(async () => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+      return response.json();
+    });
   }
 
   async function loadImage(file) {
-    const image = new Image();
-    image.decoding = "async";
-    const loaded = new Promise((resolve, reject) => {
-      image.onload = resolve;
-      image.onerror = () => reject(new Error(`Не загружено: ${file}`));
+    return retryLoad(async () => {
+      const image = new Image();
+      image.decoding = "async";
+      const loaded = new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error(`Не загружено: ${file}`));
+      });
+      image.src = ROOM_DIR + file;
+      await loaded;
+      await image.decode();
+      return image;
     });
-    image.src = ROOM_DIR + file;
-    await loaded;
-    await image.decode();
-    return image;
   }
 
   function validateData() {
@@ -597,8 +629,50 @@
     await Promise.all(jobs);
   }
 
-  function buildScene() {
+  function buildSceneFrame() {
     stage = element("div", "founder-stage");
+
+    // §4.3: на телефоне закрепляется только группа «сцена → кнопка → ссылка → факты».
+    // На компьютере и планшете обе обёртки — display: contents, сетка первого экрана прежняя.
+    track = element("div", "founder-track");
+    group = element("div", "founder-group");
+    actions.before(track);
+    group.append(stage, actions);
+    track.append(group);
+
+    // Замер 100svh и нижнего безопасного поля для проверки «группа помещается».
+    probe = decorative(element("div", "founder-probe"));
+    probe.style.cssText =
+      "position:fixed;left:0;top:0;width:0;box-sizing:border-box;visibility:hidden;pointer-events:none;" +
+      "height:100vh;height:100svh;padding:0 0 env(safe-area-inset-bottom, 0px) 0;";
+    document.body.append(probe);
+  }
+
+  function prepareShell() {
+    if (ready) return;
+    if (!phoneQuery.matches) {
+      if (track) teardownScene();
+      setStatic(false);
+      scroll = null;
+      root.classList.remove("is-reduced");
+      return;
+    }
+    if (sceneFailed) return;
+
+    root.classList.toggle("is-reduced", motion.matches);
+    if (!stage) {
+      // Пустая сцена имеет те же размеры, что и готовая, включая область имён.
+      buildSceneFrame();
+      shellResizeObserver = new ResizeObserver(scheduleMeasure);
+      shellResizeObserver.observe(stage);
+      shellResizeObserver.observe(group);
+      shellResizeObserver.observe(root);
+    }
+    measure();
+  }
+
+  function buildScene() {
+    if (!stage) buildSceneFrame();
     stage.setAttribute("role", "group");
     stage.setAttribute("aria-label", texts.stage.eyebrow);
 
@@ -634,29 +708,20 @@
     for (const name of ["screen", "reveal", "blend", "overlay", "mask", "occluder", "head", "headMask", "variantFrame", "variantLight"]) {
       work[name] = scratch();
     }
-
-    // §4.3: на телефоне закрепляется только группа «сцена → кнопка → ссылка → факты».
-    // На компьютере и планшете обе обёртки — display: contents, сетка первого экрана прежняя.
-    track = element("div", "founder-track");
-    group = element("div", "founder-group");
-    actions.before(track);
-    group.append(stage, actions);
-    track.append(group);
-
-    // Замер 100svh и нижнего безопасного поля для проверки «группа помещается».
-    probe = decorative(element("div", "founder-probe"));
-    probe.style.cssText =
-      "position:fixed;left:0;top:0;width:0;box-sizing:border-box;visibility:hidden;pointer-events:none;" +
-      "height:100vh;height:100svh;padding:0 0 env(safe-area-inset-bottom, 0px) 0;";
-    document.body.append(probe);
   }
 
   function teardownScene() {
+    if (shellResizeObserver) shellResizeObserver.disconnect();
+    shellResizeObserver = null;
     if (track && track.isConnected) {
       track.before(actions);
       track.remove();
     }
     if (probe) probe.remove();
+    stage = null;
+    track = null;
+    group = null;
+    probe = null;
     if (dialog) dialog.remove();
     if (variantPicker) variantPicker.remove();
     if (variantStyle) variantStyle.remove();
@@ -1779,7 +1844,13 @@
 
   function measure() {
     measurePending = 0;
-    if (!ready) return;
+    if (!ready) {
+      if (phoneQuery.matches && stage && !sceneFailed) {
+        mode = "phone";
+        measureScroll();
+      }
+      return;
+    }
     mode = phoneQuery.matches ? "phone" : tabletQuery.matches ? "tablet" : "wide";
     root.dataset.layout = mode;
     const box = stage.getBoundingClientRect();
@@ -1901,6 +1972,8 @@
 
   async function init() {
     try {
+      prepareShell();
+
       [manifest, texts] = await Promise.all([
         fetchJSON(`${ROOM_DIR}manifest.json`),
         fetchJSON("founders/texts.json")
@@ -1915,6 +1988,8 @@
       root.classList.add("is-ready");
       ready = true;
       visible = true;
+      if (shellResizeObserver) shellResizeObserver.disconnect();
+      shellResizeObserver = null;
       measure();
       q = filtered = p;
       lastKey = "";
@@ -1933,13 +2008,11 @@
       });
       intersectionObserver.observe(root);
 
-      window.addEventListener("resize", scheduleMeasure, { passive: true });
       window.addEventListener("scroll", () => {
         updateTarget();
         wake();
       }, { passive: true });
       motion.addEventListener("change", motionChanged);
-      phoneQuery.addEventListener("change", scheduleMeasure);
       tabletQuery.addEventListener("change", scheduleMeasure);
       document.addEventListener("visibilitychange", () => {
         if (document.hidden) sleep();
@@ -1949,12 +2022,31 @@
     } catch (error) {
       sleep();
       ready = false;
+      sceneFailed = true;
       root.classList.remove("is-ready", "is-reduced", "is-static");
+      root.classList.add("is-scene-unavailable");
+      staticMode = false;
+      scroll = null;
       if (resizeObserver) resizeObserver.disconnect();
       if (intersectionObserver) intersectionObserver.disconnect();
       teardownScene();
       console.warn("Сцена основателей не включена:", error);
     }
+  }
+
+  window.addEventListener("resize", scheduleMeasure, { passive: true });
+  phoneQuery.addEventListener("change", () => {
+    syncShellClass();
+    prepareShell();
+    scheduleMeasure();
+  });
+  motion.addEventListener("change", () => {
+    if (!ready && phoneQuery.matches) prepareShell();
+  });
+  if (document.fonts) {
+    document.fonts.ready.then(() => {
+      if (!ready && phoneQuery.matches) scheduleMeasure();
+    });
   }
 
   init();

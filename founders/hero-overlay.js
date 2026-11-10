@@ -27,7 +27,7 @@
   const savedTabIndexes = new Map();
 
   function isEnabled() {
-    return phone.matches && founders.matches(".founders.is-ready");
+    return phone.matches && founders.matches(".founders:is(.is-ready, .is-shell)");
   }
 
   function setHidden(hidden) {
