@@ -14,7 +14,6 @@
     тёмная полоса. На низком телефоне текст занимает нижнюю часть ролика,
     оставляя верхние 45% свободными.
   */
-  @property --p { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
   :root {
     color-scheme: light;
     --white: #FFFFFF;
@@ -272,10 +271,6 @@
   }
   .sound-plate:focus-visible,
   .sound-off:focus-visible { outline-color: var(--plate-ink); }
-  .item-marker:focus-visible {
-    outline-color: var(--ink);
-    box-shadow: 0 0 0 4px var(--white);
-  }
   .hero-actions {
     order: 2;
     position: relative;
@@ -297,533 +292,15 @@
   .hero-facts span { display: block; }
   .hero-aside { display: none; }
 
-  .examples { padding-block: 16px 100px; }
-  .examples-heading { padding-block: 0 36px; }
-  .examples-heading .eyebrow { color: var(--muted); margin-bottom: 16px; }
-  .examples-heading h2 { max-width: 850px; }
-  .example-grid { display: grid; gap: 100px; align-items: start; }
-  .room-card { min-width: 0; width: 100%; max-width: 800px; --split: 76%; }
-  .room-heading {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-  .room-heading p { font-size: 14px; color: var(--muted); }
-  .comparison {
-    width: 100%;
-    max-width: 800px;
-    aspect-ratio: 1600 / 1067;
-    position: relative;
-    background: var(--white);
-    touch-action: pan-y;
-    isolation: isolate;
-  }
-  .comparison > img,
-  .after-window,
-  .after-window > img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-  .comparison img { object-fit: contain; }
-  /* Наша мебель слева от границы: ползунок вправо открывает её больше. */
-  .after-window { clip-path: inset(0 calc(100% - var(--split)) 0 0); }
-  /* Рейки, как на странице клиентки: только там, где подборы отличаются (x 32.8–100 %, y 44–100 % кадра). */
-  .swap-zone {
-    position: absolute;
-    left: 32.8%;
-    top: 44%;
-    width: 67.2%;
-    height: 56%;
-    pointer-events: none;
-  }
-  .swap-zone > div { position: absolute; inset: 0; }
-  .slats { perspective: var(--depth, 600px); perspective-origin: 50% 46%; }
-  .slat {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    transform-style: preserve-3d;
-    will-change: transform;
-  }
-  .slat b {
-    position: absolute;
-    inset: 0;
-    background-repeat: no-repeat;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-  .slat b.back { transform: rotateY(180deg); }
-  .swap-gap {
-    background: var(--shade);
-    opacity: .58;
-    -webkit-mask-image: linear-gradient(90deg, transparent calc(var(--o) - var(--p) - 15%), var(--ink) calc(var(--o) - var(--p)), transparent calc(var(--o) - var(--p) + 15%), transparent calc(var(--o) + var(--p) - 15%), var(--ink) calc(var(--o) + var(--p)), transparent calc(var(--o) + var(--p) + 15%));
-    mask-image: linear-gradient(90deg, transparent calc(var(--o) - var(--p) - 15%), var(--ink) calc(var(--o) - var(--p)), transparent calc(var(--o) - var(--p) + 15%), transparent calc(var(--o) + var(--p) - 15%), var(--ink) calc(var(--o) + var(--p)), transparent calc(var(--o) + var(--p) + 15%));
-  }
-  .swap-comb {
-    background-image: linear-gradient(90deg, var(--glint) 0 1.5px, transparent 1.5px);
-    background-position: calc(var(--sw) / 2) 0;
-    background-size: var(--sw) 100%;
-    -webkit-mask-image: linear-gradient(90deg, transparent calc(var(--o) - var(--p) - 9%), var(--ink) calc(var(--o) - var(--p)), transparent calc(var(--o) - var(--p) + 9%), transparent calc(var(--o) + var(--p) - 9%), var(--ink) calc(var(--o) + var(--p)), transparent calc(var(--o) + var(--p) + 9%));
-    mask-image: linear-gradient(90deg, transparent calc(var(--o) - var(--p) - 9%), var(--ink) calc(var(--o) - var(--p)), transparent calc(var(--o) - var(--p) + 9%), transparent calc(var(--o) + var(--p) - 9%), var(--ink) calc(var(--o) + var(--p)), transparent calc(var(--o) + var(--p) + 9%));
-  }
-  /* Латунная табличка на полу кадра: барабан с кодом дивана и три риски. */
-  .swap-plate {
-    position: absolute;
-    z-index: 5;
-    left: 12px;
-    bottom: 12px;
-    display: grid;
-    align-content: center;
-    gap: 2px;
-    min-height: 44px;
-    padding: 4px 12px;
-    border: 1px solid var(--plate-rule);
-    border-radius: 8px;
-    background: var(--plate);
-    color: var(--plate-ink);
-    box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 30%, transparent);
-    text-align: left;
-    transition: box-shadow 200ms ease, translate 200ms ease;
-  }
-  .swap-plate:hover { translate: 0 -1px; box-shadow: 0 9px 22px color-mix(in srgb, var(--shade) 36%, transparent); }
-  .swap-plate:focus-visible { outline-color: var(--plate-ink); }
-  .plate-lab { font-size: 12px; font-weight: 600; line-height: 1.3; white-space: nowrap; }
-  .plate-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .drum-win {
-    position: relative;
-    display: block;
-    width: 84px;
-    height: 18px;
-    overflow: hidden;
-    perspective: 150px;
-  }
-  .drum {
-    position: absolute;
-    inset: 0;
-    transform: translateZ(-5.2px);
-    transform-style: preserve-3d;
-    transition: transform 620ms cubic-bezier(.3, 1.4, .5, 1);
-  }
-  .drum-face {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    background: var(--plate);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .02em;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-  .ticks { display: flex; gap: 3px; }
-  .ticks i {
-    display: block;
-    width: 3px;
-    height: 13px;
-    border-radius: 1px;
-    background: var(--plate-rule);
-    transition: background 200ms ease;
-  }
-  .ticks i[data-on] { background: var(--gold); }
-  .comparison-divider {
-    position: absolute;
-    z-index: 2;
-    top: 0;
-    bottom: 0;
-    left: var(--split);
-    width: 3px;
-    transform: translateX(-50%);
-    border-inline: 1px solid color-mix(in srgb, var(--shade) 30%, transparent);
-    background: var(--plate);
-    pointer-events: none;
-  }
-  /* Ручка границы — бумага с латунным кольцом, как метки и табличка. */
-  .comparison-divider::after {
-    content: "↔";
-    position: absolute;
-    left: 50%;
-    bottom: 12px;
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    transform: translateX(-50%);
-    border: 2px solid var(--brass);
-    border-radius: 50%;
-    background: var(--plate);
-    color: var(--plate-ink);
-    box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 30%, transparent);
-    font-size: 20px;
-  }
-  .marker-layer { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-  .item-marker {
-    position: absolute;
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
-    padding: 0;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--clear);
-    pointer-events: auto;
-  }
-  /* Латунная точка с кольцом, как метка на странице клиентки. */
-  .item-marker span {
-    position: relative;
-    display: block;
-    width: 18px;
-    height: 18px;
-    border: 2px solid var(--brass);
-    border-radius: 50%;
-    background: var(--plate);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--plate) 35%, transparent), 0 3px 10px color-mix(in srgb, var(--shade) 40%, transparent);
-    transition: transform 200ms ease;
-  }
-  .item-marker span::after {
-    content: "";
-    position: absolute;
-    inset: 4px;
-    border-radius: 50%;
-    background: var(--brass);
-  }
-  .item-marker:hover span,
-  .item-marker:focus-visible span { transform: scale(1.18); }
-  .marker-tip {
-    position: absolute;
-    z-index: 4;
-    width: max-content;
-    max-width: min(260px, calc(100% - 16px));
-    padding: 7px 14px 8px;
-    border: 1px solid var(--plate-rule);
-    border-radius: 8px;
-    background: var(--plate);
-    color: var(--plate-ink);
-    box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 30%, transparent);
-    line-height: 1.3;
-    pointer-events: none;
-  }
-  .marker-tip strong, .marker-tip span { display: block; }
-  .tip-code {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: var(--plate-muted);
-  }
-  .marker-tip strong { font-size: 14px; font-weight: 600; }
-  .tip-size { font-size: 12px; color: var(--plate-muted); }
-  /* Подписи концов ползунка: «Было» слева, «С нашей мебелью» справа; на телефоне подсказка строкой ниже. */
-  .range-copy {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "before after" "hint hint";
-    align-items: center;
-    gap: 2px 12px;
-    font-size: 14px;
-    color: var(--muted);
-  }
-  .range-copy span:first-child { grid-area: before; }
-  .range-copy p { grid-area: hint; color: var(--ink); text-align: center; }
-  .range-copy span:last-child { grid-area: after; text-align: right; }
-  #room-range {
-    width: 100%;
-    height: 44px;
-    margin: 0;
-    accent-color: var(--ink);
-    cursor: ew-resize;
-    touch-action: pan-y;
-  }
-  .room-status { min-height: 21px; margin-top: 12px; font-size: 14px; color: var(--muted); }
-  .item-list { list-style: none; margin: 20px 0 0; padding: 0; }
-  .item-list li + li { border-top: 1px solid var(--line); }
-  .item-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    min-height: 72px;
-    padding: 12px 0;
-    text-align: left;
-    background: var(--clear);
-  }
-  .item-row strong { display: block; font-size: 16px; font-weight: 400; }
-  .item-row small {
-    display: block;
-    margin-top: 4px;
-    font-size: 14px;
-    line-height: 1.4;
-    color: var(--muted);
-  }
-  .item-row .item-arrow {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    background: var(--clear);
-    color: var(--ink);
-    font-size: 24px;
-  }
-  .item-row:hover strong { text-decoration: underline; text-underline-offset: 4px; }
-  .considered {
-    max-width: 560px;
-    margin-top: 28px;
-    padding: 0;
-    color: var(--muted);
-    font-size: 14px;
-  }
-  .considered strong {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--ink);
-    font-size: 16px;
-    font-weight: 400;
-  }
-  .apartment-card { min-width: 0; background: var(--white); }
-  .apartment-copy { padding-block: 0 28px; }
-  .apartment-copy .eyebrow { margin-bottom: 16px; color: var(--muted); }
-  .apartment-copy h3 { font-size: clamp(26px, 2.5vw, 36px); }
-  .apt-stage {
-    position: relative;
-    width: 100%;
-    max-width: 720px;
-    aspect-ratio: 3 / 2;
-    margin-inline: auto;
-    background: var(--white);
-    overflow: clip;
-    perspective: 900px;
-    isolation: isolate;
-  }
-  .apt-stage img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: var(--white);
-    transform-origin: 50% 65%;
-    backface-visibility: hidden;
-  }
-  .apt-stage img[data-view="1"] { z-index: 2; }
-  .scene-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 16px;
-    padding-block: 20px 4px;
-  }
-  .scene-nav button {
-    flex: 0 0 auto;
-    min-width: 44px;
-    padding: 10px 0;
-    border: 0;
-    border-bottom: 1px solid var(--line);
-    background: var(--clear);
-    color: var(--muted);
-    font-size: 14px;
-  }
-  .scene-nav button[aria-pressed="true"] {
-    border-bottom: 3px solid var(--ink);
-    color: var(--ink);
-  }
-  .apt-footer { padding-block: 20px 0; }
-  .apt-footer p { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
-  .upload-card {
-    position: relative;
-    min-width: 0;
-    min-height: 360px;
-    padding: 24px;
-    border: 1px solid var(--line);
-    background: var(--white);
-    color: var(--ink);
-  }
-  .upload-card h3 { position: relative; font-size: 36px; }
-  /*
-    Рамка «Ваша комната»: пустая комната линиями → та же комната с нашей мебелью.
-    Когда рамка на виду, линии рисуются, мебель дорисовывается, по дивану проходит блик.
-    После снимка: снимок сверху, ниже место для варианта с нашей мебелью.
-  */
-  .room-pair { margin-block: 20px 16px; }
-  .room-sheet {
-    position: relative;
-    display: block;
-    width: 100%;
-    aspect-ratio: 3 / 2;
-    overflow: clip;
-    background: var(--plate);
-    color: var(--plate-ink);
-  }
-  #example-upload {
-    min-height: 0;
-    padding: 0;
-    border: 1px dashed var(--brass);
-    text-align: left;
-  }
-  #example-upload:hover { border-style: solid; }
-  .room-sheet-ours { border: 1px solid var(--plate-rule); }
-  .sheet-empty { position: absolute; inset: 0; }
-  .room-art { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; overflow: visible; }
-  .room-art .line { fill: none; stroke: var(--plate-muted); stroke-width: 1.1; stroke-opacity: .7; stroke-linejoin: round; }
-  .room-art .ink { fill: none; stroke: var(--plate-ink); stroke-width: 1.5; stroke-linejoin: round; }
-  .room-art .brass { fill: none; stroke: var(--brass); stroke-width: 1.8; stroke-linejoin: round; }
-  .room-art .glass { fill: var(--glint); fill-opacity: .55; }
-  .room-art .sofa-fill { fill: var(--sofa-fill); }
-  .room-art .chair-fill { fill: var(--chair-fill); }
-  .room-art .table-fill { fill: var(--table-fill); }
-  .glow-stop { stop-color: var(--glint); stop-opacity: .95; }
-  .glow-end { stop-color: var(--glint); stop-opacity: 0; }
-  .room-art .glint-run {
-    fill: none;
-    stroke: var(--glint);
-    stroke-width: 2.4;
-    stroke-linecap: round;
-    stroke-dasharray: .07 .93;
-    stroke-dashoffset: 1;
-    opacity: 0;
-    filter: drop-shadow(0 0 2px var(--brass));
-  }
-  .sheet-center {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: 10px;
-    padding-bottom: 5%;
-  }
-  .sheet-plus { display: block; width: 56px; height: 56px; transition: transform 300ms cubic-bezier(.16, 1, .3, 1); }
-  .sheet-plus svg { display: block; width: 100%; height: 100%; overflow: visible; }
-  .sheet-plus circle {
-    fill: color-mix(in srgb, var(--plate) 75%, transparent);
-    stroke: var(--brass);
-    stroke-width: 1.5;
-    transition: fill 300ms ease;
-  }
-  .sheet-plus .cross { fill: none; stroke: var(--plate-ink); stroke-width: 1.5; stroke-linecap: round; }
-  #example-upload:hover .sheet-plus { transform: scale(1.06); }
-  #example-upload:hover .sheet-plus circle { fill: color-mix(in srgb, var(--glint) 65%, transparent); }
-  .sheet-tag,
-  .sheet-chip,
-  .sheet-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    min-height: 26px;
-    padding: 3px 10px;
-    border: 1px solid var(--plate-rule);
-    border-radius: 8px;
-    background: var(--plate);
-    color: var(--plate-ink);
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--shade) 18%, transparent);
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.2;
-    white-space: nowrap;
-  }
-  .sheet-cta { font-size: 13px; }
-  .sheet-tag,
-  .sheet-chip { position: absolute; z-index: 3; top: 10px; }
-  .sheet-chip { left: 10px; }
-  .sheet-tag { right: 10px; }
-  .sheet-tag::before {
-    content: "";
-    width: 8px;
-    height: 8px;
-    border: 2px solid var(--brass);
-    border-radius: 50%;
-    background: var(--plate);
-  }
-  .sheet-link { position: relative; display: block; width: 24px; height: 44px; margin: 6px auto; }
-  .sheet-link svg { display: block; width: 100%; height: 100%; overflow: visible; }
-  .sheet-link path { fill: none; stroke: var(--brass); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-  .link-bead {
-    position: absolute;
-    left: 50%;
-    top: 4px;
-    width: 6px;
-    height: 6px;
-    margin-left: -3px;
-    border-radius: 50%;
-    background: var(--glint);
-    box-shadow: 0 0 6px 1px var(--brass);
-    opacity: 0;
-  }
-  .sheet-photo { position: absolute; inset: 0; z-index: 0; }
-  .sheet-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    object-fit: cover;
-    animation: photo-in .8s cubic-bezier(.16, 1, .3, 1) both;
-  }
-  .sheet-blur { filter: blur(14px) saturate(.6); transform: scale(1.12); animation-name: sheet-fade; }
-  .room-sheet-ours .sheet-photo::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: color-mix(in srgb, var(--plate) 38%, transparent);
-  }
-  .sheet-file {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: 6px;
-    padding: 40px 16px 16px;
-    font-size: 14px;
-    text-align: center;
-    overflow-wrap: anywhere;
-  }
-  .sheet-file b { font-size: 40px; font-weight: 300; line-height: 1; }
-  .sheet-note {
-    position: absolute;
-    z-index: 3;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--plate) 92%, transparent);
-    color: var(--plate-ink);
-    font-size: 13px;
-    line-height: 1.35;
-    animation: sheet-fade .6s ease .5s both;
-  }
   /* Штрих чуть длиннее линии: кольцо и контуры смыкаются без щели. */
   .draw { stroke-dasharray: 1.02 1; }
   .will-draw .draw { stroke-dashoffset: 1.02; }
   .will-draw .fade { opacity: 0; }
   .will-draw.is-drawn .draw { animation: sheet-draw 1.3s cubic-bezier(.65, 0, .35, 1) var(--d, 0s) both; }
   .will-draw.is-drawn .fade { animation: sheet-fade .9s ease var(--d, 0s) both; }
-  .is-drawn .glint-run { animation: glint-run 7s linear 4.6s infinite; }
-  .is-drawn .link-bead { animation: link-bead 3.4s ease-in-out 2.6s infinite; }
-  .has-photo .room-sheet-ours .room-art { opacity: 0; transition: opacity .4s ease; }
   @keyframes sheet-draw { from { stroke-dashoffset: 1.02; } to { stroke-dashoffset: 0; } }
   @keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes photo-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
-  @keyframes glint-run {
-    0% { stroke-dashoffset: 1; opacity: 0; }
-    5%, 28% { opacity: 1; }
-    33%, 100% { stroke-dashoffset: 0; opacity: 0; }
-  }
-  @keyframes link-bead {
-    0% { transform: translateY(0); opacity: 0; }
-    15%, 65% { opacity: 1; }
-    85%, 100% { transform: translateY(28px); opacity: 0; }
-  }
-  .upload-card > p { max-width: 260px; font-size: 14px; color: var(--muted); }
   .big-plus { display: block; font-size: 86px; font-weight: 300; line-height: 1; }
-  .example-bottom { padding-block: 40px 0; }
 
   .send-section {
     color-scheme: dark;
@@ -1040,13 +517,6 @@
   .item-dialog .button { width: 100%; }
   .item-dialog :focus-visible { outline-color: var(--modal-ink); }
 
-  @media (max-width: 599px) {
-    .comparison,
-    .apt-stage {
-      width: calc(100% + max(16px, env(safe-area-inset-left, 0px)) + max(16px, env(safe-area-inset-right, 0px)));
-      margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
-    }
-  }
 
   @media (min-width: 600px) {
     .site-header { min-height: 52px; }
@@ -1058,15 +528,6 @@
     .hero-plan-link { justify-content: flex-start; }
     .hero-facts { text-align: left; line-height: 1.45; }
     #hero-cta { min-height: 54px; }
-    .examples { padding-block: 24px 120px; }
-    .examples-heading { padding-bottom: 48px; }
-    .example-grid {
-      grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr);
-      gap: 100px 32px;
-    }
-    .room-card { grid-column: 1 / -1; margin-inline: auto; }
-    .range-copy { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "before hint after"; }
-    .upload-card { min-height: 400px; }
     .preview-file { width: calc(50% - 8px); }
     .send-section { padding-block: 120px; }
   }
@@ -1127,16 +588,6 @@
     }
     .hero.is-landscape .video-frame { max-width: none; }
     .hero.is-landscape .hero-copy { padding-top: 0; }
-    .examples { padding-top: clamp(24px, calc(100svh - 740px), 110px); }
-    .examples-heading { padding-bottom: 56px; }
-    .example-grid {
-      grid-template-columns: minmax(0, 800px) minmax(280px, 1fr);
-      gap: 110px 64px;
-    }
-    .room-card { grid-column: 1; grid-row: 1 / 3; }
-    .apartment-card { grid-column: 2; grid-row: 1; padding-top: 72px; }
-    .upload-card { grid-column: 2; grid-row: 2; }
-    .example-bottom { padding-top: 48px; }
     .send-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10%; }
     .send-intro { padding-top: 8px; }
     .send-intro h2 { font-size: clamp(48px, 4.3vw, 64px); }
@@ -1171,12 +622,6 @@
     .hero .hero-copy, .hero .hero-actions { z-index: 1; }
     .hero .hero-copy { position: relative; }
     .hero-copy p { font-size: 17px; }
-    .examples-heading {
-      display: flex;
-      align-items: flex-start;
-      gap: 64px;
-    }
-    .examples-heading .eyebrow { min-width: 180px; padding-top: 10px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1184,10 +629,7 @@
     /* Готовый кадр рамки без движения. */
     .will-draw .draw { stroke-dashoffset: 0; }
     .will-draw .fade { opacity: 1; }
-    .upload-card *,
-    .upload-card *::before,
-    .upload-card *::after { animation: none !important; transition: none !important; }
-    .drum, .ticks i, .item-marker span, .swap-plate, .sound-plate { transition: none; }
+    .sound-plate { transition: none; }
     .sound-dot::after { display: none; animation: none; }
   }
 
@@ -2351,270 +1793,733 @@
     .o-stop::before { transition: none; }
     .o-typing i { animation: none; opacity: .7; }
   }
-/* Свой слой не мешает границе сравнения и табличке на полу. */
-.fan-root {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  container: fan / inline-size;
-  pointer-events: none;
-  color: var(--plate-ink);
-  font-family: inherit;
+</style>
+<style id="examples-ac-css">
+/* Общая секция и акт 1. Глобальные токены и .shell не переопределяются. */
+.examples-ac {
+  --exa-act-gap: 64px;
+  padding-block: 32px 56px;
+  scroll-margin-top: 80px;
+  color: var(--ink);
+  background: var(--white);
+  font-family: "Onest", Arial, sans-serif;
 }
 
-.fan-root button {
-  font-family: inherit;
-  touch-action: manipulation;
+.examples-ac .exa-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--exa-act-gap);
 }
 
-.fan-root button:focus-visible {
-  outline: 3px solid var(--plate-ink);
-  outline-offset: 3px;
-}
-
-.fan-stack {
-  position: absolute;
-  left: 13.5%;
-  top: 26%;
-  width: clamp(88px, 23%, 120px);
-  height: clamp(70px, 18cqw, 104px);
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  transform: translate(-50%, -50%);
-  pointer-events: auto;
-}
-
-.fan-photo {
-  display: block;
-  aspect-ratio: 4 / 3;
-  border-radius: 6px;
-  background-color: var(--plate);
-  background-repeat: no-repeat;
-  /* Вырезка примерно x 47–100%, y 32–92%: диван и край соседней мебели. */
-  background-size: 190% auto;
-  background-position: 100% 70%;
-}
-
-.fan-mini {
-  position: absolute;
-  left: 50%;
-  top: 40%;
-  width: 54%;
-  border: 2px solid var(--plate);
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 30%, transparent);
-  transform-origin: 50% 95%;
-  translate: -50% -50%;
-  transition: rotate 200ms ease;
-}
-
-.fan-mini:nth-child(1) {
-  rotate: -13deg;
-  translate: -78% -50%;
-}
-
-.fan-mini:nth-child(2) {
-  rotate: 12deg;
-  translate: -22% -50%;
-}
-
-.fan-mini:nth-child(3) { rotate: -1deg; }
-
-.fan-stack-label {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  padding: 3px 7px;
-  border: 1px solid var(--plate-rule);
-  border-radius: 8px;
-  background: var(--plate);
-  color: var(--plate-ink);
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 30%, transparent);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 16px;
-  white-space: nowrap;
-  transform: translateX(-50%);
-}
-
-.fan-panel {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.fan-options {
-  position: absolute;
-  left: 28%;
-  top: 4%;
-  width: 64%;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: start;
-  gap: 10px;
-  pointer-events: auto;
-}
-
-.fan-card {
+.examples-ac .exa-photo-act {
   position: relative;
-  display: grid;
-  justify-items: stretch;
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  min-height: 44px;
-  padding: 5px;
-  border: 2px solid var(--plate-rule);
-  border-radius: 8px;
-  background: var(--plate);
-  color: var(--plate-ink);
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 30%, transparent);
-  text-align: left;
-  transform-origin: 50% 50%;
-  transition: rotate 180ms ease, translate 180ms ease;
 }
 
-.fan-card:first-child {
-  rotate: -4deg;
-  translate: 0 7px;
+.examples-ac .exa-photo-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
-.fan-card:last-child {
-  rotate: 4deg;
-  translate: 0 7px;
-}
-
-.fan-card > .fan-photo {
+.examples-ac .exa-title {
   width: 100%;
-  justify-self: center;
+  max-width: none;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(34px, 4.6vw, 68px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -.045em;
+  text-wrap: wrap;
 }
 
-.fan-copy {
-  display: grid;
+.examples-ac .exa-title-first,
+.examples-ac .exa-title-second,
+.examples-ac .exa-title-last {
+  display: block;
+}
+
+.examples-ac .exa-photo-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
   min-width: 0;
-  font-size: 14px;
+}
+
+.examples-ac .exa-photo-subtitle {
+  margin: 0;
+  font-size: 1.125rem;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 1.625rem;
 }
 
-.fan-code {
-  color: var(--plate-muted);
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 16px;
+.examples-ac .exa-upload {
+  flex: none;
+  width: 100%;
+  min-height: 52px;
+  padding: 13px 18px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--clear);
+  color: var(--ink);
+  box-shadow: none;
+  font: 400 1rem/1.2 "Onest", Arial, sans-serif;
+  text-align: center;
+  text-decoration: none;
 }
 
-.fan-card[aria-pressed="true"] {
-  border-color: var(--brass);
-  background: color-mix(in srgb, var(--plate) 90%, var(--glint));
+.examples-ac .exa-upload:hover {
+  text-decoration: underline;
+  text-underline-offset: 5px;
 }
 
-.fan-card:focus-visible { z-index: 2; }
+.examples-ac .exa-upload:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 4px;
+}
 
-.fan-close {
+.examples-ac .exa-photo {
+  --exa-p: 96%;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1600 / 1067;
+  isolation: isolate;
+  scroll-margin-top: 80px;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: ew-resize;
+}
+
+.examples-ac .exa-photo-crop {
   position: absolute;
-  right: 1%;
-  top: 3%;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.examples-ac .exa-image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: 50% 90%;
+  border: 0;
+  border-radius: 0;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.examples-ac .exa-after {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 calc(100% - var(--exa-p)) 0 0);
+  pointer-events: none;
+}
+
+.examples-ac .exa-boundary {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--exa-p);
+  z-index: 2;
+  width: 1px;
+  background: var(--brass);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.examples-ac .exa-handle {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: clamp(22px, var(--exa-p), calc(100% - 22px));
   display: grid;
   place-items: center;
   width: 44px;
   height: 44px;
+  transform: translate(-50%, -50%);
+  touch-action: pan-y;
+  cursor: ew-resize;
+}
+
+.examples-ac .exa-handle:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+
+.examples-ac .exa-handle-disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 12%);
+  pointer-events: none;
+}
+
+.examples-ac .exa-chevron {
+  display: block;
+  flex: none;
+  width: 5px;
+  height: 8px;
+  overflow: visible;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.examples-ac .exa-choices {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
   min-height: 44px;
-  padding: 0;
-  border: 1px solid var(--plate-rule);
-  border-radius: 8px;
-  background: var(--plate);
-  color: var(--plate-ink);
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 30%, transparent);
-  font-size: 26px;
-  font-weight: 300;
-  line-height: 1;
-  pointer-events: auto;
+  margin-top: 12px;
+  margin-inline: auto;
 }
 
-.fan-panel[aria-hidden="true"] .fan-options,
-.fan-panel[aria-hidden="true"] .fan-close {
-  pointer-events: none;
+.examples-ac .exa-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 11px 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--clear);
+  color: var(--ink);
+  box-shadow: none;
+  font: 400 .9375rem/1.375rem "Onest", Arial, sans-serif;
+  text-align: center;
+  transition: color 120ms ease-out;
 }
 
-.fan-flight {
-  position: absolute;
-  z-index: 3;
-  pointer-events: none;
-  transform-origin: 50% 50%;
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 30%, transparent);
+.examples-ac .exa-choice-label {
+  white-space: nowrap;
 }
 
-/* На узком кадре уменьшается фото, но не текст: всё остаётся выше y = 44%. */
-@container fan (max-width: 600px) {
-  .fan-options {
-    left: 10px;
-    top: 4px;
-    width: calc(100% - 20px);
-    gap: 6px;
-  }
-
-  .fan-card {
-    gap: 2px;
-    padding: 3px;
-  }
-
-  .fan-card > .fan-photo {
-    width: min(100%, max(0px, calc(32cqw - 51px)));
-  }
-
-  .fan-copy,
-  .fan-code {
-    font-size: 12px;
-    line-height: 14px;
-  }
-
-  /* Открывашка остаётся доступной, но освобождает место карточкам. */
-  .fan-root[data-open] .fan-stack {
-    top: 56%;
-    height: 44px;
-  }
-
-  .fan-root[data-open] .fan-mini { visibility: hidden; }
-
-  .fan-root[data-open] .fan-stack-label {
-    bottom: 50%;
-    transform: translate(-50%, 50%);
-  }
-
-  .fan-close {
-    left: calc(13.5% + 54px);
-    right: auto;
-    top: calc(56% - 22px);
-  }
+.examples-ac .exa-choice[aria-pressed="true"] {
+  font-weight: 600;
 }
 
 @media (hover: hover) {
-  .fan-stack:hover .fan-mini:nth-child(1) { rotate: -18deg; }
-  .fan-stack:hover .fan-mini:nth-child(2) { rotate: 17deg; }
-  .fan-card:hover {
-    z-index: 2;
-    rotate: 0deg;
-    translate: 0 -5px;
-    border-color: var(--brass);
+  .examples-ac .exa-choice:not([aria-pressed="true"]):hover {
+    color: var(--muted);
   }
-  .fan-close:hover { border-color: var(--brass); }
+}
+
+.examples-ac .exa-choice:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.examples-ac .exa-choice-indicator {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--brass);
+  pointer-events: none;
+}
+
+.examples-ac .exa-choices[data-ready] .exa-choice-indicator {
+  transition:
+    transform 220ms cubic-bezier(.22, 1, .36, 1),
+    width 220ms cubic-bezier(.22, 1, .36, 1);
+}
+
+/* Обрезание находится снаружи этой 3D-сцены. */
+.examples-ac .exa-slats {
+  position: absolute;
+  inset: 0;
+  perspective: 500px;
+  perspective-origin: 50% 50%;
+  pointer-events: none;
+}
+
+.examples-ac .exa-slat {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.examples-ac .exa-slat-face {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.examples-ac .exa-slat-front {
+  transform: translateZ(1px);
+}
+
+.examples-ac .exa-slat-back {
+  transform: rotateY(180deg) translateZ(1px);
+}
+
+.examples-ac .exa-slat-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.examples-ac .exa-slat-edge-left {
+  left: -1px;
+  transform: rotateY(-90deg);
+}
+
+.examples-ac .exa-slat-edge-right {
+  right: -1px;
+  transform: rotateY(90deg);
+}
+
+.examples-ac .exa-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 600px) {
+  .examples-ac {
+    --exa-act-gap: 80px;
+    padding-block: 40px 72px;
+  }
+
+  .examples-ac .exa-title-second,
+  .examples-ac .exa-title-last {
+    display: inline;
+  }
+
+  .examples-ac .exa-photo-header {
+    margin-bottom: 24px;
+  }
+
+  .examples-ac .exa-photo-intro {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    min-height: 52px;
+  }
+
+  .examples-ac .exa-photo-subtitle {
+    font-size: 1.375rem;
+    line-height: 1.875rem;
+  }
+
+  .examples-ac .exa-upload {
+    width: 232px;
+  }
+
+  .examples-ac .exa-photo {
+    aspect-ratio: 2 / 1;
+  }
+
+  .examples-ac .exa-choices {
+    gap: 24px;
+    min-height: 52px;
+  }
+
+  .examples-ac .exa-choice {
+    min-height: 52px;
+    padding-block: 12px;
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  .examples-ac .exa-slats {
+    perspective: 700px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .examples-ac {
+    --exa-act-gap: 96px;
+    padding-block: 48px 96px;
+  }
+
+  .examples-ac .exa-title-first {
+    display: inline;
+  }
+
+  .examples-ac .exa-title-last {
+    display: block;
+  }
+
+  .examples-ac .exa-photo-subtitle {
+    font-size: 2rem;
+    line-height: 2.5rem;
+  }
+
+  .examples-ac .exa-photo {
+    aspect-ratio: 14 / 5;
+  }
+
+  .examples-ac .exa-choices {
+    width: min(100%, 900px);
+    gap: 32px;
+    margin-top: 16px;
+  }
+
+  .examples-ac .exa-choice {
+    padding-block: 10px;
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  .examples-ac .exa-slats {
+    perspective: 1000px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fan-root *,
-  .fan-root *::before,
-  .fan-root *::after {
-    animation: none !important;
-    transition: none !important;
+  .examples-ac .exa-choice,
+  .examples-ac .exa-choices[data-ready] .exa-choice-indicator {
+    transition: none;
   }
 }
-  /* Витрина перед примером: отступ после тёмной полосы (ChatGPT, 09.11). */
-  .sc + .examples { padding-top: 40px; }
-  @media (min-width: 600px) { .sc + .examples { padding-top: 56px; } }
-  @media (min-width: 1000px) { .sc + .examples { padding-top: 80px; } }
+/* Интервал между актами и нижний padding уже заданы в examples.css. */
+.examples-ac .exa-plan-act {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.examples-ac .exa-plan-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.examples-ac .exa-plan-heading-part,
+.examples-ac .exa-plan-subtitle-part {
+  display: block;
+}
+
+.examples-ac .exa-plan-subtitle {
+  margin: 0;
+  color: var(--ink);
+  font: 400 1.125rem/1.625rem "Onest", Arial, sans-serif;
+}
+
+.examples-ac .exa-plan-scene {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: var(--white);
+}
+
+.examples-ac .exa-plan-panel {
+  position: absolute;
+  inset: 0;
+  background: var(--white);
+}
+
+.examples-ac .exa-plan-panel:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+
+.examples-ac .exa-plan-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: 50% 50%;
+}
+
+.examples-ac .exa-plan-scroll {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: -12px;
+  left: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+}
+
+/* 1.8 W = 2.4 × (3/4 W). Полоса прокрутки не участвует в высоте кадра. */
+.examples-ac .exa-plan-canvas {
+  position: relative;
+  width: 180%;
+  aspect-ratio: 12 / 5;
+}
+
+.examples-ac .exa-plan-volume {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(100% 0 0 0);
+}
+
+.examples-ac .exa-plan-lines {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.examples-ac .exa-plan-outer {
+  opacity: .25;
+  stroke: var(--dark-line);
+  stroke-width: 1.5px;
+}
+
+.examples-ac .exa-plan-inner,
+.examples-ac .exa-plan-openings,
+.examples-ac .exa-plan-edges {
+  opacity: 0;
+  stroke: var(--arc);
+  stroke-width: 1px;
+}
+
+.examples-ac .exa-plan-lines > g > path {
+  vector-effect: non-scaling-stroke;
+}
+
+/*
+ * Нормированная прорисовка выполняется в масках без non-scaling-stroke.
+ * Видимые исходные пути сохраняют постоянную толщину в CSS px.
+ */
+.examples-ac .exa-plan-draw {
+  fill: none;
+  stroke: var(--white);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: none;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+}
+
+.examples-ac .exa-plan-ghost {
+  pointer-events: none;
+}
+
+.examples-ac .exa-plan-tabs {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 112px;
+  align-items: start;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  margin-top: 12px;
+  padding-block: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+}
+
+.examples-ac .exa-plan-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.examples-ac .exa-plan-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 11px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  box-shadow: none;
+  font: 400 1rem/1.375rem "Onest", Arial, sans-serif;
+  text-align: center;
+  scroll-snap-align: start;
+  transition: color 120ms ease-out;
+}
+
+.examples-ac .exa-plan-tab-label {
+  white-space: nowrap;
+}
+
+.examples-ac .exa-plan-tab[aria-selected="true"] {
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .examples-ac .exa-plan-tab:not([aria-selected="true"]):hover {
+    color: var(--muted);
+  }
+}
+
+.examples-ac .exa-plan-tab:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+
+.examples-ac .exa-plan-indicator {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--brass);
+  pointer-events: none;
+}
+
+.examples-ac .exa-upload-plan {
+  align-self: flex-end;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 24px;
+}
+
+.examples-ac .exa-plan-rule {
+  flex: none;
+  width: 100%;
+  height: 1px;
+  margin-top: 24px;
+  background: var(--line);
+}
+
+.examples-ac .exa-plan-note {
+  margin: 16px 0 0;
+  color: var(--ink);
+  font: 400 1rem/1.5rem "Onest", Arial, sans-serif;
+}
+
+@media (min-width: 600px) {
+  .examples-ac .exa-plan-heading-part,
+  .examples-ac .exa-plan-subtitle-part {
+    display: inline;
+  }
+
+  .examples-ac .exa-plan-header {
+    margin-bottom: 24px;
+  }
+
+  .examples-ac .exa-plan-scene {
+    aspect-ratio: 2 / 1;
+  }
+
+  .examples-ac .exa-plan-scroll {
+    bottom: 0;
+    overflow: hidden;
+  }
+
+  .examples-ac .exa-plan-canvas {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  .examples-ac .exa-plan-tabs {
+    grid-auto-columns: 120px;
+    gap: 24px;
+    margin-top: 16px;
+  }
+
+  .examples-ac .exa-plan-tab {
+    padding-block: 10px;
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+  }
+
+  .examples-ac .exa-upload-plan {
+    width: 256px;
+  }
+
+  .examples-ac .exa-plan-rule {
+    margin-top: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .examples-ac .exa-plan-subtitle {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  .examples-ac .exa-plan-scene {
+    aspect-ratio: 12 / 5;
+  }
+
+  .examples-ac .exa-plan-tabs {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-auto-columns: auto;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .examples-ac .exa-plan-tab:focus-visible {
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .examples-ac .exa-plan-volume {
+    clip-path: none;
+  }
+
+  .examples-ac .exa-plan-lines {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .examples-ac .exa-plan-tab {
+    transition: none;
+  }
+}
+
 </style>
 <link rel="stylesheet" href="founders/founders.css">
 
@@ -2737,138 +2642,139 @@
       </div>
     </section>
 
-    <section class="examples shell" id="examples" aria-labelledby="examples-title">
-      <div class="examples-heading">
-        <p class="eyebrow">Вот что вы увидите</p>
-        <h2 id="examples-title">Та же комната.<br>Уже с&nbsp;нашей мебелью.</h2>
+<section class="examples-ac" id="examples" aria-labelledby="examples-title">
+  <div class="shell exa-shell">
+    <div class="exa-photo-act">
+      <header class="exa-photo-header">
+        <h2 class="exa-title" id="examples-title"><span class="exa-title-first">Та же комната.</span> <span class="exa-title-second">Уже с нашей</span> <span class="exa-title-last">мебелью.</span></h2>
+        <div class="exa-photo-intro">
+          <p class="exa-photo-subtitle">По фото — бесплатно</p>
+          <a class="button exa-upload" href="#send" data-upload-kind="photo">Прислать фото</a>
+        </div>
+      </header>
+
+      <div class="exa-photo" aria-busy="false">
+        <div class="exa-photo-crop">
+          <img class="exa-image exa-before" src="example/room.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="Обычная комната до подбора мебели">
+          <div class="exa-after">
+            <img class="exa-image exa-preset-image" data-preset="c" src="example/c.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="" role="img" aria-labelledby="examples-title exa-choice-c" hidden>
+            <img class="exa-image exa-preset-image" data-preset="a" src="example/a.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="" role="img" aria-labelledby="examples-title exa-choice-a" hidden>
+            <img class="exa-image exa-preset-image" data-preset="b" src="example/b.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="" role="img" aria-labelledby="examples-title exa-choice-b">
+          </div>
+        </div>
+        <div class="exa-boundary" aria-hidden="true"></div>
+        <div class="exa-handle" role="slider" tabindex="0" aria-label="Граница сравнения комнаты до и после подбора мебели" aria-orientation="horizontal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="96" aria-valuetext="96% с нашей мебелью">
+          <span class="exa-handle-disc" aria-hidden="true">
+            <svg class="exa-chevron" width="5" height="8" viewBox="0 0 5 8" aria-hidden="true" focusable="false"><path d="M4 1 1 4 4 7"></path></svg>
+            <svg class="exa-chevron" width="5" height="8" viewBox="0 0 5 8" aria-hidden="true" focusable="false"><path d="m1 1 3 3-3 3"></path></svg>
+          </span>
+        </div>
       </div>
 
-      <div class="example-grid">
-        <article class="room-card" id="room-card" aria-labelledby="room-title">
-          <div class="room-heading">
-            <h3 id="room-title">Меняем мебель,<br>не&nbsp;вашу комнату</h3>
-            <p>пример показа</p>
-          </div>
-          <div class="comparison" id="comparison">
-            <img src="example/room.jpg" alt="Обычная комната до подбора мебели" width="1600" height="1067" loading="lazy" draggable="false">
-            <div class="after-window">
-              <img id="room-after" src="example/b.jpg" alt="Та же комната: изумрудный диван, белое кресло и белый стол" width="1600" height="1067" loading="lazy" draggable="false">
-              <div class="swap-zone" id="swap-zone" aria-hidden="true"></div>
-            </div>
-            <div class="comparison-divider" id="comparison-divider" aria-hidden="true"></div>
-            <div class="marker-layer" id="marker-layer" hidden></div>
-            <div class="marker-tip" id="marker-tip" role="tooltip" hidden></div>
-            <button type="button" class="swap-plate" id="swap-plate">
-              <span class="plate-lab">Следующий подбор</span>
-              <span class="plate-row" aria-hidden="true">
-                <span class="drum-win"><span class="drum" id="swap-drum">
-                  <span class="drum-face" style="transform: rotateX(0deg) translateZ(5.2px)">Коньячный</span>
-                  <span class="drum-face" style="transform: rotateX(120deg) translateZ(5.2px)">Молочный</span>
-                  <span class="drum-face" style="transform: rotateX(240deg) translateZ(5.2px)">Изумрудный</span>
-                </span></span>
-                <span class="ticks" id="swap-ticks"><i data-on></i><i></i><i></i></span>
-              </span>
-            </button>
-          </div>
-
-          <input id="room-range" type="range" min="0" max="100" value="76" aria-label="Граница сравнения комнаты до и после подбора мебели" aria-valuetext="76% с нашей мебелью">
-          <div class="range-copy">
-            <span>Было</span>
-            <p>Потяните границу</p>
-            <span>С&nbsp;нашей мебелью</span>
-          </div>
-          <p class="room-status" id="room-status" role="status">Подбор 1 из 3</p>
-          <ul class="item-list" id="item-list">
-            <li><button class="item-row" type="button" data-code="PL-063"><span><strong>Трёхместный диван</strong><small>210 × 105 × 85 см · PL-063</small></span><span class="item-arrow" aria-hidden="true">↗</span></button></li>
-            <li><button class="item-row" type="button" data-code="PL-283"><span><strong>Журнальный стол</strong><small>140 × 42 см · PL-283</small></span><span class="item-arrow" aria-hidden="true">↗</span></button></li>
-            <li><button class="item-row" type="button" data-code="PL-161"><span><strong>Кресло</strong><small>81 × 84 × 73 см · PL-161</small></span><span class="item-arrow" aria-hidden="true">↗</span></button></li>
-          </ul>
-          <p class="considered"><strong>Что мы учли</strong>Ширину стены, цвет пола и&nbsp;свет. Мебель подбираем под интерьер, а&nbsp;не&nbsp;наоборот.</p>
-        </article>
-
-        <article class="apartment-card" aria-labelledby="apartment-title">
-          <div class="apartment-copy">
-            <p class="eyebrow">От&nbsp;чертежа — к&nbsp;квартире</p>
-            <h3 id="apartment-title">По&nbsp;чертежу бесплатно сделаем полный <span class="nowrap">дизайн-план</span> всей квартиры с&nbsp;нашей мебелью.</h3>
-          </div>
-          <div class="apt-stage" id="apt-stage" aria-label="Дизайн-план квартиры">
-            <img data-view="0" src="apt/plan.jpg" alt="Чистый чертёж квартиры" loading="lazy" width="1536" height="1024">
-            <img data-view="1" src="apt/iso-full.jpg" alt="Дизайн-план квартиры: вид сверху" loading="lazy" width="1622" height="1282" hidden>
-            <img data-view="2" src="apt/living_sofa.jpg" alt="Гостиная с молочным диваном" loading="lazy" width="1536" height="1024" hidden>
-            <img data-view="3" src="apt/dining_kitchen.jpg" alt="Кухня и обеденная зона" loading="lazy" width="1536" height="1024" hidden>
-            <img data-view="4" src="apt/bedroom_bed.jpg" alt="Спальня" loading="lazy" width="1536" height="1024" hidden>
-            <img data-view="5" src="apt/living_tv.jpg" alt="Гостиная: зона напротив дивана" loading="lazy" width="1536" height="1024" hidden>
-            <img data-view="6" src="apt/hall.jpg" alt="Прихожая" loading="lazy" width="1536" height="1024" hidden>
-          </div>
-          <div class="scene-nav" role="group" aria-label="Сцены квартиры">
-            <button type="button" data-scene="0" aria-pressed="true">Чертёж</button>
-            <button type="button" data-scene="1" aria-pressed="false">Сверху</button>
-            <button type="button" data-scene="2" aria-pressed="false">Гостиная</button>
-            <button type="button" data-scene="3" aria-pressed="false">Кухня</button>
-            <button type="button" data-scene="4" aria-pressed="false">Спальня</button>
-            <button type="button" data-scene="5" aria-pressed="false">ТВ-зона</button>
-            <button type="button" data-scene="6" aria-pressed="false">Прихожая</button>
-          </div>
-          <div class="apt-footer">
-            <p id="apt-caption">Дизайн-план по чертежу. От общего вида до каждой комнаты.</p>
-            <a class="button green-button" href="#send" data-upload-kind="plan">Прислать чертёж</a>
-          </div>
-        </article>
-
-        <article class="upload-card" id="upload-card" aria-labelledby="your-room-title">
-          <h3 id="your-room-title">Ваша<br>комната</h3>
-          <div class="room-pair" id="room-pair">
-            <button type="button" class="room-sheet" id="example-upload" aria-label="Выбрать фото для рамки «Ваша комната»">
-              <span class="sheet-empty" id="example-empty">
-                <svg class="room-art" viewBox="0 0 300 200" aria-hidden="true">
-                  <defs><linearGradient id="glow-yours" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="glow-stop"/><stop offset="1" class="glow-end"/></linearGradient></defs>
-                  <path class="glow fade" style="--d: .9s" d="M40 150 H114 L132 200 H14 Z" fill="url(#glow-yours)"/>
-                  <rect class="glass fade" style="--d: .8s" x="40" y="24" width="74" height="60"/>
-                  <path class="line draw" pathLength="1" d="M0 150 H212 M212 0 V150 M212 150 L300 186"/>
-                  <path class="line draw" pathLength="1" style="--d: .35s" d="M40 24 H114 V84 H40 Z M77 24 V84 M40 54 H114 M34 87 H120"/>
-                </svg>
-                <span class="sheet-center">
-                  <span class="sheet-plus fade" style="--d: .55s" aria-hidden="true">
-                    <svg viewBox="0 0 56 56"><circle class="draw" pathLength="1" style="--d: .55s" cx="28" cy="28" r="26" transform="rotate(-90 28 28)"/><path class="cross" d="M28 19 V37 M19 28 H37"/></svg>
-                  </span>
-                  <span class="sheet-cta fade" style="--d: .95s">Добавьте свой снимок</span>
-                </span>
-              </span>
-              <span class="sheet-photo" id="example-preview" hidden></span>
-            </button>
-            <span class="sheet-link" aria-hidden="true">
-              <svg viewBox="0 0 24 44"><path class="draw" pathLength="1" style="--d: 1.15s" d="M12 4 V38 M6 32 L12 38 L18 32"/></svg>
-              <i class="link-bead"></i>
-            </span>
-            <div class="room-sheet room-sheet-ours" id="example-ours">
-              <span class="sheet-photo" id="example-ours-photo" hidden></span>
-              <svg class="room-art" viewBox="0 0 300 200" aria-hidden="true">
-                <defs><linearGradient id="glow-ours" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="glow-stop"/><stop offset="1" class="glow-end"/></linearGradient></defs>
-                <path class="glow fade" style="--d: 1.9s" d="M40 150 H114 L132 200 H14 Z" fill="url(#glow-ours)"/>
-                <rect class="glass fade" style="--d: 1.8s" x="40" y="24" width="74" height="60"/>
-                <path class="line draw" pathLength="1" style="--d: 1.35s" d="M0 150 H212 M212 0 V150 M212 150 L300 186"/>
-                <path class="line draw" pathLength="1" style="--d: 1.55s" d="M40 24 H114 V84 H40 Z M77 24 V84 M40 54 H114 M34 87 H120"/>
-                <path class="sofa-fill fade" style="--d: 3.1s" d="M60 146 V120 Q60 112 68 112 H84 V98 Q84 92 90 92 H170 Q176 92 176 98 V112 H192 Q200 112 200 120 V146 Z"/>
-                <path class="chair-fill fade" style="--d: 3.25s" d="M232 148 V130 Q232 124 238 124 H254 Q260 124 260 130 V148 Z M226 178 V156 Q226 148 234 148 H258 Q266 148 266 156 V178 Z"/>
-                <path class="table-fill fade" style="--d: 3.4s" d="M116 172 A30 6 0 0 1 176 172 V176 A30 6 0 0 1 116 176 Z"/>
-                <path class="ink draw" pathLength="1" style="--d: 2s" d="M60 146 V120 Q60 112 68 112 H84 V98 Q84 92 90 92 H170 Q176 92 176 98 V112 H192 Q200 112 200 120 V146 H60 M84 112 V128 H176 V112 M130 94 V128"/>
-                <path class="ink draw" pathLength="1" style="--d: 2.45s" d="M232 148 V130 Q232 124 238 124 H254 Q260 124 260 130 V148 M226 178 V156 Q226 148 234 148 H258 Q266 148 266 156 V178 H226 M232 160 H260"/>
-                <path class="ink draw" pathLength="1" style="--d: 2.75s" d="M116 172 A30 6 0 0 1 176 172 A30 6 0 0 1 116 172 M116 172 V176 A30 6 0 0 0 176 176 V172"/>
-                <path class="brass draw" pathLength="1" style="--d: 3s" d="M68 146 V154 M192 146 V154 M228 181 A18 3 0 0 0 264 181 A18 3 0 0 0 228 181 M146 182 V190 M134 192 A12 2.4 0 0 1 158 192 A12 2.4 0 0 1 134 192"/>
-                <path class="glint-run" pathLength="1" d="M60 146 V120 Q60 112 68 112 H84 V98 Q84 92 90 92 H170 Q176 92 176 98 V112 H192 Q200 112 200 120 V146 Z"/>
-              </svg>
-              <span class="sheet-tag fade" style="--d: 3.4s">С&nbsp;нашей мебелью</span>
-              <p class="sheet-note" id="example-note" hidden>Здесь покажем вашу комнату с&nbsp;нашей мебелью. Бесплатно.</p>
-            </div>
-          </div>
-          <p>Вы выбираете цвета, материалы и&nbsp;отделку.</p>
-        </article>
+      <div class="exa-choices">
+        <button class="exa-choice" id="exa-choice-c" type="button" data-preset="c" aria-pressed="false"><span class="exa-choice-label">Коньячный</span></button>
+        <button class="exa-choice" id="exa-choice-a" type="button" data-preset="a" aria-pressed="false"><span class="exa-choice-label">Молочный</span></button>
+        <button class="exa-choice" id="exa-choice-b" type="button" data-preset="b" aria-pressed="true"><span class="exa-choice-label">Изумрудный</span></button>
+        <span class="exa-choice-indicator" aria-hidden="true"></span>
       </div>
+      <p class="exa-sr-only exa-photo-status" role="status" aria-live="polite" aria-atomic="true">Подбор 3 из 3</p>
+    </div>
+    <div class="exa-plan-act">
+  <header class="exa-plan-header">
+    <h2 class="exa-title" id="exa-plan-title"><span class="exa-plan-heading-part">Вся квартира —</span> <span class="exa-plan-heading-part">по чертежу</span></h2>
+    <p class="exa-plan-subtitle"><span class="exa-plan-subtitle-part">Полный дизайн-план</span> <span class="exa-plan-subtitle-part">с нашей мебелью — бесплатно</span></p>
+  </header>
 
-      <div class="example-bottom">
-        <a class="button green-button" href="#send" data-upload-kind="photo">Хочу так же у&nbsp;себя <span aria-hidden="true">↗</span></a>
+  <div class="exa-plan-scene">
+    <div class="exa-plan-panel" id="exa-plan-panel-drawing" role="tabpanel" aria-labelledby="exa-plan-tab-drawing" hidden>
+      <img class="exa-plan-image" src="apt/plan.jpg" width="2917" height="1734" loading="lazy" decoding="async" alt="Чистый чертёж квартиры">
+    </div>
+
+    <div class="exa-plan-panel exa-plan-overview" id="exa-plan-panel-overview" role="tabpanel" aria-labelledby="exa-plan-tab-overview" tabindex="0">
+      <div class="exa-plan-scroll">
+        <div class="exa-plan-canvas">
+          <img class="exa-plan-image exa-plan-volume" src="apt/iso-wide.jpg" width="3072" height="1280" loading="lazy" decoding="async" alt="Дизайн-план квартиры: вид сверху">
+          <svg class="exa-plan-lines" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 640" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+            <g class="exa-plan-outer">
+              <path d="M 55.8 289.7 L 64.0 564.1 L 1296.5 568.5 L 1291.4 309.6 L 1424.5 309.1 L 1419.3 32.0 L 384.6 31.7 L 389.6 217.2 L 176.1 217.6 L 177.1 289.9 Z" pathLength="1" />
+            </g>
+            <g class="exa-plan-inner">
+              <path d="M 81.0 403.4 L 392.4 403.5 L 397.3 543.5 L 86.2 543.1 Z" pathLength="1" />
+              <path d="M 802.7 390.7 L 963.6 390.3 L 962.8 308.2 L 1254.8 308.8 L 1260.7 546.4 L 807.5 545.6 Z" pathLength="1" />
+              <path d="M 800.6 301.3 L 947.2 300.9 L 950.1 380.8 L 803.6 381.2 Z" pathLength="1" />
+              <path d="M 1287.3 46.7 L 1391.8 47.5 L 1395.3 293.6 L 1291.1 292.7 L 1290.2 249.3 L 1283.5 248.6 L 1280.6 99.1 L 1287.2 98.3 Z" pathLength="1" />
+              <path d="M 794.6 47.3 L 1262.9 46.7 L 1265.0 98.3 L 1271.7 99.1 L 1274.7 248.6 L 1268.0 249.3 L 1268.9 292.7 L 801.5 292.5 Z" pathLength="1" />
+              <path d="M 408.1 46.4 L 781.3 47.3 L 792.1 545.6 L 421.4 544.3 L 416.3 394.1 L 393.3 394.0 L 392.2 395.5 L 80.7 394.0 L 78.1 305.1 L 200.4 304.6 L 199.5 232.3 L 387.8 232.5 L 390.9 306.4 L 413.9 306.4 Z" pathLength="1" />
+            </g>
+            <g class="exa-plan-openings">
+              <path d="M 785.6 225.6 L 798.8 225.7 L 800.1 281.3 L 786.9 281.3 Z" pathLength="1" />
+              <path d="M 794.7 394.8 L 797.7 394.8 L 799.0 446.3 L 795.9 446.3 Z" pathLength="1" />
+              <path d="M 1273.0 348.7 L 1276.1 348.7 L 1279.2 504.0 L 1276.1 504.0 Z" pathLength="1" />
+              <path d="M 1271.4 98.3 L 1280.8 98.3 L 1282.7 197.8 L 1273.4 197.8 Z" pathLength="1" />
+              <path d="M 1273.4 197.8 L 1282.7 197.8 L 1283.8 249.3 L 1274.4 249.3 Z" pathLength="1" />
+              <path d="M 1405.0 89.2 L 1408.2 89.2 L 1411.1 243.5 L 1407.9 243.5 Z" pathLength="1" />
+              <path d="M 249.9 223.3 L 360.9 223.4 L 361.0 226.4 L 249.9 226.2 Z" pathLength="1" />
+              <path d="M 215.0 397.9 L 304.2 398.1 L 304.3 401.0 L 215.1 400.8 Z" pathLength="1" />
+              <path d="M 823.2 226.5 L 827.6 226.5 L 829.1 292.5 L 824.7 292.5 Z" pathLength="1" />
+              <path d="M 961.7 308.6 L 1061.2 308.8 L 1061.2 311.7 L 961.8 311.5 Z" pathLength="1" />
+            </g>
+            <g class="exa-plan-edges">
+              <path d="M 57.6 350.5 L 55.8 289.7" pathLength="1" />
+              <path d="M 65.8 624.6 L 64.0 564.1" pathLength="1" />
+              <path d="M 177.8 278.5 L 176.1 217.6" pathLength="1" />
+              <path d="M 202.2 365.4 L 200.4 304.6" pathLength="1" />
+              <path d="M 394.1 464.4 L 392.4 403.5" pathLength="1" />
+              <path d="M 392.6 367.3 L 390.9 306.4" pathLength="1" />
+              <path d="M 415.6 367.4 L 413.9 306.4" pathLength="1" />
+              <path d="M 948.6 362.0 L 947.2 300.9" pathLength="1" />
+              <path d="M 964.9 451.4 L 963.6 390.3" pathLength="1" />
+              <path d="M 1266.2 159.8 L 1265.0 98.3" pathLength="1" />
+              <path d="M 1281.8 160.6 L 1280.6 99.1" pathLength="1" />
+              <path d="M 1288.4 159.8 L 1287.2 98.3" pathLength="1" />
+              <path d="M 1297.7 629.6 L 1296.5 568.5" pathLength="1" />
+              <path d="M 1288.5 108.2 L 1287.3 46.7" pathLength="1" />
+              <path d="M 1393.0 109.0 L 1391.8 47.5" pathLength="1" />
+              <path d="M 1425.6 370.5 L 1424.5 309.1" pathLength="1" />
+            </g>
+          </svg>
+        </div>
       </div>
-    </section>
+    </div>
+
+    <div class="exa-plan-panel" id="exa-plan-panel-living" role="tabpanel" aria-labelledby="exa-plan-tab-living" hidden>
+      <img class="exa-plan-image" src="apt/living_sofa.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Гостиная с молочным диваном">
+    </div>
+    <div class="exa-plan-panel" id="exa-plan-panel-kitchen" role="tabpanel" aria-labelledby="exa-plan-tab-kitchen" hidden>
+      <img class="exa-plan-image" src="apt/dining_kitchen.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Кухня и обеденная зона">
+    </div>
+    <div class="exa-plan-panel" id="exa-plan-panel-bedroom" role="tabpanel" aria-labelledby="exa-plan-tab-bedroom" hidden>
+      <img class="exa-plan-image" src="apt/bedroom_bed.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Спальня">
+    </div>
+    <div class="exa-plan-panel" id="exa-plan-panel-tv" role="tabpanel" aria-labelledby="exa-plan-tab-tv" hidden>
+      <img class="exa-plan-image" src="apt/living_tv.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Гостиная: зона напротив дивана">
+    </div>
+    <div class="exa-plan-panel" id="exa-plan-panel-hall" role="tabpanel" aria-labelledby="exa-plan-tab-hall" hidden>
+      <img class="exa-plan-image" src="apt/hall.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Прихожая">
+    </div>
+  </div>
+
+  <div class="exa-plan-tabs" role="tablist" aria-label="Сцены квартиры">
+    <button class="exa-plan-tab" id="exa-plan-tab-drawing" type="button" role="tab" aria-selected="false" aria-controls="exa-plan-panel-drawing" tabindex="-1"><span class="exa-plan-tab-label">Чертёж</span></button>
+    <button class="exa-plan-tab" id="exa-plan-tab-overview" type="button" role="tab" aria-selected="true" aria-controls="exa-plan-panel-overview" tabindex="0"><span class="exa-plan-tab-label">Сверху</span></button>
+    <button class="exa-plan-tab" id="exa-plan-tab-living" type="button" role="tab" aria-selected="false" aria-controls="exa-plan-panel-living" tabindex="-1"><span class="exa-plan-tab-label">Гостиная</span></button>
+    <button class="exa-plan-tab" id="exa-plan-tab-kitchen" type="button" role="tab" aria-selected="false" aria-controls="exa-plan-panel-kitchen" tabindex="-1"><span class="exa-plan-tab-label">Кухня</span></button>
+    <button class="exa-plan-tab" id="exa-plan-tab-bedroom" type="button" role="tab" aria-selected="false" aria-controls="exa-plan-panel-bedroom" tabindex="-1"><span class="exa-plan-tab-label">Спальня</span></button>
+    <button class="exa-plan-tab" id="exa-plan-tab-tv" type="button" role="tab" aria-selected="false" aria-controls="exa-plan-panel-tv" tabindex="-1"><span class="exa-plan-tab-label">ТВ-зона</span></button>
+    <button class="exa-plan-tab" id="exa-plan-tab-hall" type="button" role="tab" aria-selected="false" aria-controls="exa-plan-panel-hall" tabindex="-1"><span class="exa-plan-tab-label">Прихожая</span></button>
+    <span class="exa-plan-indicator" aria-hidden="true"></span>
+  </div>
+
+  <a class="button exa-upload exa-upload-plan" href="#send" data-upload-kind="plan">Прислать чертёж</a>
+  <div class="exa-plan-rule" aria-hidden="true"></div>
+  <p class="exa-plan-note">Цвета, материалы и отделку выбираете вы.</p>
+</div>
+  </div>
+</section>
 
     <section class="f-block f-process" id="f-process" aria-labelledby="f-process-title">
       <div class="f-wrap f-process-layout">
@@ -3379,46 +3285,6 @@
   const desktop = matchMedia("(min-width: 1000px)");
   const phone = matchMedia("(max-width: 599px)");
 
-  // Названия, размеры, коды и координаты — из переданного items.json.
-  // Старые пути photo намеренно не используются.
-  const variants = {
-    a: {
-      name: "Молочный",
-      image: "example/a.jpg",
-      alt: "Та же комната: молочный диван, терракотовое кресло и мраморные столы",
-      color: "var(--white)",
-      ink: "var(--ink)",
-      items: [
-        { code: "PL-028", name: "Трёхместный диван", size: "218 × 90 × 78 см", x: 76.9, y: 60.0 },
-        { code: "PL-264", name: "Журнальный стол", size: "Ø90 × 44; Ø60 × 54; Ø50 × 54 см", x: 72.5, y: 74.0 },
-        { code: "PL-125", name: "Кресло", size: "80 × 75 × 69 см", x: 46.0, y: 64.7 }
-      ]
-    },
-    b: {
-      name: "Изумрудный",
-      image: "example/b.jpg",
-      alt: "Та же комната: изумрудный диван, белое кресло и белый стол",
-      color: "var(--white)",
-      ink: "var(--ink)",
-      items: [
-        { code: "PL-063", name: "Трёхместный диван", size: "210 × 105 × 85 см", x: 75.6, y: 58.1 },
-        { code: "PL-283", name: "Журнальный стол", size: "140 × 42 см", x: 74.0, y: 75.0 },
-        { code: "PL-161", name: "Кресло", size: "81 × 84 × 73 см", x: 45.6, y: 60.9 }
-      ]
-    },
-    c: {
-      name: "Коньячный",
-      image: "example/c.jpg",
-      alt: "Та же комната: коньячный диван, изумрудное кресло и светлый мраморный стол",
-      color: "var(--white)",
-      ink: "var(--ink)",
-      items: [
-        { code: "PL-054", name: "Диван", size: "235 × 98 × 83 см", x: 76.9, y: 60.0 },
-        { code: "PL-286", name: "Журнальный стол", size: "140 × 80 × 45 см", x: 72.5, y: 79.7 },
-        { code: "PL-124", name: "Кресло", size: "75 × 65 × 70 см", x: 47.8, y: 63.7 }
-      ]
-    }
-  };
 
   let noticeTimer;
   function notice(text) {
@@ -3524,11 +3390,6 @@
     return promise;
   }
 
-  function preloadVariants() {
-    Object.values(variants).forEach((variant) => {
-      loadImage(variant.image).catch(() => {});
-    });
-  }
 
   function observeOnce(element, callback, options = {}) {
     if (!("IntersectionObserver" in window)) {
@@ -3544,690 +3405,9 @@
     observer.observe(element);
   }
 
-  observeOnce($("examples"), preloadVariants, { rootMargin: "900px 0px" });
 
-  const room = $("room-card");
-  const comparison = $("comparison");
-  const range = $("room-range");
-  const markerLayer = $("marker-layer");
-  const tip = $("marker-tip");
-  const baseImage = $("room-after");
-  const swapZone = $("swap-zone");
-  const roomStatus = $("room-status");
-  // Порядок на табличке: первым стоит подбор из разметки.
-  const order = ["b", "c", "a"];
-  const nameAfter = (key) => variants[order[(order.indexOf(key) + 1) % order.length]].name;
-  // На барабане — название подбора, который встанет по нажатию, а не код дивана на экране.
-  $("swap-drum").querySelectorAll(".drum-face").forEach((face, i) => { face.textContent = nameAfter(order[i]); });
-  // Где подборы отличаются друг от друга: доли кадра 1600 × 1067.
-  const ZONE_X = .328;
-  const ZONE_Y = .44;
-  // Рейки как на странице клиентки: волна от края, поворот рейки, ребро ловит свет.
-  const SPREAD = 620;
-  const SLAT_TIME = 640;
-  const EDGE_ON = 250;
-  const AUTO_EVERY = 4800;
-  const HOLD = 6000;
-  const masks = CSS.supports("mask-image", "linear-gradient(#000, #000)") ||
-    CSS.supports("-webkit-mask-image", "linear-gradient(#000, #000)");
-  const bands = masks && "registerProperty" in CSS;
-  let activeVariant = "b";
-  let shownVariant = "b";
-  let drumTurn = 0;
-  let swapRun = null;
-  let swapOrigin = 1;
-  let swapRequest = 0;
-  let lastSwap = 0;
-  let autoTimer = 0;
-  let holdUntil = 0;
-  let roomInView = !("IntersectionObserver" in window);
-  let activeTipMarker = null;
-  let sweepFrame = 0;
-  let userMovedRange = false;
-  let fanOpen = false;
 
-  function hideTip() {
-    tip.hidden = true;
-    if (activeTipMarker) activeTipMarker.removeAttribute("aria-describedby");
-    activeTipMarker = null;
-  }
 
-  function updateMarkersVisibility() {
-    markerLayer.hidden = comparison.clientWidth <= 600;
-    const split = Number(range.value);
-    // Метки видны только на нашей мебели — слева от границы.
-    markerLayer.querySelectorAll(".item-marker").forEach((marker) => {
-      marker.hidden = Number(marker.dataset.x) >= split - 3;
-    });
-    if (activeTipMarker && (markerLayer.hidden || activeTipMarker.hidden)) hideTip();
-  }
-
-  function setSplit(value) {
-    const bounded = Math.max(0, Math.min(100, Number(value)));
-    range.value = String(bounded);
-    room.style.setProperty("--split", bounded + "%");
-    range.setAttribute("aria-valuetext", Math.round(bounded) + "% с нашей мебелью");
-    updateMarkersVisibility();
-  }
-
-  // Касание ползунка, таблички или метки ставит смены подборов на паузу.
-  function holdAuto() {
-    holdUntil = performance.now() + HOLD;
-    queueAuto();
-  }
-
-  function stopSweep() {
-    userMovedRange = true;
-    cancelAnimationFrame(sweepFrame);
-    $("comparison-divider").getAnimations().forEach((animation) => animation.cancel());
-    holdAuto();
-  }
-
-  range.addEventListener("input", () => {
-    stopSweep();
-    hideTip();
-    setSplit(range.value);
-  });
-  range.addEventListener("pointerdown", stopSweep);
-  range.addEventListener("keydown", stopSweep);
-
-  let drag = null;
-  function positionToSplit(clientX) {
-    const box = comparison.getBoundingClientRect();
-    return (clientX - box.left) / box.width * 100;
-  }
-  comparison.addEventListener("pointerdown", (event) => {
-    if (event.target.closest("button") || (event.pointerType === "mouse" && event.button !== 0)) return;
-    stopSweep();
-    hideTip();
-    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false };
-  });
-  comparison.addEventListener("pointermove", (event) => {
-    if (!drag || drag.id !== event.pointerId) return;
-    const dx = Math.abs(event.clientX - drag.x);
-    const dy = Math.abs(event.clientY - drag.y);
-    if (!drag.horizontal && dy > dx && dy > 8) {
-      drag = null;
-      return;
-    }
-    if (!drag.horizontal && dx > 5 && dx > dy) {
-      drag.horizontal = true;
-      comparison.setPointerCapture(event.pointerId);
-    }
-    if (drag.horizontal) setSplit(positionToSplit(event.clientX));
-  });
-  comparison.addEventListener("pointerup", (event) => {
-    if (!drag || drag.id !== event.pointerId) return;
-    if (drag.horizontal || Math.abs(event.clientY - drag.y) < 6) {
-      setSplit(positionToSplit(event.clientX));
-    }
-    if (comparison.hasPointerCapture(event.pointerId)) comparison.releasePointerCapture(event.pointerId);
-    drag = null;
-    holdAuto();
-  });
-  comparison.addEventListener("pointercancel", () => { drag = null; });
-
-  function showTip(marker, item) {
-    hideTip();
-    activeTipMarker = marker;
-    const code = document.createElement("span");
-    code.className = "tip-code";
-    code.textContent = item.code;
-    const title = document.createElement("strong");
-    title.textContent = item.name;
-    const size = document.createElement("span");
-    size.className = "tip-size";
-    size.textContent = item.size;
-    tip.replaceChildren(code, title, size);
-    tip.hidden = false;
-    marker.setAttribute("aria-describedby", "marker-tip");
-
-    const width = comparison.clientWidth;
-    const height = comparison.clientHeight;
-    const anchorX = item.x / 100 * width;
-    const anchorY = item.y / 100 * height;
-    const left = Math.max(8, Math.min(width - tip.offsetWidth - 8, anchorX - tip.offsetWidth / 2));
-    // Подсказка вынесена вверх, на свободную стену, а не на диван или стол.
-    const top = Math.max(8, Math.min(height * .22, anchorY - tip.offsetHeight - 38));
-    tip.style.left = left + "px";
-    tip.style.top = top + "px";
-  }
-
-  function renderList() {
-    const fragment = document.createDocumentFragment();
-    variants[activeVariant].items.forEach((item) => {
-      const li = document.createElement("li");
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "item-row";
-      button.dataset.code = item.code;
-      const copy = document.createElement("span");
-      const name = document.createElement("strong");
-      name.textContent = item.name;
-      const detail = document.createElement("small");
-      detail.textContent = item.size + " · " + item.code;
-      copy.append(name, detail);
-      const arrow = document.createElement("span");
-      arrow.className = "item-arrow";
-      arrow.setAttribute("aria-hidden", "true");
-      arrow.textContent = "↗";
-      button.append(copy, arrow);
-      li.append(button);
-      fragment.append(li);
-    });
-    $("item-list").replaceChildren(fragment);
-  }
-
-  function renderMarkers(key) {
-    hideTip();
-    const fragment = document.createDocumentFragment();
-    variants[key].items.forEach((item) => {
-      const marker = document.createElement("button");
-      marker.type = "button";
-      marker.className = "item-marker";
-      marker.dataset.code = item.code;
-      marker.dataset.x = String(item.x);
-      marker.style.left = item.x + "%";
-      marker.style.top = item.y + "%";
-      marker.setAttribute("aria-label", item.name + ", " + item.size + ", " + item.code + ". Открыть фото");
-      const dot = document.createElement("span");
-      dot.setAttribute("aria-hidden", "true");
-      marker.append(dot);
-      marker.addEventListener("mouseenter", () => {
-        holdAuto();
-        showTip(marker, item);
-      });
-      marker.addEventListener("mouseleave", () => {
-        if (document.activeElement !== marker) hideTip();
-      });
-      marker.addEventListener("focus", () => {
-        holdAuto();
-        showTip(marker, item);
-      });
-      marker.addEventListener("blur", hideTip);
-      fragment.append(marker);
-    });
-    markerLayer.replaceChildren(fragment);
-    updateMarkersVisibility();
-  }
-
-  // Табличка, подпись и список показывают выбранный подбор сразу, фото догоняет рейками.
-  function paintPlate(announce) {
-    const at = order.indexOf(activeVariant);
-    drumTurn += (at - drumTurn % order.length + order.length) % order.length;
-    $("swap-drum").style.transform = "translateZ(-5.2px) rotateX(" + (-drumTurn * 120) + "deg)";
-    $("swap-ticks").querySelectorAll("i").forEach((tick, i) => tick.toggleAttribute("data-on", i === at));
-    $("swap-plate").setAttribute("aria-label", "Следующий подбор: " + nameAfter(activeVariant));
-    roomStatus.setAttribute("aria-live", announce ? "polite" : "off");
-    roomStatus.textContent = "Подбор " + (at + 1) + " из " + order.length;
-    renderList();
-    document.dispatchEvent(new CustomEvent("avelio-swap", { detail: activeVariant }));
-  }
-
-  // Метки гаснут в начале смены, новые появляются в конце.
-  function fadeMarkersOut() {
-    hideTip();
-    if (!markerLayer.childElementCount) return;
-    if (reduceMotion.matches || !markerLayer.animate) {
-      markerLayer.replaceChildren();
-      return;
-    }
-    const fade = markerLayer.animate({ opacity: [1, 0] }, { duration: 160, easing: "ease-out", fill: "forwards" });
-    fade.onfinish = () => {
-      if (swapRun) markerLayer.replaceChildren();
-      fade.cancel();
-    };
-  }
-
-  const cssImage = (src) => 'url("' + new URL(src, document.baseURI).href + '")';
-
-  function startSwap() {
-    const from = shownVariant;
-    const to = activeVariant;
-    const width = comparison.clientWidth;
-    const height = comparison.clientHeight;
-    const run = { to, width, nodes: [], anims: [] };
-    swapRun = run;
-    lastSwap = performance.now();
-    clearTimeout(autoTimer);
-    fadeMarkersOut();
-    if (reduceMotion.matches || !swapZone.animate || !width) {
-      landSwap(run);
-      return;
-    }
-
-    // Оборот реек — вырезки из полного старого и нового снимка со сдвигом зоны.
-    const zoneWidth = width * (1 - ZONE_X);
-    const count = Math.max(12, Math.min(20, Math.round(zoneWidth / 24)));
-    const slatWidth = zoneWidth / count;
-    swapOrigin = 1 - swapOrigin;
-    const origin = swapOrigin;
-    const reach = Math.max(origin, 1 - origin);
-    const layer = (className) => {
-      const element = document.createElement("div");
-      element.className = className;
-      swapZone.append(element);
-      run.nodes.push(element);
-      return element;
-    };
-    const gap = bands ? layer("swap-gap") : null;
-    const slats = layer("slats");
-    slats.style.setProperty("--depth", Math.round(zoneWidth * 1.15) + "px");
-    const faces = [["front", cssImage(variants[from].image)], ["back", cssImage(variants[to].image)]];
-    for (let i = 0; i < count; i++) {
-      const centre = (i + .5) / count;
-      const side = centre < origin ? -1 : 1;
-      const slat = document.createElement("i");
-      slat.className = "slat";
-      slat.style.left = (i * slatWidth).toFixed(2) + "px";
-      slat.style.width = (slatWidth + 1).toFixed(2) + "px";
-      faces.forEach(([className, image]) => {
-        const face = document.createElement("b");
-        face.className = className;
-        face.style.backgroundImage = image;
-        face.style.backgroundSize = width + "px " + height + "px";
-        face.style.backgroundPosition = (-(width * ZONE_X + i * slatWidth)).toFixed(2) + "px " + (-height * ZONE_Y).toFixed(2) + "px";
-        slat.append(face);
-      });
-      slats.append(slat);
-      run.anims.push(slat.animate([
-        { transform: "rotateY(0deg)", easing: "cubic-bezier(.45, .02, .35, 1)" },
-        { transform: "rotateY(" + side * 188 + "deg)", offset: .78, easing: "ease-in-out" },
-        { transform: "rotateY(" + side * 180 + "deg)" }
-      ], { duration: SLAT_TIME, delay: Math.abs(centre - origin) * SPREAD, fill: "both" }));
-    }
-    if (gap) {
-      const comb = layer("swap-comb");
-      const move = { duration: SPREAD * (reach + .12), delay: EDGE_ON, easing: "linear", fill: "both" };
-      [gap, comb].forEach((element) => {
-        element.style.setProperty("--o", origin * 100 + "%");
-        element.style.setProperty("--sw", slatWidth.toFixed(2) + "px");
-        run.anims.push(element.animate({ "--p": ["0%", ((reach + .12) * 100).toFixed(1) + "%"] }, move));
-      });
-    }
-    Promise.allSettled(run.anims.map((animation) => animation.finished)).then(() => landSwap(run));
-  }
-
-  function clearSwap(run) {
-    run.anims.forEach((animation) => animation.cancel());
-    run.nodes.forEach((node) => node.remove());
-  }
-
-  // Под рейками остаётся старый снимок; в конце туда встаёт новый, рейки снимаются.
-  function landSwap(run) {
-    if (swapRun !== run) return;
-    shownVariant = run.to;
-    baseImage.src = variants[run.to].image;
-    baseImage.alt = variants[run.to].alt;
-    const finish = () => {
-      if (swapRun !== run) return;
-      clearSwap(run);
-      swapRun = null;
-      afterSwap();
-    };
-    const decoded = baseImage.decode ? baseImage.decode().catch(() => {}) : Promise.resolve();
-    Promise.race([decoded, new Promise((resolve) => setTimeout(resolve, 400))]).then(finish);
-  }
-
-  function settleSwap() {
-    const run = swapRun;
-    if (!run) return;
-    clearSwap(run);
-    shownVariant = run.to;
-    baseImage.src = variants[run.to].image;
-    baseImage.alt = variants[run.to].alt;
-    swapRun = null;
-    afterSwap();
-  }
-
-  function afterSwap() {
-    if (activeVariant !== shownVariant) {
-      // Табличку нажали ещё раз во время смены: следующая смена идёт сразу за этой.
-      const target = activeVariant;
-      loadImage(variants[target].image).then(() => {
-        if (!swapRun && activeVariant === target && target !== shownVariant) startSwap();
-      }, () => {
-        if (swapRun || activeVariant !== target) return;
-        activeVariant = shownVariant;
-        paintPlate(false);
-        afterSwap();
-      });
-      return;
-    }
-    renderMarkers(shownVariant);
-    if (!reduceMotion.matches && markerLayer.animate) {
-      markerLayer.animate({ opacity: [0, 1] }, { duration: 260, easing: "ease-out" });
-    }
-    queueAuto();
-  }
-
-  async function goTo(key, manual) {
-    const request = ++swapRequest;
-    activeVariant = key;
-    paintPlate(manual);
-    try {
-      await loadImage(variants[key].image);
-    } catch {
-      if (request !== swapRequest) return;
-      activeVariant = shownVariant;
-      paintPlate(false);
-      if (manual) {
-        roomStatus.setAttribute("aria-live", "polite");
-        roomStatus.textContent = "Снимок не загрузился. Выберите другой подбор или повторите позже.";
-      }
-      queueAuto();
-      return;
-    }
-    if (request !== swapRequest || swapRun || activeVariant === shownVariant) return;
-    startSwap();
-  }
-
-  function nextVariant() {
-    return order[(order.indexOf(activeVariant) + 1) % order.length];
-  }
-
-  // Смены идут сами каждые 4,8 с, пока кадр на виду и вкладка открыта; при reduce — только по табличке.
-  function queueAuto() {
-    clearTimeout(autoTimer);
-    if (reduceMotion.matches || !roomInView || document.hidden || swapRun) return;
-    const due = Math.max(lastSwap + AUTO_EVERY, holdUntil);
-    autoTimer = setTimeout(autoSwap, Math.max(100, due - performance.now()));
-  }
-
-  function autoSwap() {
-    if (reduceMotion.matches || !roomInView || document.hidden || swapRun) return;
-    if (performance.now() < holdUntil) {
-      queueAuto();
-      return;
-    }
-    const focused = document.activeElement;
-    const reading = focused && room.contains(focused) && focused.matches(".item-row, .item-marker");
-    if (drag || reading || fanOpen || $("item-dialog").open) {
-      autoTimer = setTimeout(autoSwap, 1000);
-      return;
-    }
-    goTo(nextVariant(), false);
-  }
-
-  $("swap-plate").addEventListener("click", () => {
-    holdAuto();
-    goTo(nextVariant(), true);
-  });
-
-  // Веер подборов (full/fan.js): выбранный подбор встаёт теми же рейками; пока веер открыт, смены сами не идут.
-  window.avelioSwap = {
-    order: order.slice(),
-    variant: (key) => ({ name: variants[key].name, image: variants[key].image, items: variants[key].items }),
-    current: () => activeVariant,
-    pick(key) {
-      if (!variants[key]) return;
-      holdAuto();
-      if (key !== activeVariant) goTo(key, true);
-    },
-    hold(open) {
-      fanOpen = Boolean(open);
-      holdAuto();
-    }
-  };
-
-  if ("IntersectionObserver" in window) {
-    new IntersectionObserver((entries) => {
-      const entry = entries[entries.length - 1];
-      const visible = entry.isIntersecting && entry.intersectionRatio >= .34;
-      if (visible === roomInView) return;
-      roomInView = visible;
-      if (visible) {
-        lastSwap = performance.now();
-        queueAuto();
-      } else {
-        clearTimeout(autoTimer);
-      }
-    }, { threshold: [0, .35] }).observe(comparison);
-  }
-  document.addEventListener("visibilitychange", () => {
-    clearTimeout(autoTimer);
-    if (document.hidden) return;
-    lastSwap = performance.now();
-    queueAuto();
-  });
-
-  function startSweep() {
-    if (reduceMotion.matches || userMovedRange) return;
-    const start = performance.now();
-    const duration = 1250;
-    const divider = $("comparison-divider");
-    divider.animate([
-      { boxShadow: "0 0 0 0 var(--white)" },
-      { boxShadow: "0 0 14px 3px var(--white)", offset: .45 },
-      { boxShadow: "0 0 0 0 var(--white)" }
-    ], { duration, easing: "ease-out" });
-
-    // Граница сама уходит влево, показывает «было» и возвращается к нашей мебели.
-    function tick(now) {
-      if (userMovedRange || reduceMotion.matches) return;
-      const progress = Math.min(1, (now - start) / duration);
-      const value = progress < .42
-        ? 76 - 63 * Math.sin((progress / .42) * Math.PI / 2)
-        : 13 + 63 * (1 - Math.pow(1 - (progress - .42) / .58, 3));
-      setSplit(value);
-      if (progress < 1) sweepFrame = requestAnimationFrame(tick);
-    }
-    sweepFrame = requestAnimationFrame(tick);
-  }
-
-  observeOnce(comparison, startSweep, { threshold: .35 });
-  if ("ResizeObserver" in window) {
-    new ResizeObserver(() => {
-      hideTip();
-      updateMarkersVisibility();
-      if (swapRun && Math.abs(comparison.clientWidth - swapRun.width) > 1) settleSwap();
-    }).observe(comparison);
-  } else {
-    addEventListener("resize", updateMarkersVisibility);
-  }
-  paintPlate(false);
-  renderMarkers(shownVariant);
-
-  const dialog = $("item-dialog");
-  let modalOpener = null;
-  function openItem(code, opener) {
-    const variant = variants[activeVariant];
-    const item = variant.items.find((entry) => entry.code === code);
-    if (!item) return;
-    hideTip();
-    modalOpener = opener;
-    root.style.setProperty("--modal-color", variant.color);
-    root.style.setProperty("--modal-ink", variant.ink);
-    $("modal-variant").textContent = "Подбор " + (order.indexOf(activeVariant) + 1) + " из " + order.length;
-    $("modal-title").textContent = item.name;
-    $("modal-details").textContent = item.size + " · " + item.code;
-    $("modal-photo").hidden = false;
-    $("modal-image-note").hidden = true;
-    $("modal-photo").alt = item.name + ", " + item.code;
-    $("modal-photo").src = "example/items/" + item.code + ".jpg";
-    dialog.hidden = false;
-    dialog.showModal();
-    $("modal-close").focus();
-  }
-
-  $("modal-photo").addEventListener("error", () => {
-    $("modal-photo").hidden = true;
-    $("modal-image-note").hidden = false;
-  });
-
-  room.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-code]");
-    if (button) openItem(button.dataset.code, button);
-  });
-
-  function closeModal(restoreFocus = true) {
-    dialog.close();
-    dialog.hidden = true;
-    if (restoreFocus && modalOpener && modalOpener.isConnected) modalOpener.focus({ preventScroll: true });
-  }
-  $("modal-close").addEventListener("click", () => closeModal());
-  dialog.addEventListener("cancel", (event) => {
-    event.preventDefault();
-    closeModal();
-  });
-  dialog.addEventListener("click", (event) => {
-    if (event.target !== dialog) return;
-    const rect = dialog.getBoundingClientRect();
-    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
-      closeModal();
-    }
-  });
-
-  const aptImages = Array.from($("apt-stage").querySelectorAll("img"));
-  const sceneButtons = Array.from(document.querySelectorAll("[data-scene]"));
-  let aptAnimations = [];
-  let aptTimer = 0;
-  let aptToken = 0;
-  let aptManual = false;
-  let aptStarted = false;
-  let aptInView = false;
-  let currentScene = 0;
-
-  function cancelApartmentMotion() {
-    clearTimeout(aptTimer);
-    aptAnimations.forEach((animation) => {
-      animation.onfinish = null;
-      animation.cancel();
-    });
-    aptAnimations = [];
-  }
-
-  function markScene(index) {
-    currentScene = index;
-    sceneButtons.forEach((button) => {
-      button.setAttribute("aria-pressed", String(Number(button.dataset.scene) === index));
-    });
-  }
-
-  function showScene(index) {
-    cancelApartmentMotion();
-    aptImages.forEach((image, i) => { image.hidden = i !== index; });
-    markScene(index);
-  }
-
-  async function selectScene(index) {
-    aptManual = true;
-    const token = ++aptToken;
-    cancelApartmentMotion();
-    // При ручном выборе текущие слои заменяются в одном кадре.
-    showScene(index);
-    try {
-      await loadImage(aptImages[index].getAttribute("src"));
-      if (token !== aptToken) return;
-      $("apt-caption").textContent = "Дизайн-план по чертежу. " + aptImages[index].alt + ".";
-    } catch {
-      if (token === aptToken) $("apt-caption").textContent = "Снимок этой сцены сейчас недоступен. Можно выбрать другую.";
-    }
-  }
-
-  sceneButtons.forEach((button) => {
-    button.addEventListener("click", () => selectScene(Number(button.dataset.scene)));
-  });
-
-  function queueNextRoom() {
-    if (aptManual || !aptInView || reduceMotion.matches || currentScene >= 6) return;
-    aptTimer = setTimeout(async () => {
-      const next = Math.max(2, currentScene + 1);
-      const token = aptToken;
-      try {
-        await loadImage(aptImages[next].getAttribute("src"));
-      } catch {
-        return;
-      }
-      if (token !== aptToken || aptManual || !aptInView || reduceMotion.matches) return;
-      showScene(next);
-      queueNextRoom();
-    }, 3200);
-  }
-
-  async function startApartment() {
-    if (aptStarted || aptManual) return;
-    aptStarted = true;
-    const token = ++aptToken;
-    try {
-      await Promise.all([
-        loadImage("apt/plan.jpg"),
-        loadImage("apt/iso-full.jpg")
-      ]);
-    } catch {
-      $("apt-caption").textContent = "Дизайн-план по чертежу. Выберите доступную сцену ниже.";
-      return;
-    }
-    if (token !== aptToken || aptManual) return;
-
-    if (reduceMotion.matches || !aptImages[0].animate) {
-      showScene(1);
-      return;
-    }
-
-    const plan = aptImages[0];
-    const iso = aptImages[1];
-    plan.hidden = false;
-    iso.hidden = false;
-    markScene(1);
-
-    // Два непрозрачных листа в разных плоскостях; это не совмещение по точкам.
-    const planAnimation = plan.animate([
-      { transform: "translateY(0) rotateX(0deg) scale(1)", offset: 0 },
-      { transform: "translateY(8%) rotateX(56deg) scale(.92)", offset: .32 },
-      { transform: "translateY(24%) rotateX(58deg) scale(.85)", offset: .7 },
-      { transform: "translateY(115%) rotateX(58deg) scale(.78)", offset: 1 }
-    ], { duration: 1400, easing: "cubic-bezier(.22,.7,.25,1)", fill: "both" });
-
-    const isoAnimation = iso.animate([
-      { transform: "translateY(38%) rotateX(58deg) scale(0)", offset: 0 },
-      { transform: "translateY(38%) rotateX(58deg) scale(0)", offset: .24 },
-      { transform: "translateY(-12%) rotateX(29deg) scale(.72)", offset: .57 },
-      { transform: "translateY(-3%) rotateX(-5deg) scale(1.025)", offset: .84 },
-      { transform: "translateY(0) rotateX(0deg) scale(1)", offset: 1 }
-    ], { duration: 1400, easing: "cubic-bezier(.2,.75,.25,1)", fill: "both" });
-
-    aptAnimations = [planAnimation, isoAnimation];
-    isoAnimation.onfinish = () => {
-      if (token !== aptToken) return;
-      showScene(1);
-      queueNextRoom();
-    };
-  }
-
-  observeOnce($("apt-stage"), () => {
-    aptImages.forEach((image) => loadImage(image.getAttribute("src")).catch(() => {}));
-  }, { rootMargin: "700px 0px" });
-
-  if ("IntersectionObserver" in window) {
-    const apartmentObserver = new IntersectionObserver((entries) => {
-      aptInView = entries[0].isIntersecting;
-      if (aptInView) {
-        if (aptStarted && !aptAnimations.length) queueNextRoom();
-      } else {
-        clearTimeout(aptTimer);
-      }
-    }, { threshold: .35 });
-    apartmentObserver.observe($("apt-stage"));
-    // Превращение стартует, когда сцена на виду целиком и не под закреплённой кнопкой.
-    observeOnce($("apt-stage"), startApartment, { threshold: .8, rootMargin: "0px 0px -80px 0px" });
-  } else {
-    aptInView = true;
-    startApartment();
-  }
-
-  reduceMotion.addEventListener("change", () => {
-    if (!reduceMotion.matches) {
-      queueAuto();
-      return;
-    }
-    cancelAnimationFrame(sweepFrame);
-    $("comparison-divider").getAnimations().forEach((animation) => animation.cancel());
-    clearTimeout(autoTimer);
-    settleSwap();
-    if (aptAnimations.length) showScene(1);
-    else clearTimeout(aptTimer);
-  });
 
   const fileInput = $("room-files");
   const form = $("send-form");
@@ -4280,17 +3460,7 @@
     });
   });
 
-  $("modal-upload").addEventListener("click", () => {
-    closeModal(false);
-    goToSend("photo");
-    $("choose-files").focus({ preventScroll: true });
-  });
 
-  $("example-upload").addEventListener("click", () => {
-    returnToForm();
-    setBranch("photo");
-    fileInput.click();
-  });
   $("choose-files").addEventListener("click", () => fileInput.click());
 
   function revokeFiles() {
@@ -4304,7 +3474,6 @@
     fileInput.value = "";
     $("form-preview").replaceChildren();
     $("form-preview").hidden = true;
-    paintRoomCard();
     $("selected-files-note").hidden = true;
     $("choose-files-text").textContent = $("branch-plan").checked ? "Выбрать чертёж" : "Выбрать фото";
   }
@@ -4337,67 +3506,6 @@
     return frame;
   }
 
-  const uploadCard = $("upload-card");
-
-  // Рамка «Ваша комната»: первый снимок встаёт в верхний лист, нижний ждёт вариант с нашей мебелью.
-  function paintRoomCard() {
-    const yours = $("example-preview");
-    const oursPhoto = $("example-ours-photo");
-    const first = selectedFiles[0];
-    yours.replaceChildren();
-    oursPhoto.replaceChildren();
-    uploadCard.classList.remove("has-photo", "has-file");
-    $("example-empty").hidden = Boolean(first);
-    yours.hidden = !first;
-    oursPhoto.hidden = true;
-    $("example-note").hidden = !first;
-    $("example-upload").setAttribute("aria-label", first
-      ? "Сменить фото для рамки «Ваша комната»"
-      : "Выбрать фото для рамки «Ваша комната»");
-    if (!first) return;
-
-    const chip = document.createElement("span");
-    chip.className = "sheet-chip";
-    chip.textContent = "Ваша комната · сменить";
-    const showFile = () => {
-      const box = document.createElement("span");
-      box.className = "sheet-file";
-      const icon = document.createElement("b");
-      icon.textContent = "▧";
-      icon.setAttribute("aria-hidden", "true");
-      const name = document.createElement("span");
-      name.textContent = first.name;
-      box.append(icon, name);
-      yours.replaceChildren(box, chip);
-      oursPhoto.replaceChildren();
-      oursPhoto.hidden = true;
-      uploadCard.classList.remove("has-photo");
-      uploadCard.classList.add("has-file");
-    };
-    if (first.type === "application/pdf" || /\.pdf$/i.test(first.name)) {
-      showFile();
-      return;
-    }
-    const photo = new Image();
-    photo.className = "sheet-img";
-    photo.alt = "Выбранный снимок: " + first.name;
-    photo.src = objectURLs[0];
-    // HEIC браузер может не показать — тогда в рамке имя файла.
-    photo.addEventListener("error", () => {
-      if (selectedFiles[0] === first) showFile();
-    }, { once: true });
-    const blurred = new Image();
-    blurred.className = "sheet-img sheet-blur";
-    blurred.alt = "";
-    blurred.src = objectURLs[0];
-    yours.replaceChildren(photo, chip);
-    oursPhoto.replaceChildren(blurred);
-    oursPhoto.hidden = false;
-    uploadCard.classList.add("has-photo");
-  }
-
-  uploadCard.classList.add("will-draw");
-  observeOnce($("room-pair"), () => uploadCard.classList.add("is-drawn"), { threshold: .35 });
 
   fileInput.addEventListener("change", () => {
     if (!fileInput.files || !fileInput.files.length) return;
@@ -4430,7 +3538,6 @@
       $("form-preview").append(makePreview(file, url));
     });
 
-    paintRoomCard();
     $("form-preview").hidden = false;
     $("selected-files-note").textContent = "Файлы выбраны. Теперь укажите, куда ответить.";
     $("selected-files-note").hidden = false;
@@ -5738,330 +4845,1031 @@
     plan(advance, 700);
   });
 })();
+</script>
+<script id="examples-ac-photo">
 (() => {
-  "use strict";
+  'use strict';
 
-  const $ = id => document.getElementById(id);
-  const comparison = $("comparison");
-  const swap = window.avelioSwap;
-  if (!comparison || !swap || $("fan-root")) return;
+  const section = document.querySelector('#examples.examples-ac');
+  if (!section) return;
 
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
-  const make = (tag, className) => {
-    const element = document.createElement(tag);
-    element.className = className;
-    return element;
-  };
-  const button = className => {
-    const element = make("button", className);
-    element.type = "button";
-    return element;
-  };
-  const photo = (image, className) => {
-    const element = make("span", "fan-photo " + className);
-    element.setAttribute("aria-hidden", "true");
-    element.style.backgroundImage =
-      "url(" + JSON.stringify(new URL(image, document.baseURI).href) + ")";
-    return element;
-  };
+  const photo = section.querySelector('.exa-photo');
+  if (!photo) return;
 
-  const root = make("div", "fan-root");
-  root.id = "fan-root";
+  const before = photo.querySelector('.exa-before');
+  const after = photo.querySelector('.exa-after');
+  const line = photo.querySelector('.exa-boundary');
+  const handle = photo.querySelector('.exa-handle');
+  const choices = section.querySelector('.exa-choices');
+  const buttons = [...choices.querySelectorAll('.exa-choice')];
+  const indicator = choices.querySelector('.exa-choice-indicator');
+  const status = section.querySelector('.exa-photo-status');
+  const images = new Map(
+    [...photo.querySelectorAll('.exa-preset-image')].map(img => [img.dataset.preset, img])
+  );
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const supports3D = typeof Element.prototype.animate === 'function'
+    && CSS.supports('transform-style', 'preserve-3d')
+    && CSS.supports('perspective', '500px');
 
-  const stack = button("fan-stack");
-  stack.setAttribute("aria-expanded", "false");
-  stack.setAttribute("aria-controls", "fan-panel");
-  stack.setAttribute("aria-label", "Все подборы");
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
+  const band = () => innerWidth < 600 ? 0 : innerWidth < 1024 ? 1 : 2;
 
-  const label = make("span", "fan-stack-label");
-  label.textContent = "Все подборы";
+  let position = 96;
+  let shown = 'b';
+  let selected = 'b';
+  let busy = false;
+  let target = null;
+  let pending = null;
+  let activeRun = null;
+  let gesture = null;
 
-  const panel = make("div", "fan-panel");
-  panel.id = "fan-panel";
-  panel.hidden = true;
-  panel.setAttribute("role", "group");
-  panel.setAttribute("aria-label", "Все подборы");
+  const decoded = new WeakMap();
 
-  const options = make("div", "fan-options");
-  const close = button("fan-close");
-  close.setAttribute("aria-label", "Закрыть подборы");
-  const cross = make("span", "fan-cross");
-  cross.setAttribute("aria-hidden", "true");
-  cross.textContent = "×";
-  close.append(cross);
+  function ready(img) {
+    img.loading = 'eager';
+    if (!decoded.has(img)) {
+      const promise = img.decode().then(() => {
+        if (!img.naturalWidth) throw new Error(`Image unavailable: ${img.src}`);
+        return img;
+      });
+      decoded.set(img, promise);
+      promise.catch(() => decoded.delete(img));
+    }
+    return decoded.get(img);
+  }
 
-  let open = false;
-  let revision = 0;
-  let panelRuns = [];
-  let flight = null;
-
-  const entries = swap.order.map(key => {
-    const variant = swap.variant(key);
-    const sofa = variant.items[0];
-    const mini = photo(variant.image, "fan-mini");
-    stack.append(mini);
-
-    const card = button("fan-card");
-    card.setAttribute("aria-label", variant.name + ", " + sofa.code);
-    card.setAttribute("aria-pressed", "false");
-
-    const image = photo(variant.image, "fan-card-photo");
-    const copy = make("span", "fan-copy");
-    const name = make("span", "fan-name");
-    name.textContent = variant.name;
-    const code = make("span", "fan-code");
-    code.textContent = sofa.code;
-    copy.append(name, code);
-    card.append(image, copy);
-    options.append(card);
-
-    const entry = { key, variant, sofa, mini, card, image };
-    card.addEventListener("click", () => {
-      if (!open) return;
-      if (key !== swap.current()) {
-        fly(entry);
-        // API сохраняет рейки и шестисекундную паузу после выбора.
-        swap.pick(key);
-      }
-      closePanel(true);
+  function preload() {
+    // Сначала текущая пара; остальные кадры не блокируют её отрисовку.
+    const initial = Promise.all([ready(before), ready(images.get(shown))]);
+    initial.then(() => {
+      images.forEach(img => { ready(img).catch(() => {}); });
+    }).catch(() => {
+      images.forEach(img => { ready(img).catch(() => {}); });
     });
-    return entry;
+    return initial;
+  }
+
+  function updateAria(value) {
+    const rounded = Math.round(value);
+    handle.setAttribute('aria-valuenow', String(rounded));
+    handle.setAttribute('aria-valuetext', `${rounded}% с нашей мебелью`);
+  }
+
+  function setPosition(value) {
+    position = clamp(value, 0, 100);
+    photo.style.setProperty('--exa-p', `${position}%`);
+    updateAria(position);
+  }
+
+  function positionAt(clientX) {
+    const rect = photo.getBoundingClientRect();
+    return clamp(100 * (clientX - rect.left) / rect.width, 0, 100);
+  }
+
+  function moveIndicator() {
+    const button = buttons.find(item => item.dataset.preset === selected);
+    const label = button.querySelector('.exa-choice-label').getBoundingClientRect();
+    const row = choices.getBoundingClientRect();
+    const width = label.width + 12;
+    indicator.style.width = `${width}px`;
+    indicator.style.transform = `translateX(${label.left - row.left - 6}px)`;
+  }
+
+  function select(code) {
+    selected = code;
+    buttons.forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.preset === code));
+    });
+    moveIndicator();
+  }
+
+  function showFlat(code) {
+    // Назначение уже декодировано; показываем его до удаления реек.
+    images.get(code).hidden = false;
+    images.forEach((img, key) => {
+      if (key !== code) img.hidden = true;
+    });
+    shown = code;
+    status.textContent = `Подбор ${buttons.findIndex(b => b.dataset.preset === code) + 1} из 3`;
+  }
+
+  /* Одноразовая подсказка: WAAPI двигает маску, линию и ручку.
+     rAF только считывает фактическую координату для aria и отмены. */
+  let hintUsed = reduced.matches;
+  let hint = null;
+  let visibility = 0;
+  let hintReadinessPending = false;
+
+  function readHintPosition() {
+    const width = photo.getBoundingClientRect().width;
+    return width ? clamp(parseFloat(getComputedStyle(line).left) / width * 100, 0, 100) : position;
+  }
+
+  function stopHint(reset = false) {
+    hintUsed = true;
+    if (!hint) return;
+    const current = reset ? 96 : readHintPosition();
+    const old = hint;
+    hint = null;
+    cancelAnimationFrame(old.frame);
+    old.animations.forEach(animation => animation.cancel());
+    setPosition(current);
+  }
+
+  function hintFrames(property, makeValue) {
+    return [
+      { [property]: makeValue(96), offset: 0, easing: 'cubic-bezier(.4, 0, .2, 1)' },
+      { [property]: makeValue(82), offset: 420 / 1140, easing: 'linear' },
+      { [property]: makeValue(82), offset: 520 / 1140, easing: 'cubic-bezier(.22, 1, .36, 1)' },
+      { [property]: makeValue(96), offset: 1 }
+    ];
+  }
+
+  async function maybeHint() {
+    if (hintUsed || hintReadinessPending || visibility < .6 || gesture || reduced.matches) return;
+    hintReadinessPending = true;
+    try {
+      await Promise.all([ready(before), ready(images.get('b'))]);
+      if (hintUsed || visibility < .6 || gesture || reduced.matches) return;
+      hintUsed = true;
+      if (typeof photo.animate !== 'function') return;
+
+      const timing = { duration: 1140, delay: 250, fill: 'both' };
+      const run = { animations: [], frame: 0 };
+      hint = run;
+      run.animations.push(
+        after.animate(
+          hintFrames('clipPath', p => `inset(0 calc(100% - ${p}%) 0 0)`),
+          timing
+        ),
+        line.animate(hintFrames('left', p => `${p}%`), timing),
+        handle.animate(
+          hintFrames('left', p => `clamp(22px, ${p}%, calc(100% - 22px))`),
+          timing
+        )
+      );
+
+      const sync = () => {
+        if (hint !== run) return;
+        position = readHintPosition();
+        updateAria(position);
+        run.frame = requestAnimationFrame(sync);
+      };
+      run.frame = requestAnimationFrame(sync);
+
+      Promise.allSettled(run.animations.map(animation => animation.finished)).then(() => {
+        if (hint === run) stopHint(true);
+      });
+    } catch {
+      // Без готовой пары подсказку не показываем; существующий кадр сохраняется.
+    } finally {
+      hintReadinessPending = false;
+    }
+  }
+
+  if ('IntersectionObserver' in window) {
+    const preloadObserver = new IntersectionObserver(entries => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      preloadObserver.disconnect();
+      preload().catch(() => {});
+    }, { rootMargin: '900px 0px' });
+    preloadObserver.observe(section);
+
+    const visibilityObserver = new IntersectionObserver(entries => {
+      const entry = entries[entries.length - 1];
+      visibility = entry.intersectionRatio;
+      if (!entry.isIntersecting && hint) stopHint(true);
+      if (visibility >= .6) void maybeHint();
+    }, { threshold: [0, .6] });
+    visibilityObserver.observe(photo);
+  } else {
+    // Без наблюдения нельзя надёжно подтвердить порог видимости.
+    hintUsed = true;
+    preload().catch(() => {});
+  }
+
+  /* Pointer Events: захват касания только после определения горизонтального жеста. */
+  photo.addEventListener('pointerdown', event => {
+    if (!event.isPrimary || event.button !== 0 || gesture) return;
+    stopHint();
+    const isTouch = event.pointerType === 'touch';
+    gesture = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      touch: isTouch,
+      mode: isTouch ? 'pending' : 'horizontal'
+    };
+
+    if (!isTouch) {
+      event.preventDefault();
+      handle.focus({ preventScroll: true });
+      photo.setPointerCapture(event.pointerId);
+      if (!handle.contains(event.target)) setPosition(positionAt(event.clientX));
+    }
   });
 
-  stack.append(label);
-  panel.append(options, close);
-  root.append(stack, panel);
-  comparison.append(root);
+  photo.addEventListener('pointermove', event => {
+    const current = gesture;
+    if (!current || current.id !== event.pointerId) return;
 
-  function paint(key) {
-    entries.forEach(entry => {
-      entry.card.setAttribute("aria-pressed", String(entry.key === key));
-    });
+    if (current.mode === 'pending') {
+      const dx = Math.abs(event.clientX - current.x);
+      const dy = Math.abs(event.clientY - current.y);
+
+      if (dy >= 8 && dy >= dx) {
+        current.mode = 'vertical';
+        return;
+      }
+      if (dx >= 8 && dx > 1.25 * dy) {
+        current.mode = 'horizontal';
+        photo.setPointerCapture(event.pointerId);
+      }
+    }
+
+    if (current.mode === 'horizontal') {
+      if (event.cancelable) event.preventDefault();
+      setPosition(positionAt(event.clientX));
+    }
+  }, { passive: false });
+
+  function endGesture(event, cancelled) {
+    const current = gesture;
+    if (!current || current.id !== event.pointerId) return;
+
+    if (!cancelled && current.touch && current.mode === 'pending') {
+      const distance = Math.hypot(event.clientX - current.x, event.clientY - current.y);
+      if (distance < 8) setPosition(positionAt(event.clientX));
+    }
+
+    gesture = null;
+    if (photo.hasPointerCapture(event.pointerId)) photo.releasePointerCapture(event.pointerId);
   }
 
-  function stopPanelMotion() {
-    revision++;
-    panelRuns.forEach(run => run.cancel());
-    panelRuns = [];
+  photo.addEventListener('pointerup', event => endGesture(event, false));
+  photo.addEventListener('pointercancel', event => endGesture(event, true));
+  photo.addEventListener('lostpointercapture', event => {
+    // Касание сначала само захвачено ручкой; её lostpointercapture всплывает сюда при переносе захвата на фото.
+    if (event.target === photo && gesture && gesture.id === event.pointerId) gesture = null;
+  });
+  photo.addEventListener('dragstart', event => event.preventDefault());
+
+  handle.addEventListener('keydown', event => {
+    const deltas = {
+      ArrowLeft: -1,
+      ArrowDown: -1,
+      ArrowRight: 1,
+      ArrowUp: 1,
+      PageDown: -10,
+      PageUp: 10
+    };
+    if (!(event.key in deltas) && event.key !== 'Home' && event.key !== 'End') return;
+    event.preventDefault();
+    stopHint();
+    if (event.key === 'Home') setPosition(0);
+    else if (event.key === 'End') setPosition(100);
+    else setPosition(position + deltas[event.key]);
+  });
+
+  /* Рейки используют общее кадрирование исходника, а не cover каждой полосы. */
+  function makeNode(className, parent) {
+    const node = document.createElement('div');
+    node.className = className;
+    node.setAttribute('aria-hidden', 'true');
+    parent.append(node);
+    return node;
   }
 
-  function clearFlight() {
-    if (!flight) return;
-    flight.run.cancel();
-    flight.node.remove();
-    flight = null;
-  }
+  function transitionTo(code, origin) {
+    select(code);
 
-  function stackRects() {
-    return entries.map(entry => entry.mini.getBoundingClientRect());
-  }
+    if (reduced.matches || !supports3D) {
+      showFlat(code);
+      return Promise.resolve();
+    }
 
-  function toStack(card, target) {
-    const rect = card.getBoundingClientRect();
-    const dx = target.left + target.width / 2 - rect.left - rect.width / 2;
-    const dy = target.top + target.height / 2 - rect.top - rect.height / 2;
-    const scale = target.width / Math.max(1, rect.width);
-    return `translate(${dx}px, ${dy}px) scale(${scale})`;
-  }
+    const rect = photo.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const count = [12, 20, 32][band()];
+    const oldImage = images.get(shown);
+    const newImage = images.get(code);
+    const scene = makeNode('exa-slats', after);
 
-  function openPanel(keyboard) {
-    if (open) return;
-    stopPanelMotion();
-    clearFlight();
+    // Общие округлённые границы, а не независимо округлённые ширины.
+    const boundaries = Array.from({ length: count + 1 }, (_, i) => Math.round(i * width / count));
+    boundaries[count] = width;
+    const centers = boundaries.slice(0, -1).map((left, i) => (left + boundaries[i + 1]) / 2);
+    const originX = clamp(origin, 0, 1) * width;
+    const reach = Math.max(...centers.map(center => Math.abs(center - originX)));
 
-    // Источник меряем до перестановки открывашки на узком кадре.
-    const origins = stackRects();
-    open = true;
-    swap.hold(true);
-    paint(swap.current());
-    panel.hidden = false;
-    panel.inert = false;
-    panel.removeAttribute("aria-hidden");
-    stack.setAttribute("aria-expanded", "true");
-    root.setAttribute("data-open", "");
+    const scale = Math.max(width / 1600, height / 1067);
+    const textureWidth = 1600 * scale;
+    const textureHeight = 1067 * scale;
+    const textureX = (width - textureWidth) * .5;
+    const textureY = (height - textureHeight) * .9;
 
-    if (!reduceMotion.matches && options.animate) {
-      panelRuns = entries.map((entry, index) => entry.card.animate([
-        { transform: toStack(entry.card, origins[index]), opacity: .5 },
-        { transform: "none", opacity: 1 }
+    let resolveDone;
+    const done = new Promise(resolve => { resolveDone = resolve; });
+    const run = {
+      code,
+      scene,
+      animations: [],
+      finished: false,
+      finish() {
+        if (run.finished) return;
+        run.finished = true;
+        showFlat(code);
+        scene.remove();
+        run.animations.forEach(animation => animation.cancel());
+        if (activeRun === run) activeRun = null;
+        resolveDone();
+      }
+    };
+    activeRun = run;
+
+    for (let i = 0; i < count; i++) {
+      const left = boundaries[i];
+      const slat = makeNode('exa-slat', scene);
+      slat.style.left = `${left}px`;
+      slat.style.width = `${boundaries[i + 1] - left}px`;
+
+      const face = (className, img) => {
+        const node = makeNode(`exa-slat-face ${className}`, slat);
+        node.style.backgroundImage = `url(${JSON.stringify(img.currentSrc || img.src)})`;
+        node.style.backgroundSize = `${textureWidth}px ${textureHeight}px`;
+        node.style.backgroundPosition = `${textureX - left}px ${textureY}px`;
+      };
+      face('exa-slat-front', oldImage);
+      face('exa-slat-back', newImage);
+      makeNode('exa-slat-edge exa-slat-edge-left', slat);
+      makeNode('exa-slat-edge exa-slat-edge-right', slat);
+
+      const delay = reach ? 240 * Math.abs(centers[i] - originX) / reach : 0;
+      run.animations.push(slat.animate([
+        { transform: 'rotateY(0deg)', boxShadow: '0 0 8px rgb(0 0 0 / 0%)' },
+        { transform: 'rotateY(90deg)', boxShadow: '0 0 8px rgb(0 0 0 / 12%)', offset: .5 },
+        { transform: 'rotateY(180deg)', boxShadow: '0 0 8px rgb(0 0 0 / 0%)' }
       ], {
-        duration: 430,
-        delay: index * 42,
-        easing: "cubic-bezier(.2, 1.05, .35, 1)",
-        fill: "backwards"
+        duration: 560,
+        delay,
+        easing: 'cubic-bezier(.45, 0, .2, 1)',
+        fill: 'both'
       }));
     }
 
-    if (keyboard) {
-      const selected = entries.find(entry => entry.key === swap.current());
-      (selected || entries[0]).card.focus({ preventScroll: true });
-    }
+    Promise.allSettled(run.animations.map(animation => animation.finished)).then(() => run.finish());
+    return done;
   }
 
-  function closePanel(returnFocus, instant = false) {
-    if (!open) return;
-    stopPanelMotion();
-    open = false;
-    swap.hold(false);
-    stack.setAttribute("aria-expanded", "false");
-    root.removeAttribute("data-open");
+  async function drain() {
+    if (busy) return;
+    busy = true;
+    photo.setAttribute('aria-busy', 'true');
 
-    // Фокус не остаётся внутри скрываемой группы.
-    if (returnFocus || panel.contains(document.activeElement)) {
-      stack.focus({ preventScroll: true });
-    }
-    panel.inert = true;
-    panel.setAttribute("aria-hidden", "true");
+    try {
+      while (pending) {
+        const request = pending;
+        pending = null;
+        target = request.code;
 
-    if (instant || reduceMotion.matches || !options.animate) {
-      panel.hidden = true;
-      return;
-    }
+        if (request.code === shown) continue;
 
-    const token = revision;
-    const origins = stackRects();
-    panelRuns = entries.map((entry, index) => entry.card.animate([
-      { transform: "none", opacity: 1 },
-      { transform: toStack(entry.card, origins[index]), opacity: 0 }
-    ], {
-      duration: 240,
-      delay: index * 26,
-      easing: "cubic-bezier(.5, 0, .75, .5)",
-      fill: "forwards"
-    }));
+        try {
+          await Promise.all([ready(images.get(shown)), ready(images.get(request.code))]);
+        } catch {
+          // Старый кадр и выбранное состояние остаются; повторный клик повторит загрузку.
+          continue;
+        }
 
-    Promise.allSettled(panelRuns.map(run => run.finished)).then(() => {
-      if (open || token !== revision) return;
-      panel.hidden = true;
-      stopPanelMotion();
-    });
-  }
+        // Пока не начался поворот, достаточно подготовить последнюю запрошенную цель.
+        if (pending) continue;
 
-  function fly(entry) {
-    clearFlight();
-    if (reduceMotion.matches || !root.animate) return;
-
-    const from = entry.image.getBoundingClientRect();
-    const base = root.getBoundingClientRect();
-    if (!from.width || !base.width || !base.height) return;
-
-    // Проценты сохраняют привязку к кадру; при изменении размера полёт снимается.
-    const node = photo(entry.variant.image, "fan-flight");
-    node.style.left = (from.left - base.left) / base.width * 100 + "%";
-    node.style.top = (from.top - base.top) / base.height * 100 + "%";
-    node.style.width = from.width / base.width * 100 + "%";
-    node.style.height = from.height / base.height * 100 + "%";
-    root.append(node);
-
-    const dx = base.left + base.width * entry.sofa.x / 100 -
-      from.left - from.width / 2;
-    const dy = base.top + base.height * entry.sofa.y / 100 -
-      from.top - from.height / 2;
-    const end = Math.min(.5, 54 / from.width);
-    const run = node.animate([
-      {
-        transform: "translate(0, 0) rotate(0deg) scale(1)",
-        opacity: 1,
-        easing: "cubic-bezier(.3, .1, .4, 1)"
-      },
-      {
-        transform: `translate(${dx * .5}px, ${dy * .5 - 14}px) rotate(-5deg) scale(${(1 + end) / 2})`,
-        opacity: 1,
-        offset: .5,
-        easing: "cubic-bezier(.6, 0, .9, .7)"
-      },
-      {
-        transform: `translate(${dx}px, ${dy}px) rotate(2deg) scale(${end})`,
-        opacity: .9,
-        offset: .82
-      },
-      {
-        transform: `translate(${dx}px, ${dy}px) rotate(2deg) scale(${end * .8})`,
-        opacity: 0
+        await transitionTo(request.code, request.origin);
+        // Между двумя переворотами обязательно есть граница кадров.
+        await nextFrame();
       }
-    ], { duration: 420, fill: "both" });
-
-    const currentFlight = { node, run };
-    flight = currentFlight;
-    run.finished.then(() => {
-      if (flight === currentFlight) clearFlight();
-    }, () => {});
+    } finally {
+      target = null;
+      busy = false;
+      photo.setAttribute('aria-busy', 'false');
+    }
   }
 
-  // Не даём выбору карточек запускать перетаскивание границы.
-  root.addEventListener("pointerdown", event => event.stopPropagation());
+  buttons.forEach(button => {
+    button.addEventListener('pointerdown', () => stopHint());
+    button.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') stopHint();
+    });
+    button.addEventListener('click', event => {
+      stopHint();
+      const code = button.dataset.preset;
 
-  stack.addEventListener("click", event => {
-    if (open) closePanel(true);
-    else openPanel(event.detail === 0);
-  });
-  close.addEventListener("click", () => closePanel(true));
+      // Возврат к цели текущего перехода отменяет отложенный выбор: побеждает последнее нажатие.
+      if (busy && code === target) {
+        pending = null;
+        return;
+      }
+      if (!busy && code === shown) return;
 
-  document.addEventListener("keydown", event => {
-    if (!open || event.key !== "Escape") return;
-    event.preventDefault();
-    closePanel(true);
-  });
+      const photoRect = photo.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      const clientX = event.detail === 0
+        ? buttonRect.left + buttonRect.width / 2
+        : event.clientX;
 
-  // Только наблюдаем внешнее нажатие: граница и табличка получают его без изменений.
-  const inside = target => stack.contains(target) ||
-    options.contains(target) || close.contains(target);
-  let press = null;
-
-  document.addEventListener("pointerdown", event => {
-    press = open && !inside(event.target) && event.button === 0
-      ? { id: event.pointerId, x: event.clientX, y: event.clientY }
-      : null;
-  }, { capture: true, passive: true });
-
-  document.addEventListener("pointerup", event => {
-    const start = press;
-    if (!start || start.id !== event.pointerId) return;
-    press = null;
-    if (!open || inside(event.target)) return;
-    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) return;
-    closePanel(false);
-  }, { capture: true, passive: true });
-
-  document.addEventListener("pointercancel", () => { press = null; }, {
-    capture: true,
-    passive: true
+      pending = {
+        code,
+        origin: clamp((clientX - photoRect.left) / photoRect.width, 0, 1)
+      };
+      void drain();
+    });
   });
 
-  document.addEventListener("avelio-swap", event => paint(event.detail));
+  let lastBand = band();
+  let lastWidth = photo.getBoundingClientRect().width;
+  let lastHeight = photo.getBoundingClientRect().height;
 
-  function settleMotion() {
-    stopPanelMotion();
-    clearFlight();
-    if (!open) panel.hidden = true;
+  function resize() {
+    const rect = photo.getBoundingClientRect();
+    const currentBand = band();
+    const changed = currentBand !== lastBand
+      || Math.abs(rect.width - lastWidth) > .1
+      || Math.abs(rect.height - lastHeight) > .1;
+
+    if (changed) {
+      if (hint) stopHint(true);
+      if (activeRun) activeRun.finish();
+    }
+
+    lastBand = currentBand;
+    lastWidth = rect.width;
+    lastHeight = rect.height;
+    moveIndicator();
   }
 
-  if ("ResizeObserver" in window) {
-    let width = comparison.clientWidth;
-    let height = comparison.clientHeight;
-    new ResizeObserver(() => {
-      const nextWidth = comparison.clientWidth;
-      const nextHeight = comparison.clientHeight;
-      if (nextWidth === width && nextHeight === height) return;
-      width = nextWidth;
-      height = nextHeight;
-      settleMotion();
-    }).observe(comparison);
-  } else {
-    addEventListener("resize", settleMotion);
+  if ('ResizeObserver' in window) {
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(photo);
+    resizeObserver.observe(choices);
   }
+  window.addEventListener('resize', resize, { passive: true });
 
-  reduceMotion.addEventListener("change", () => {
-    if (reduceMotion.matches) settleMotion();
+  reduced.addEventListener('change', () => {
+    if (!reduced.matches) return;
+    stopHint(true);
+    if (activeRun) activeRun.finish();
   });
 
-  addEventListener("pagehide", () => {
-    closePanel(false, true);
-    settleMotion();
-  });
+  setPosition(96);
+  select('b');
+  requestAnimationFrame(() => choices.setAttribute('data-ready', ''));
 
-  paint(swap.current());
+  if (document.fonts) {
+    document.fonts.ready.then(moveIndicator).catch(() => {});
+  }
 })();
+
+</script>
+<script id="examples-ac-plan">
+(() => {
+  'use strict';
+
+  function init() {
+    const root = document.querySelector('#examples.examples-ac .exa-plan-act');
+    if (!root) return;
+
+    const scene = root.querySelector('.exa-plan-scene');
+    const row = root.querySelector('.exa-plan-tabs');
+    const tabs = [...row.querySelectorAll('.exa-plan-tab')];
+    const panels = tabs.map(tab => root.querySelector(`#${tab.getAttribute('aria-controls')}`));
+    const images = panels.map(panel => panel.querySelector('img'));
+    const indicator = row.querySelector('.exa-plan-indicator');
+    const overview = panels[1];
+    const scroller = overview.querySelector('.exa-plan-scroll');
+    const canvas = overview.querySelector('.exa-plan-canvas');
+    const volume = overview.querySelector('.exa-plan-volume');
+    const lines = overview.querySelector('.exa-plan-lines');
+    const groups = ['outer', 'inner', 'openings', 'edges'].map(name =>
+      lines.querySelector(`.exa-plan-${name}`)
+    );
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    const phone = matchMedia('(max-width: 599px)');
+    const canAnimate = typeof Element.prototype.animate === 'function';
+    const decoded = new WeakMap();
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+    const ENTRY_THRESHOLD = .6;
+
+    let selected = 1;
+    let pending = null;
+    let busy = false;
+    let fade = null;
+    let indicatorAnimation = null;
+    let entry = null;
+    let entryUsed = false;
+    let imageReady = false;
+    let visibility = 0;
+    let visibleHeight = 0;
+    let cleanHeight = 0;
+    let sceneIntersecting = false;
+    let entryFrame = null;
+    let savedPan = null;
+    let expectedPan = null;
+    let lastWidth = 0;
+    let lastHeight = 0;
+
+    function ready(img) {
+      // Скрытый lazy-слой иначе может никогда не начать загрузку.
+      img.loading = 'eager';
+      if (!decoded.has(img)) {
+        const promise = img.decode().then(() => {
+          if (!img.naturalWidth) throw new Error(`Image unavailable: ${img.src}`);
+          return img;
+        });
+        decoded.set(img, promise);
+        promise.catch(() => decoded.delete(img));
+      }
+      return decoded.get(img);
+    }
+
+    function setPan(value) {
+      scroller.scrollLeft = value;
+      expectedPan = scroller.scrollLeft;
+      if (phone.matches) savedPan = scroller.scrollLeft;
+    }
+
+    function restorePan() {
+      if (!phone.matches || overview.hidden) return;
+      const gutter = scroller.offsetHeight - scroller.clientHeight;
+      scroller.style.bottom = `${-Math.max(12, gutter)}px`;
+      if (savedPan === null) {
+        const width = canvas.getBoundingClientRect().width;
+        savedPan = Math.max(0, (width - scroller.clientWidth) / 2);
+      }
+      setPan(savedPan);
+    }
+
+    function keepTabVisible(tab) {
+      const max = row.scrollWidth - row.clientWidth;
+      if (max <= 0) return;
+      const r = row.getBoundingClientRect();
+      const b = tab.getBoundingClientRect();
+      const left = r.left + row.clientLeft;
+      const right = left + row.clientWidth;
+      if (b.left < left - 1) {
+        row.scrollLeft = Math.min(max, Math.max(0, row.scrollLeft + b.left - left));
+      } else if (b.right > right + 1) {
+        const minimum = row.scrollLeft + b.right - right;
+        let target = max;
+        for (const item of tabs) {
+          const point = item.getBoundingClientRect().left - left + row.scrollLeft;
+          if (point >= minimum && point < target) target = point;
+        }
+        row.scrollLeft = target;
+      }
+    }
+
+    function moveIndicator(animate = false) {
+      const label = tabs[selected].querySelector('.exa-plan-tab-label').getBoundingClientRect();
+      const button = tabs[selected].getBoundingClientRect();
+      const r = row.getBoundingClientRect();
+      const width = label.width + 16;
+      const x = button.left - r.left + row.scrollLeft + (button.width - width) / 2;
+      const previous = getComputedStyle(indicator);
+      const from = {
+        width: previous.width,
+        transform: previous.transform
+      };
+
+      if (indicatorAnimation) {
+        indicatorAnimation.cancel();
+        indicatorAnimation = null;
+      }
+
+      const to = { width: `${width}px`, transform: `translateX(${x}px)` };
+      Object.assign(indicator.style, to);
+
+      if (!animate || reduced.matches || !canAnimate) return;
+      const animation = indicator.animate([from, to], {
+        duration: 180,
+        easing: 'cubic-bezier(.22, 1, .36, 1)'
+      });
+      indicatorAnimation = animation;
+      animation.finished.then(() => {
+        if (indicatorAnimation === animation) {
+          Object.assign(indicator.style, to);
+          animation.cancel();
+          indicatorAnimation = null;
+        }
+      }).catch(() => {});
+    }
+
+    function select(index) {
+      selected = index;
+      tabs.forEach((tab, i) => {
+        tab.setAttribute('aria-selected', String(i === index));
+        tab.tabIndex = i === index ? 0 : -1;
+      });
+      moveIndicator(true);
+    }
+
+    function stopEntryWatch() {
+      window.removeEventListener('scroll', scheduleEntryMeasure);
+      window.removeEventListener('resize', scheduleEntryMeasure);
+      if (entryFrame !== null) {
+        cancelAnimationFrame(entryFrame);
+        entryFrame = null;
+      }
+    }
+
+    function measureEntry() {
+      entryFrame = null;
+      if (entryUsed || !sceneIntersecting) return;
+
+      let bottom = innerHeight;
+      const sticky = document.querySelector('#sticky-cta');
+      if (sticky) {
+        const style = getComputedStyle(sticky);
+        if (
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          style.position === 'fixed'
+        ) {
+          const top = sticky.getBoundingClientRect().top;
+          if (top < innerHeight) bottom = top;
+        }
+      }
+
+      const rect = scene.getBoundingClientRect();
+      cleanHeight = Math.max(0, bottom - 64);
+      visibleHeight = Math.max(0, Math.min(rect.bottom, bottom) - Math.max(rect.top, 64));
+      visibility = rect.height > 0 ? visibleHeight / rect.height : 0;
+      startEntry();
+    }
+
+    function scheduleEntryMeasure() {
+      if (entryUsed || !sceneIntersecting || entryFrame !== null) return;
+      entryFrame = requestAnimationFrame(measureEntry);
+    }
+
+    function finishEntry() {
+      entryUsed = true;
+      stopEntryWatch();
+      const old = entry;
+      entry = null;
+
+      volume.style.clipPath = 'none';
+      lines.style.opacity = '0';
+      lines.style.visibility = 'hidden';
+
+      groups.forEach(group => {
+        group.style.opacity = '1';
+        group.removeAttribute('mask');
+      });
+
+      if (old) {
+        old.animations.forEach(animation => animation.cancel());
+        old.defs.remove();
+      }
+    }
+
+    /*
+     * pathLength + non-scaling-stroke не используются вместе для dash-анимации.
+     * Неизменённые исходные пути рисуют видимый штрих постоянной толщины.
+     * Их точные копии в масках рисуются с pathLength=1, но без vector-effect.
+     */
+    function startEntry() {
+      if (entryUsed || !imageReady || !sceneIntersecting || entryFrame !== null) return;
+      if (
+        visibility < ENTRY_THRESHOLD &&
+        (cleanHeight <= 0 || visibleHeight < .9 * cleanHeight)
+      ) return;
+      if (reduced.matches || !canAnimate) {
+        finishEntry();
+        return;
+      }
+
+      entryUsed = true;
+      stopEntryWatch();
+      const defs = document.createElementNS(svgNS, 'defs');
+      lines.prepend(defs);
+      const run = { animations: [], defs };
+      entry = run;
+
+      const rect = canvas.getBoundingClientRect();
+      const scale = Math.min(rect.width / 1536, rect.height / 640);
+      const maskStroke = Math.max(8, 6 / Math.max(scale, .01));
+      const timing = [
+        { delay: 0, duration: 400 },
+        { delay: 250, duration: 450 },
+        { delay: 500, duration: 400 },
+        { delay: 500, duration: 400 }
+      ];
+
+      groups.forEach((group, i) => {
+        const mask = document.createElementNS(svgNS, 'mask');
+        mask.id = `exa-plan-entry-mask-${i}`;
+        mask.setAttribute('maskUnits', 'userSpaceOnUse');
+        mask.setAttribute('maskContentUnits', 'userSpaceOnUse');
+        mask.setAttribute('x', '-16');
+        mask.setAttribute('y', '-16');
+        mask.setAttribute('width', '1568');
+        mask.setAttribute('height', '672');
+        defs.append(mask);
+
+        for (const source of group.querySelectorAll('path')) {
+          const path = source.cloneNode(false);
+          path.setAttribute('class', 'exa-plan-draw');
+          path.style.strokeWidth = String(maskStroke);
+          mask.append(path);
+          run.animations.push(path.animate([
+            { strokeDashoffset: '1' },
+            { strokeDashoffset: '0' }
+          ], {
+            ...timing[i],
+            easing: 'cubic-bezier(.4, 0, .2, 1)',
+            fill: 'both'
+          }));
+        }
+
+        group.setAttribute('mask', `url(#${mask.id})`);
+        group.style.opacity = '1';
+      });
+
+      run.animations.push(
+        groups[0].animate([{ opacity: .25 }, { opacity: 1 }], {
+          duration: 400,
+          easing: 'cubic-bezier(.4, 0, .2, 1)',
+          fill: 'both'
+        }),
+        volume.animate([
+          { clipPath: 'inset(100% 0 0 0)' },
+          { clipPath: 'inset(0 0 0 0)' }
+        ], {
+          delay: 850,
+          duration: 650,
+          easing: 'cubic-bezier(.22, 1, .36, 1)',
+          fill: 'both'
+        }),
+        lines.animate([{ opacity: 1 }, { opacity: 0 }], {
+          delay: 1100,
+          duration: 400,
+          easing: 'ease-out',
+          fill: 'both'
+        })
+      );
+
+      Promise.allSettled(run.animations.map(animation => animation.finished)).then(() => {
+        if (entry === run) finishEntry();
+      });
+    }
+
+    function visualCopy(panel) {
+      const copy = panel.cloneNode(true);
+      copy.hidden = false;
+      copy.classList.add('exa-plan-ghost');
+      copy.setAttribute('aria-hidden', 'true');
+      copy.setAttribute('inert', '');
+
+      for (const node of [copy, ...copy.querySelectorAll('*')]) {
+        node.removeAttribute('id');
+        node.removeAttribute('role');
+        node.removeAttribute('aria-labelledby');
+        node.removeAttribute('tabindex');
+      }
+      copy.querySelectorAll('img').forEach(img => { img.alt = ''; });
+      // Вход к этому моменту уже завершён; SVG не нужен и не копирует mask IDs.
+      copy.querySelectorAll('svg').forEach(svg => svg.remove());
+      scene.append(copy);
+      const copiedScroller = copy.querySelector('.exa-plan-scroll');
+      if (copiedScroller) copiedScroller.scrollLeft = scroller.scrollLeft;
+      return copy;
+    }
+
+    function transitionTo(index) {
+      const oldPanel = panels[selected];
+      const newPanel = panels[index];
+      if (selected === 1 && phone.matches) savedPan = scroller.scrollLeft;
+
+      const shouldAnimate = canAnimate && !reduced.matches;
+      const copy = shouldAnimate ? visualCopy(oldPanel) : null;
+      oldPanel.hidden = true;
+      newPanel.hidden = false;
+      newPanel.style.opacity = '1';
+      if (index === 1) restorePan();
+      select(index);
+
+      if (!shouldAnimate) return Promise.resolve();
+
+      let resolveDone;
+      const done = new Promise(resolve => { resolveDone = resolve; });
+      const run = {
+        animations: [],
+        finished: false,
+        finish() {
+          if (run.finished) return;
+          run.finished = true;
+          newPanel.style.opacity = '1';
+          copy.style.opacity = '0';
+          run.animations.forEach(animation => animation.cancel());
+          copy.remove();
+          if (fade === run) fade = null;
+          resolveDone();
+        }
+      };
+      fade = run;
+      run.animations.push(
+        newPanel.animate([{ opacity: 0 }, { opacity: 1 }], {
+          duration: 180,
+          easing: 'ease-out',
+          fill: 'both'
+        }),
+        copy.animate([{ opacity: 1 }, { opacity: 0 }], {
+          duration: 180,
+          easing: 'ease-out',
+          fill: 'both'
+        })
+      );
+      Promise.allSettled(run.animations.map(animation => animation.finished))
+        .then(() => run.finish());
+      return done;
+    }
+
+    async function drain() {
+      if (busy) return;
+      busy = true;
+      try {
+        while (pending !== null) {
+          const index = pending;
+          pending = null;
+          if (index === selected) continue;
+
+          try {
+            await ready(images[index]);
+          } catch {
+            // Сохраняем предыдущую панель; повторное нажатие повторит decode.
+            continue;
+          }
+
+          // Пока кадр готовился, пользователь мог выбрать другую цель.
+          if (pending !== null) continue;
+          await transitionTo(index);
+          await frame();
+        }
+      } finally {
+        busy = false;
+      }
+    }
+
+    function request(index) {
+      finishEntry();
+      pending = index;
+      // Подготовка последней цели начинается сразу, даже во время текущей смены.
+      ready(images[index]).catch(() => {});
+      void drain();
+    }
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('pointerdown', finishEntry);
+      tab.addEventListener('click', () => {
+        keepTabVisible(tab);
+        request(index);
+      });
+      tab.addEventListener('keydown', event => {
+        let target;
+        if (event.key === 'ArrowRight') target = (index + 1) % tabs.length;
+        else if (event.key === 'ArrowLeft') target = (index + tabs.length - 1) % tabs.length;
+        else if (event.key === 'Home') target = 0;
+        else if (event.key === 'End') target = tabs.length - 1;
+        else if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          keepTabVisible(tab);
+          request(index);
+          return;
+        } else return;
+
+        event.preventDefault();
+        tabs[target].focus({ preventScroll: true });
+        keepTabVisible(tabs[target]);
+      });
+    });
+
+    scroller.addEventListener('scroll', () => {
+      if (!phone.matches || overview.hidden) return;
+      const value = scroller.scrollLeft;
+      if (expectedPan !== null && Math.abs(value - expectedPan) <= .75) {
+        expectedPan = null;
+        return;
+      }
+      expectedPan = null;
+      savedPan = value;
+      finishEntry();
+    }, { passive: true });
+
+    overview.addEventListener('keydown', event => {
+      if (!phone.matches) return;
+      let value;
+      if (event.key === 'ArrowLeft') value = scroller.scrollLeft - 48;
+      else if (event.key === 'ArrowRight') value = scroller.scrollLeft + 48;
+      else if (event.key === 'Home') value = 0;
+      else if (event.key === 'End') value = scroller.scrollWidth;
+      else return;
+      event.preventDefault();
+      event.stopPropagation();
+      finishEntry();
+      setPan(value);
+    });
+
+    function resize() {
+      const rect = scene.getBoundingClientRect();
+      if (entry && (
+        Math.abs(rect.width - lastWidth) > .1 ||
+        Math.abs(rect.height - lastHeight) > .1
+      )) finishEntry();
+
+      lastWidth = rect.width;
+      lastHeight = rect.height;
+      overview.tabIndex = phone.matches ? 0 : -1;
+
+      if (phone.matches) restorePan();
+      else {
+        scroller.style.bottom = '';
+        scroller.scrollLeft = 0;
+        expectedPan = null;
+      }
+      moveIndicator();
+    }
+
+    reduced.addEventListener('change', () => {
+      if (!reduced.matches) return;
+      finishEntry();
+      if (fade) fade.finish();
+      moveIndicator();
+    });
+
+    resize();
+    row.scrollLeft = 0;
+
+    if (reduced.matches || !canAnimate) finishEntry();
+
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(entries => {
+        const current = entries[entries.length - 1];
+        sceneIntersecting = current.isIntersecting;
+        if (!sceneIntersecting) {
+          stopEntryWatch();
+          visibility = 0;
+          visibleHeight = 0;
+          if (entry) finishEntry();
+        } else if (!entryUsed) {
+          window.addEventListener('scroll', scheduleEntryMeasure, { passive: true });
+          window.addEventListener('resize', scheduleEntryMeasure, { passive: true });
+          scheduleEntryMeasure();
+        }
+      }, {
+        threshold: [0]
+      });
+      observer.observe(scene);
+    } else {
+      finishEntry();
+    }
+
+    ready(volume).then(() => {
+      imageReady = true;
+      startEntry();
+      // Остальные файлы не задерживают подготовку первого кадра.
+      requestAnimationFrame(() => {
+        images.forEach(img => {
+          if (img !== volume) ready(img).catch(() => {});
+        });
+      });
+    }).catch(() => {
+      // При ошибке нового рендера остаётся контур, а вкладки продолжают работать.
+      // Старого диагонального рендера в качестве подмены здесь нет.
+    });
+
+    if ('ResizeObserver' in window) {
+      const observer = new ResizeObserver(resize);
+      observer.observe(scene);
+      observer.observe(row);
+    }
+    window.addEventListener('resize', resize, { passive: true });
+
+    if (document.fonts) {
+      document.fonts.ready.then(() => moveIndicator()).catch(() => {});
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+})();
+
 </script>
 <script src="founders/founders.js" defer></script>
 <script src="founders/hero-overlay.js" defer></script>
