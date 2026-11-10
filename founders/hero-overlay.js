@@ -87,7 +87,7 @@
       return;
     }
 
-    if (!detail.on && (detail.source === "off" || detail.source === "fail")) {
+    if (!detail.on && (detail.source === "off" || detail.source === "fail" || detail.source === "ended" || detail.source === "away")) {
       setHidden(false);
     } else if (detail.on && (detail.source === "video" || detail.source === "play")) {
       setHidden(true);

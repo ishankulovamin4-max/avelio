@@ -526,13 +526,13 @@
   }
 }
 
-/* Телефон: заголовок → строка → ролик → локально закрепляемая группа.
+/* Телефон: ролик → текст → локально закрепляемая сцена основателей.
    Высоту группы определяет содержимое: 356 + 12 + 52 + 40 + 32 + 12. */
 @media (max-width: 699px) {
   .founders:is(.is-ready, .is-shell) {
-    /* Высоты шапки и CTA без safe-area; уточняются по замерам страницы. */
+    /* Высота шапки без safe-area; уточняется по замерам страницы. */
     --fh-header: 44px;
-    --fh-cta: 68px;
+    --fh-cta: 0px;
     --fh-sound-row: 0px;
     --fh-header-safe: env(safe-area-inset-top, 0px);
     --fh-bottom-safe: env(safe-area-inset-bottom, 0px);
@@ -624,11 +624,11 @@
     width: 100%;
     height: calc(
       100vh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
-      - var(--fh-header-safe) - var(--fh-bottom-safe)
+      - var(--fh-header-safe)
     );
     height: calc(
       100svh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
-      - var(--fh-header-safe) - var(--fh-bottom-safe)
+      - var(--fh-header-safe)
     );
     margin: 0;
     padding: 0;
@@ -640,12 +640,17 @@
     object-position: 50% calc(
       min(0px, max(
         100svh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
-        - var(--fh-header-safe) - var(--fh-bottom-safe) - 100cqw * 16 / 9,
+        - var(--fh-header-safe) - 100cqw * 16 / 9,
         min(
           (100svh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
-          - var(--fh-header-safe) - var(--fh-bottom-safe) - 100cqw * 16 / 9) / 2,
+          - var(--fh-header-safe) - 100cqw * 16 / 9) / 2,
           100svh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
-          - var(--fh-header-safe) - var(--fh-bottom-safe) - 76px - 0.87 * (100cqw * 16 / 9)
+          - var(--fh-header-safe) - max(24px, var(--fh-bottom-safe) + 8px) - 52px
+          - 0.87 * max(
+            100cqw * 16 / 9,
+            100svh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
+            - var(--fh-header-safe)
+          )
         )
       ))
     );
@@ -661,7 +666,8 @@
     top: auto;
     left: 50%;
     right: auto;
-    bottom: 24px;
+    /* 24px от низа; на iPhone с полоской «домой» — 8px над безопасной зоной, иначе плашка наедет на субтитры. */
+    bottom: max(24px, var(--fh-bottom-safe) + 8px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -924,11 +930,10 @@
   }
 }
 
-/* С 600 точек шапка 52px, а .sticky-cta страница не показывает (phone = max-width 599px). */
+/* С 600 точек высота шапки в потоке — 52px. */
 @media (min-width: 600px) and (max-width: 699px) {
   .founders:is(.is-ready, .is-shell) {
     --fh-header: 52px;
-    --fh-cta: 0px;
   }
 }
 

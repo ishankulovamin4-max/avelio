@@ -34,6 +34,7 @@
   function setSound(on) {
     video.muted = !on;
     video.defaultMuted = !on;
+    video.loop = !on;
 
     if (on) {
       video.removeAttribute("muted");
@@ -208,6 +209,47 @@
     requestPlay(true);
   }
 
+  function autoSoundOff(source) {
+    if (video.muted !== false) {
+      return;
+    }
+
+    var restoreFocus = document.activeElement === soundOff;
+    var wasPending = pending || Boolean(legacyFailure);
+
+    ++attempt;
+    pending = false;
+    legacyFailure = null;
+    setSound(false);
+    announce(false, source);
+
+    // Звуковой play() ещё не ответил: его отказ уже не обработается — запускаем без звука заново.
+    if (source === "away" && wasPending) {
+      requestPlay(false);
+    }
+
+    if (restoreFocus) {
+      focusPlate(false);
+    }
+  }
+
+  video.addEventListener("ended", function () {
+    if (video.muted !== false) {
+      return;
+    }
+
+    autoSoundOff("ended");
+
+    try {
+      video.currentTime = 0;
+    } catch (error) {
+      // Старые движки могут запрещать seek до loadedmetadata.
+      // У ещё не загруженного ролика начальная позиция и так нулевая.
+    }
+
+    requestPlay(false);
+  });
+
   video.addEventListener("playing", markPlaying);
 
   video.addEventListener("error", function () {
@@ -249,6 +291,43 @@
       announce(false, "off");
       focusPlate(false);
     });
+  }
+
+  if (typeof window.IntersectionObserver === "function") {
+    var visibilityObserver = new window.IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.intersectionRatio < 0.5) {
+          autoSoundOff("away");
+        }
+      });
+    }, { threshold: [0, 0.5] });
+
+    visibilityObserver.observe(frame);
+  } else {
+    var visibilityScheduled = false;
+    var scheduleVisibilityCheck = function () {
+      if (visibilityScheduled) {
+        return;
+      }
+
+      visibilityScheduled = true;
+      window.requestAnimationFrame(function () {
+        visibilityScheduled = false;
+
+        var rect = frame.getBoundingClientRect();
+        var height = rect.bottom - rect.top;
+        var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        var visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+
+        if (height > 0 && visibleHeight / height < 0.5) {
+          autoSoundOff("away");
+        }
+      });
+    };
+
+    window.addEventListener("scroll", scheduleVisibilityCheck, { passive: true });
+    window.addEventListener("resize", scheduleVisibilityCheck, { passive: true });
+    scheduleVisibilityCheck();
   }
 
   // Все свойства и атрибуты выставляются до первого явного play().

@@ -451,19 +451,6 @@
   .done-panel { padding-block: 28px; }
   .done-panel h3 { font-size: 52px; font-weight: 300; }
   .done-panel p { margin-block: 24px; }
-  .sticky-cta {
-    position: fixed;
-    z-index: 20;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-    padding-block: 8px calc(8px + env(safe-area-inset-bottom, 0px));
-    background: var(--white);
-    color: var(--ink);
-  }
-  .sticky-cta .button { width: 100%; }
   .notice {
     position: fixed;
     z-index: 50;
@@ -1029,8 +1016,6 @@
     text-decoration: underline;
     text-underline-offset: 5px;
   }
-  /* На экране одна залитая кнопка: у блока со своей кнопкой закреплённая молчит. */
-  .f-own-button .sticky-cta { display: none; }
 
   @media (max-width: 599px) {
     .f-real-pair img,
@@ -3716,9 +3701,6 @@
     </section>
   </main>
 
-  <div class="sticky-cta" id="sticky-cta" hidden>
-    <a class="button" href="#send" data-upload-kind="photo">Пришлите фото комнаты</a>
-  </div>
   <p class="notice" id="catalog-note" role="status" hidden></p>
 
   <dialog class="item-dialog" id="item-dialog" aria-labelledby="modal-title" aria-describedby="modal-details" hidden>
@@ -3775,38 +3757,12 @@
   function updateResponsiveElements() {
     $("header-cta").hidden = !desktop.matches;
     $("hero-aside").hidden = !desktop.matches;
-    updateSticky();
   }
-
-  function updateSticky() {
-    const heroButton = $("hero-cta").getBoundingClientRect();
-    const sendRect = $("send").getBoundingClientRect();
-    const sendVisible = sendRect.top < innerHeight && sendRect.bottom > 0;
-    // Кнопки первого экрана нет в окне ни сверху, ни снизу (ролик крупный — на телефоне она бывает ниже окна).
-    const heroVisible = heroButton.top < innerHeight && heroButton.bottom > 0;
-    $("sticky-cta").hidden = !phone.matches || heroVisible || sendVisible;
-  }
-
-  let scrollPending = false;
-  addEventListener("scroll", () => {
-    if (scrollPending) return;
-    scrollPending = true;
-    requestAnimationFrame(() => {
-      scrollPending = false;
-      updateSticky();
-    });
-  }, { passive: true });
 
   addEventListener("resize", updateResponsiveElements);
   desktop.addEventListener("change", updateResponsiveElements);
   phone.addEventListener("change", updateResponsiveElements);
   updateResponsiveElements();
-  // Первый экран меняется и без прокрутки (founders.js растягивает ролик после загрузки).
-  if ("IntersectionObserver" in window) {
-    const stickyWatch = new IntersectionObserver(() => updateSticky());
-    stickyWatch.observe($("hero-cta"));
-    stickyWatch.observe($("send"));
-  }
 
   const imageCache = new Map();
   function loadImage(src) {
@@ -3851,7 +3807,6 @@
     $("send-done").hidden = true;
     form.hidden = false;
     if (focus) $("reply-address").focus();
-    updateSticky();
   }
 
   function setBranch(kind) {
@@ -3882,7 +3837,6 @@
     returnToForm();
     setBranch(kind);
     $("send").scrollIntoView({ behavior: "auto", block: "start" });
-    updateSticky();
   }
 
   document.querySelectorAll("[data-upload-kind]").forEach((link) => {
@@ -3977,7 +3931,6 @@
     $("choose-files-text").textContent = "Выбрать другие файлы";
     returnToForm();
     $("send").scrollIntoView({ behavior: "auto", block: "start" });
-    updateSticky();
   });
 
   document.querySelectorAll('input[name="messenger"]').forEach((input) => {
@@ -4009,7 +3962,6 @@
     form.hidden = true;
     $("send-done").hidden = false;
     $("send-done").focus();
-    updateSticky();
   });
 
   $("back-to-form").addEventListener("click", () => returnToForm(true));
@@ -4292,21 +4244,6 @@
       backgroundPosition: photo.style.backgroundPosition
     });
   });
-
-  // Закреплённая кнопка молчит рядом со своей кнопкой блока и весь финал.
-  if ("IntersectionObserver" in window) {
-    const shown = new Set();
-    const buttonWatcher = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) shown.add(entry.target);
-        else shown.delete(entry.target);
-      });
-      $("avelio-start").classList.toggle("f-own-button", shown.size > 0);
-    });
-    document.querySelectorAll(".f-button, #f-final").forEach((element) => {
-      buttonWatcher.observe(element);
-    });
-  }
 
   // Весь дизайн-план квартиры клиента окном поверх страницы. Сам план — отдельная страница plan/index.html.
   const planDialog = $("f-plan-dialog");
