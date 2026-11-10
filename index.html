@@ -4051,6 +4051,7 @@
   let turn = 0;
   let sofaTurn = 0;
   let timers = [];
+  let chipDue = null;
   let idle = 0;
   let flight = null;
   let cursorAt = [0, 0];
@@ -4058,9 +4059,12 @@
   const now = { pane: null, sofa: "PL-028", chip: chip.textContent, card: false, thumb: 0, shot: 0 };
 
   const wait = (ms, action) => timers.push(setTimeout(action, ms));
+  // Отложенная подпись не теряется: остановка, новая сцена или нажатие человека ставят её сразу.
   const clear = () => {
     timers.forEach(clearTimeout);
     timers = [];
+    if (chipDue) setChip(chipDue, true);
+    chipDue = null;
   };
   const moving = () => animates && !reduceMotion.matches;
   const playing = () => visible && !manual && !reduceMotion.matches && !document.hidden && !(dialog && dialog.open);
@@ -4121,13 +4125,24 @@
   }
   const roomSpot = (room) => block.querySelector(`.p-map [data-room="${room}"]`);
 
-  // Куда летит курсор: на то, что он нажмёт, или в угол кадра.
+  // Куда летит курсор: на то, что он нажмёт, или рядом со следующим нажатием.
   function aim(scene) {
     if (scene.tap === "thumb") return thumbAt(scene.thumb);
     if (scene.tap === "room") return inScreen(roomSpot(scene.room));
     if (scene.tap === "sofa") return inScreen(sofa.querySelector(".p-spot"));
     if (scene.tap === "plate") return inScreen(plate);
     if (scene.tap === "spot") return inScreen(place);
+    const scenes = tracks[track].scenes;
+    const start = scenes.indexOf(scene);
+    for (let i = 1; i <= scenes.length; i++) {
+      const next = scenes[(start + i) % scenes.length];
+      if (!next.tap) continue;
+      const [x, y] = aim(next);
+      return [
+        Math.min(view.offsetLeft + view.offsetWidth - 16, Math.max(view.offsetLeft + 16, x + .06 * view.offsetWidth)),
+        Math.min(view.offsetTop + view.offsetHeight - 16, Math.max(view.offsetTop + 16, y - .08 * view.offsetHeight)),
+      ];
+    }
     return [view.offsetLeft + view.offsetWidth * .88, view.offsetTop + view.offsetHeight * .84];
   }
   function origin(scene) {
@@ -4137,33 +4152,50 @@
     return null;
   }
 
-  // Курсор летит по дуге: контрольная точка — середина пути, сдвинутая поперёк на 0,2 его длины.
-  // Если он ещё летит, новый путь начинается оттуда, где он сейчас.
-  const ease = (t) => (t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+  // Мягкая дуга вверх, у бокового края — внутрь кадра. Разгон и торможение без рывка.
+  // Новый путь начинается от последней нарисованной точки, а не от прежней цели.
   function fly([x, y], instant) {
     let [x0, y0] = cursorAt;
     if (flight) {
-      if (flight.playState === "running") {
-        const matrix = new DOMMatrix(getComputedStyle(cursor).transform);
-        [x0, y0] = [matrix.e, matrix.f];
-      }
-      flight.cancel();
+      [x0, y0] = [flight.x, flight.y];
+      cancelAnimationFrame(flight.id);
       flight = null;
     }
     cursorAt = [x, y];
-    cursor.style.transform = `translate(${x}px, ${y}px)`;
-    const length = Math.hypot(x - x0, y - y0);
-    if (instant || !moving() || length < 1) return 0;
-    const cx = (x0 + x) / 2 - (y - y0) * .2;
-    const cy = (y0 + y) / 2 + (x - x0) * .2;
-    const frames = [];
-    for (let i = 0; i < 16; i++) {
-      const t = ease(i / 15);
-      const u = 1 - t;
-      frames.push({ transform: `translate(${u * u * x0 + 2 * u * t * cx + t * t * x}px, ${u * u * y0 + 2 * u * t * cy + t * t * y}px)` });
+    const dx = x - x0;
+    const dy = y - y0;
+    const length = Math.hypot(dx, dy);
+    if (instant || !moving() || length < 1) {
+      cursor.style.transform = `translate(${x}px, ${y}px)`;
+      return 0;
     }
-    const ms = Math.min(950, 420 + .8 * length);
-    flight = cursor.animate(frames, { duration: ms, easing: "linear" });
+    let nx = -dy / length;
+    let ny = dx / length;
+    const middle = (x0 + x) / 2;
+    const inward = view.offsetLeft + view.offsetWidth / 2 - middle;
+    if (Math.abs(dx) < .3 * length ? nx * inward < 0 : ny > 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    const bend = Math.min(.1 * length, 36);
+    const cx = Math.min(screen.clientWidth - 8, Math.max(8, middle + nx * bend));
+    const cy = Math.min(screen.clientHeight - 8, Math.max(8, (y0 + y) / 2 + ny * bend));
+    const ms = Math.round(Math.min(1100, Math.max(480, 340 + 240 * Math.log2(1 + length / 50))));
+    const state = { x: x0, y: y0, start: null, id: 0 };
+    flight = state;
+    const step = (time) => {
+      if (flight !== state) return;
+      if (state.start === null) state.start = time;
+      const t = Math.min(1, Math.max(0, (time - state.start) / ms));
+      const s = 10 * t ** 3 - 15 * t ** 4 + 6 * t ** 5;
+      const u = 1 - s;
+      state.x = u * u * x0 + 2 * u * s * cx + s * s * x;
+      state.y = u * u * y0 + 2 * u * s * cy + s * s * y;
+      cursor.style.transform = `translate(${state.x}px, ${state.y}px)`;
+      if (t === 1) flight = null;
+      else state.id = requestAnimationFrame(step);
+    };
+    state.id = requestAnimationFrame(step);
     return ms;
   }
   function press() {
@@ -4187,9 +4219,35 @@
     }
   }
 
+  // По доле раскрытия находим время: подпись ждёт, пока картинка дойдёт до неё.
+  function bezier(x1, y1, x2, y2) {
+    const value = (t, a, b) => 3 * (1 - t) ** 2 * t * a + 3 * (1 - t) * t * t * b + t ** 3;
+    return (f) => {
+      if (f <= 0) return 0;
+      if (f >= 1) return 1;
+      let low = 0;
+      let high = 1;
+      for (let i = 0; i < 40; i++) {
+        const t = (low + high) / 2;
+        if (value(t, y1, y2) < f) low = t;
+        else high = t;
+      }
+      return value((low + high) / 2, x1, x2);
+    };
+  }
+  const chipTime = bezier(.65, 0, .35, 1);
+  function chipBox(text) {
+    const previousText = chip.textContent;
+    chip.textContent = text;
+    const box = chip.getBoundingClientRect();
+    chip.textContent = previousText;
+    const base = view.getBoundingClientRect();
+    return { left: box.left - base.left - 6, right: box.right - base.left + 6, top: box.top - base.top - 6, bottom: box.bottom - base.top + 6 };
+  }
+
   // Новый вид ложится поверх старого и раскрывается; старый снимаем, когда его уже не видно.
-  function showPane(name, how, at) {
-    if (name === now.pane) return;
+  function showPane(name, how, at, text) {
+    if (name === now.pane) return 0;
     const from = now.pane && pane(now.pane);
     const to = pane(name);
     now.pane = name;
@@ -4205,19 +4263,21 @@
     if (how === "cut" || !from || !moving()) {
       tidy();
       to.classList.add("on");
-      return;
+      return 0;
     }
     to.style.zIndex = ++layer;
     to.classList.add("on");
-    let ms;
-    if (how === "dive" && from.dataset.pane === "iso" && at) ms = dive(to, from, at);
-    else if (how === "wipe" && from.dataset.pane === "empty") ms = wipe(to);
-    else if (how === "reveal" && at) ms = reveal(to, from, at);
-    else ms = fade(to);
+    let timing;
+    if (how === "dive" && from.dataset.pane === "iso" && at) timing = dive(to, from, at);
+    else if (how === "wipe" && from.dataset.pane === "empty") timing = wipe(to, text);
+    else if (how === "reveal" && at) timing = reveal(to, from, at, text);
+    else timing = fade(to);
+    const [ms, caption] = timing;
     setTimeout(() => { if (token === turn) tidy(); }, ms);
+    return caption;
   }
   // Круг из точки нажатия до дальнего угла кадра; новый вид при этом подходит ближе, старый отходит.
-  function reveal(to, from, [x, y]) {
+  function reveal(to, from, [x, y], text) {
     const w = view.offsetWidth;
     const h = view.offsetHeight;
     const grow = to.dataset.pane !== "iso";
@@ -4226,10 +4286,12 @@
     const cx = w / 2 + (x - w / 2) / k;
     const cy = h / 2 + (y - h / 2) / k;
     const r = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy));
+    const box = chipBox(text);
+    const d = Math.max(...[box.left, box.right].flatMap((px) => [box.top, box.bottom].map((py) => Math.hypot(px - cx, py - cy))));
     to.animate({ clipPath: [`circle(0px at ${cx}px ${cy}px)`, `circle(${r}px at ${cx}px ${cy}px)`] }, { duration: 1000, easing: inOut });
     if (grow) to.animate({ transform: ["scale(1.12)", "none"] }, { duration: 1600, easing: soft });
     from.animate({ transform: "scale(.94)" }, { duration: 1600, easing: soft, fill: "forwards" });
-    return 1600;
+    return [1600, chipTime(Math.min(1, d / r)) * 1000 + 60];
   }
   // Наезд: вид сверху увеличивается в точку комнаты и тает, комната под ним встаёт из приближения в той же точке.
   function dive(to, from, [x, y]) {
@@ -4238,17 +4300,18 @@
     to.style.transformOrigin = `${x}px ${y}px`;
     from.animate({ transform: ["none", "scale(2.6)"], opacity: [1, 0] }, { duration: 1100, easing: inOut, fill: "forwards" });
     to.animate({ transform: ["scale(1.22)", "none"] }, { duration: 1600, easing: soft });
-    return 1600;
+    return [1600, chipTime(.65) * 1100];
   }
   // Шторка: мебель ложится на присланный чертёж слева направо, по краю идёт линия.
-  function wipe(to) {
+  function wipe(to, text) {
+    const f = chipBox(text).right / view.offsetWidth;
     to.animate({ clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)"] }, { duration: 1600, easing: inOut });
     sweepLine(0, view.offsetWidth, 1600, false);
-    return 1600;
+    return [1600, chipTime(f) * 1600 + 60];
   }
   function fade(to) {
     to.animate({ opacity: [0, 1] }, { duration: 700, easing: "ease" });
-    return 700;
+    return [700, 350];
   }
   function sweepLine(x0, x1, ms, light) {
     sweep.classList.toggle("light", light);
@@ -4355,8 +4418,14 @@
 
   function act(scene, { how, at, hand = false } = {}) {
     const cut = how === "cut";
-    setChip(scene.chip, cut);
-    showPane(scene.pane, how, at);
+    const caption = showPane(scene.pane, how, at, scene.chip);
+    if (caption > 0) {
+      chipDue = scene.chip;
+      wait(caption, () => {
+        if (chipDue === scene.chip) chipDue = null;
+        setChip(scene.chip, cut);
+      });
+    } else setChip(scene.chip, cut);
     if (scene.pane === "room") showShot(scene, how);
     // В записи диван возвращается сам, когда гостиную уже не видно. Выбранный человеком остаётся.
     const code = scene.sofa || "PL-028";
@@ -4406,7 +4475,7 @@
     }
     if (scene.tap) {
       const ms = fly(aim(scene));
-      wait(ms + 90, () => {
+      wait(ms + 120, () => {
         press();
         go();
       });
