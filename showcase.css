@@ -1,0 +1,553 @@
+/* Тёмное оформление ограничено витриной; внешняя страница не затрагивается. */
+.sc {
+  --sc-bg: #101112;
+  --sc-text: #eeeae5;
+  --sc-muted: #aaa7a2;
+  --sc-rule: rgb(238 234 229 / 16%);
+  --sc-image-width: min(1120px, calc(100% - clamp(28px, calc(14vw - 28px), 10%)));
+  --sc-image-base-height: clamp(240px, calc(40svh + clamp(0px, calc(20vw - 78px), 15svh)), 740px);
+  --sc-image-height: calc(var(--sc-image-base-height) * .86);
+  --sc-stage-height: clamp(264px, calc(var(--sc-image-base-height) + 24px), 764px);
+  --sc-air-gap: 16px;
+  --sc-name-cap-offset: 6px;
+  /*
+   * Поправка от низа коробки заголовка до линии букв:
+   * 7.5px при 25px и 10.2px при 40px.
+   * Между контрольными размерами следует за размером шрифта заголовка.
+   */
+  --sc-title-tail: calc(3px + clamp(4.5px, .54vw, 7.2px));
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font-family: "Onest", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color-scheme: dark;
+  isolation: isolate;
+}
+
+.sc,
+.sc *,
+.sc *::before,
+.sc *::after {
+  box-sizing: border-box;
+}
+
+.sc [hidden] {
+  display: none !important;
+}
+
+.sc .sc-shell {
+  max-width: 1600px;
+  margin-inline: auto;
+  padding: 24px 16px 12px;
+}
+
+.sc .sc-heading {
+  text-align: center;
+}
+
+.sc .sc-eyebrow,
+.sc .sc-title,
+.sc .sc-copy p,
+.sc .sc-name,
+.sc .sc-live {
+  margin: 0;
+}
+
+.sc .sc-eyebrow {
+  color: var(--sc-muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: .08em;
+}
+
+.sc .sc-title {
+  margin-top: 7px;
+  color: var(--sc-text);
+  font-size: clamp(25px, 3vw, 40px);
+  font-weight: 400;
+  line-height: 1.18;
+  letter-spacing: -.035em;
+}
+
+.sc .sc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  margin-top: var(--sc-air-gap);
+}
+
+.sc .sc-stage {
+  position: relative;
+  height: var(--sc-stage-height);
+  min-width: 0;
+  margin-inline: -16px;
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: grab;
+}
+
+.sc .sc-stage[data-dragging] {
+  cursor: grabbing;
+}
+
+.sc .sc-track,
+.sc .sc-slide,
+.sc .sc-visual {
+  position: absolute;
+  inset: 0;
+}
+
+.sc .sc-track,
+.sc .sc-visual {
+  transform-origin: 50% 100%;
+}
+
+.sc .sc-visual {
+  pointer-events: none;
+}
+
+/*
+ * Видимая вещь вместе с тенью уже отцентрирована внутри исходного WebP.
+ * Сцена сохраняет прежнюю высоту: базовая высота картинки + 24px.
+ * Общий предел высоты картинки уменьшен на 14%; освободившееся поле
+ * поровну добавляется сверху и снизу без сдвига подписи и управления.
+ * Ширина прежняя: широкие вещи, ограниченные ею, не уменьшаются без нужды.
+ * И коробка img, и изображение внутри неё стоят по центру.
+ * object-fit сохраняет пропорции и ничего не обрезает.
+ */
+.sc .sc-image {
+  position: absolute;
+  inset-inline: 0;
+  top: calc((var(--sc-stage-height) - var(--sc-image-height)) / 2);
+  bottom: auto;
+  display: block;
+  width: var(--sc-image-width);
+  max-width: 1120px;
+  height: var(--sc-image-height);
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  object-fit: contain;
+  object-position: 50% 50%;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.sc .sc-missing {
+  position: absolute;
+  inset-inline: 0;
+  top: calc((var(--sc-stage-height) - var(--sc-image-height)) / 2);
+  bottom: auto;
+  width: var(--sc-image-width);
+  height: var(--sc-image-height);
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  color: var(--sc-muted);
+  text-align: center;
+  font-size: 14px;
+}
+
+.sc .sc-hint {
+  display: none;
+}
+
+.sc .sc-info {
+  width: 100%;
+  max-width: 640px;
+  min-width: 0;
+  margin-inline: auto;
+  /*
+   * У сцены одинаковые внутренние поля.
+   * Поэтому нижний отступ отличается от верхнего только поправками на буквы.
+   */
+  padding-top: calc(var(--sc-air-gap) + var(--sc-title-tail) - var(--sc-name-cap-offset));
+  text-align: center;
+}
+
+.sc .sc-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content minmax(0, 1fr);
+  grid-template-rows: auto auto 18px;
+  align-content: start;
+  row-gap: 0;
+  /* Боковой подлёт не расширяет страницу; выносные элементы букв не обрезаются по высоте. */
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.sc .sc-name {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  color: var(--sc-text);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 34px;
+  letter-spacing: -.035em;
+  white-space: nowrap;
+}
+
+.sc .sc-copy .sc-description {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  /*
+   * Для Onest с ascent .96em / descent .32em:
+   * по 8px между контентом названия, двух строк описания и строки реквизитов.
+   * Одна строка описания получает дополнительно по 10.5px с обеих сторон.
+   */
+  margin-top: 7.38px;
+  margin-bottom: 5.14px;
+  color: #cfcbc5;
+  font-size: 14px;
+  line-height: 21px;
+  text-wrap: pretty;
+}
+
+.sc .sc-size,
+.sc .sc-code {
+  grid-row: 3;
+  align-self: center;
+  color: var(--sc-muted);
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sc .sc-size {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+}
+
+.sc .sc-dimension {
+  display: inline-block;
+}
+
+.sc .sc-dimension + .sc-dimension::before,
+.sc .sc-code::before {
+  content: "·";
+  display: inline-block;
+  margin-inline: 6px;
+  letter-spacing: 0;
+}
+
+.sc .sc-code {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  letter-spacing: .08em;
+}
+
+.sc .sc-put {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 320px;
+  min-height: 48px;
+  /* От низа контента строки реквизитов до верхней границы кнопки — 16px. */
+  margin: 14.68px auto 0;
+  padding: 12px 14px;
+  border: 1px solid rgb(238 234 229 / 38%);
+  border-radius: 0;
+  background: transparent;
+  color: var(--sc-text);
+  box-shadow: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0;
+  text-align: center;
+  text-decoration: none;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.sc .sc-controls {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  width: 100%;
+  max-width: 880px;
+  min-width: 0;
+  margin: 8px auto 0;
+}
+
+.sc .sc-counter {
+  color: var(--sc-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .1em;
+}
+
+.sc .sc-arrows {
+  display: flex;
+  gap: 4px;
+}
+
+.sc .sc-arrow,
+.sc .sc-mark,
+.sc .sc-category,
+.sc .sc-all {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--sc-text);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sc .sc-arrow {
+  width: 44px;
+  padding: 0;
+  font-size: 23px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.sc .sc-marks {
+  position: relative;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.sc .sc-marks::-webkit-scrollbar,
+.sc .sc-categories::-webkit-scrollbar {
+  display: none;
+}
+
+.sc .sc-mark {
+  position: relative;
+  flex: 1 0 44px;
+  padding: 0 12px;
+}
+
+.sc .sc-mark::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: rgb(238 234 229 / 24%);
+}
+
+.sc .sc-mark[aria-current="true"]::before {
+  background: var(--sc-text);
+}
+
+.sc .sc-catalog {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding-top: 5px;
+  border-top: 1px solid var(--sc-rule);
+}
+
+.sc .sc-categories {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.sc .sc-category,
+.sc .sc-all {
+  flex: none;
+  padding: 8px 2px;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sc .sc-category {
+  color: var(--sc-muted);
+}
+
+.sc .sc-all {
+  padding-left: 8px;
+}
+
+.sc :is(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--sc-text);
+  outline-offset: -3px;
+}
+
+.sc .sc-put:focus-visible {
+  outline-offset: 4px;
+}
+
+.sc .sc-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.sc .sc-noscript {
+  color: var(--sc-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+@media (hover: hover) {
+  .sc .sc-put:hover {
+    border-color: var(--sc-text);
+    background: rgb(238 234 229 / 5%);
+  }
+
+  .sc .sc-arrow:hover {
+    background: rgb(238 234 229 / 5%);
+  }
+
+  .sc .sc-category:hover,
+  .sc .sc-all:hover {
+    color: var(--sc-text);
+    text-decoration: underline;
+    text-underline-offset: 5px;
+  }
+
+  .sc .sc-mark:hover::before {
+    background: var(--sc-text);
+  }
+}
+
+@media (min-width: 600px) {
+  .sc {
+    --sc-air-gap: 24px;
+    --sc-name-cap-offset: 7px;
+  }
+
+  .sc .sc-shell {
+    padding: 28px 24px 16px;
+  }
+
+  .sc .sc-stage {
+    margin-inline: -24px;
+  }
+
+  .sc .sc-name {
+    font-size: 32px;
+    line-height: 40px;
+  }
+
+  .sc .sc-copy .sc-description {
+    height: 22px;
+    margin-top: 7.08px;
+    margin-bottom: 5.28px;
+    font-size: 15px;
+    line-height: 22px;
+    white-space: nowrap;
+    text-wrap: nowrap;
+  }
+
+  .sc .sc-controls {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    gap: 12px;
+    margin-block: 20px 12px;
+  }
+
+  .sc .sc-marks {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .sc .sc-category,
+  .sc .sc-all {
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 1000px) {
+  .sc {
+    --sc-name-cap-offset: 8px;
+  }
+
+  .sc .sc-shell {
+    padding: 36px 64px 20px;
+  }
+
+  .sc .sc-stage {
+    margin-inline: -64px;
+  }
+
+  .sc .sc-info {
+    max-width: 680px;
+  }
+
+  .sc .sc-copy {
+    grid-template-rows: auto auto 20px;
+  }
+
+  .sc .sc-name {
+    font-size: 36px;
+    line-height: 44px;
+  }
+
+  .sc .sc-copy .sc-description {
+    margin-top: 7.64px;
+    margin-bottom: 4.92px;
+  }
+
+  .sc .sc-size,
+  .sc .sc-code {
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  .sc .sc-put {
+    margin-top: 14.32px;
+    font-size: 14px;
+  }
+
+  .sc .sc-controls {
+    gap: 24px;
+    margin-block: 24px 20px;
+  }
+
+  .sc .sc-catalog {
+    gap: 30px;
+    padding-top: 10px;
+  }
+
+  .sc .sc-categories {
+    gap: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc *,
+  .sc *::before,
+  .sc *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

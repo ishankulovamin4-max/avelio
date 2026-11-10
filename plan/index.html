@@ -1,0 +1,1427 @@
+<!doctype html>
+<!-- Копия client-apartment-1/final/page, собирает tools/scratch/avelio/plan_copy.py -->
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Дизайн-план квартиры клиента · Avelio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&display=swap");
+
+:root {
+    color-scheme: light;
+    --paper: rgb(250, 247, 239);
+    --surface: rgb(243, 237, 225);
+    --ink: rgb(64, 57, 46);
+    --muted: rgb(111, 99, 80);
+    --gold: rgb(162, 126, 69);
+    --rule: rgb(219, 207, 185);
+    --button-bg: rgb(250, 247, 239);
+    --button-ink: rgb(64, 57, 46);
+    --selected-bg: rgb(64, 57, 46);
+    --selected-ink: rgb(250, 247, 239);
+    --focus: rgb(123, 88, 35);
+    /* Поверх фото в Рейках: фото в обеих темах одно, поэтому значения одинаковые. */
+    --brass: rgb(190, 146, 74);
+    --glint: rgb(255, 236, 196);
+    --shade: rgb(38, 30, 18);
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --paper: rgb(31, 29, 25);
+        --surface: rgb(42, 38, 32);
+        --ink: rgb(240, 232, 216);
+        --muted: rgb(194, 181, 158);
+        --gold: rgb(208, 172, 115);
+        --rule: rgb(82, 72, 56);
+        --button-bg: rgb(42, 38, 32);
+        --button-ink: rgb(240, 232, 216);
+        --selected-bg: rgb(218, 188, 140);
+        --selected-ink: rgb(31, 29, 25);
+        --focus: rgb(236, 201, 147);
+        color-scheme: dark;
+    }
+}
+:root[data-theme="dark"] {
+    --paper: rgb(31, 29, 25);
+    --surface: rgb(42, 38, 32);
+    --ink: rgb(240, 232, 216);
+    --muted: rgb(194, 181, 158);
+    --gold: rgb(208, 172, 115);
+    --rule: rgb(82, 72, 56);
+    --button-bg: rgb(42, 38, 32);
+    --button-ink: rgb(240, 232, 216);
+    --selected-bg: rgb(218, 188, 140);
+    --selected-ink: rgb(31, 29, 25);
+    --focus: rgb(236, 201, 147);
+    color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Montserrat", "Arial", sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.65;
+}
+.apartment {
+    width: 100%;
+    max-width: 1400px;
+    margin-inline: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 48px 64px;
+    display: grid;
+    gap: 52px;
+    min-width: 0;
+}
+.apartment :where(h1, h2, h3, h4, p, ul, figure) {
+    margin: 0;
+    padding: 0;
+}
+.apartment :where(h1, h2, h3, h4) { font-weight: 600; }
+.apartment :where(section, article, figure, div) { min-width: 0; }
+.apartment ul { list-style: none; }
+.apartment img {
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+.introduction { display: grid; gap: 22px; max-width: 1000px; }
+.introduction h1 {
+    font-size: clamp(30px, 4.2vw, 52px);
+    line-height: 1.17;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+}
+.introduction p { max-width: 800px; }
+.toggle {
+    display: inline-flex;
+    justify-self: start;
+    max-width: 100%;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    background: var(--button-bg);
+}
+.toggle button {
+    min-height: 46px;
+    min-width: 0;
+    border: 0;
+    border-radius: 3px;
+    padding-inline: 18px;
+    padding-block: 11px;
+    background: var(--button-bg);
+    color: var(--button-ink);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 600;
+    cursor: pointer;
+}
+.toggle button[aria-pressed="true"] {
+    background: var(--selected-bg);
+    color: var(--selected-ink);
+}
+.toggle button:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 4px;
+    position: relative;
+    z-index: 1;
+}
+.block { display: grid; gap: 22px; }
+.block > h2 {
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+}
+.overview-image { max-height: 850px; }
+.plan-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(235px, 0.32fr);
+    align-items: center;
+    gap: 32px;
+}
+.plan-key { display: grid; gap: 10px; font-size: 13px; line-height: 1.5; }
+.plan-key li { display: grid; grid-template-columns: 25px minmax(0, 1fr); gap: 8px; }
+.number { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
+.note { color: var(--muted); font-size: 13px; max-width: 900px; }
+.room-figure { display: grid; gap: 13px; }
+.room-key { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 13px; }
+.room-key li { display: inline-flex; align-items: baseline; gap: 8px; }
+.catalog-group { display: grid; gap: 22px; }
+.catalog-group h3 {
+    border-bottom: 1px solid var(--rule);
+    padding-block: 8px 12px;
+    font-size: 18px;
+    line-height: 1.4;
+}
+.catalog-stack { display: grid; gap: 34px; }
+.products {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px;
+}
+.product { display: grid; align-content: start; gap: 5px; }
+.apartment .product-photo {
+    width: 100%;
+    height: 235px;
+    object-fit: contain;
+    background: #fff;
+}
+.product h4 {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    padding-block: 9px 0;
+    font-size: 15px;
+    line-height: 1.5;
+}
+.product-code { color: var(--muted); font-size: 12px; }
+.product-size { font-size: 13px; }
+@media (max-width: 900px) {
+    .plan-layout { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+    .plan-key { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; }
+    .products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+    .apartment { padding-block: 28px 40px; gap: 36px; }
+    .introduction { gap: 18px; }
+    .introduction p { font-size: 14px; }
+    .toggle button { padding-inline: 15px; }
+    .block { gap: 17px; }
+    .plan-key { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+    .room-key { display: grid; gap: 5px; font-size: 12px; }
+    .products { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+    .apartment .product-photo { height: 220px; }
+    .catalog-group { gap: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .apartment, .apartment * {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
+.v3d {
+    gap: 14px;
+    color: var(--ink);
+    font-family: "Montserrat", "Arial", sans-serif;
+    /* Ряд комнат расположен вне .v3d-frame и использует ширину блока. */
+    container-type: inline-size;
+    min-width: 0;
+}
+
+.v3d-hint {
+    max-width: 720px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.v3d-rooms {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.v3d-rooms button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    min-height: 44px;
+    max-width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--button-bg);
+    color: var(--button-ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: center;
+    cursor: pointer;
+}
+
+.v3d-rooms button[aria-pressed="true"] {
+    background: var(--selected-bg);
+    color: var(--selected-ink);
+}
+
+/* Внешний контейнер позволяет менять высоту самой сцены по её ширине. */
+.v3d-frame {
+    container-type: inline-size;
+    min-width: 0;
+}
+
+.v3d-stage {
+    container-type: inline-size;
+    position: relative;
+    isolation: isolate;
+    height: min(74vh, 760px);
+    min-height: 420px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--surface);
+}
+
+.v3d-stage canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    transition: opacity 160ms ease;
+}
+
+.v3d.is-hop canvas {
+    opacity: 0;
+}
+
+.apartment .v3d-poster {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-fit: cover;
+}
+
+.v3d[data-state="ready"] .v3d-poster,
+.v3d[data-state="ready"] .v3d-status {
+    display: none;
+}
+
+.v3d[data-state="failed"] canvas,
+.v3d[data-state="failed"] .v3d-tools {
+    display: none;
+}
+
+.v3d-status {
+    position: absolute;
+    z-index: 5;
+    left: 16px;
+    bottom: 16px;
+    max-width: min(440px, calc(100% - 32px));
+    padding: 12px 16px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--ink) 14%, transparent);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.v3d-look-hint {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    bottom: 16px;
+    display: none;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    margin: 0;
+    padding: 12px 16px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--ink) 14%, transparent);
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.v3d[data-view="room"]:not([data-looked="yes"]):not([data-card="open"]) .v3d-look-hint {
+    display: block;
+}
+
+.v3d button:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+}
+
+.v3d-icon {
+    display: block;
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.v3d-tools {
+    position: absolute;
+    z-index: 3;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: max-content;
+    max-width: calc(100% - 24px);
+    height: 44px;
+    padding: 1px;
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    background: var(--paper);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent),
+        0 4px 16px color-mix(in srgb, var(--ink) 16%, transparent);
+}
+
+.v3d-tools button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    gap: 7px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--button-bg);
+    color: var(--button-ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.v3d-tool-label {
+    display: none;
+}
+
+.v3d-walls {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 1px;
+    height: 40px;
+    padding-inline: 4px;
+    border-inline: 1px solid var(--rule);
+}
+
+.v3d-walls button {
+    border-radius: 5px;
+}
+
+.v3d-tools button[aria-pressed="true"] {
+    background: var(--selected-bg);
+    color: var(--selected-ink);
+}
+
+.v3d-tools .v3d-exit,
+.v3d-here {
+    display: none;
+}
+
+.v3d-exit-label {
+    display: inline;
+}
+
+.v3d-here {
+    flex: 0 0 auto;
+    margin: 0;
+    padding-inline: 8px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.v3d[data-view="room"] .v3d-tools [data-act="home"],
+.v3d[data-view="room"] .v3d-tools [data-act="top"],
+.v3d[data-view="room"] .v3d-tools .v3d-walls {
+    display: none;
+}
+
+.v3d[data-view="room"] .v3d-exit {
+    display: inline-flex;
+}
+
+.v3d[data-view="room"] .v3d-here {
+    display: block;
+}
+
+.v3d-pins {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.v3d-pin {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--muted);
+    border-radius: 50%;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow:
+        0 0 0 1px var(--paper),
+        0 2px 5px color-mix(in srgb, var(--ink) 28%, transparent);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    /* Значок рисует сцена, стили задают его вид (pins.js). Кнопка проявляется только для клавиатуры. */
+    opacity: 0;
+}
+
+.v3d-pin:focus-visible {
+    opacity: 1;
+}
+
+.v3d-pin.is-active {
+    border: 2px solid var(--gold);
+    background: var(--selected-bg);
+    color: var(--selected-ink);
+    box-shadow:
+        0 0 0 1px var(--paper),
+        0 2px 6px color-mix(in srgb, var(--ink) 32%, transparent);
+}
+
+.v3d-pin[hidden] {
+    display: none;
+}
+
+.v3d-card {
+    position: absolute;
+    z-index: 4;
+    top: 68px;
+    right: 12px;
+    display: grid;
+    box-sizing: border-box;
+    align-content: start;
+    gap: 10px;
+    width: 320px;
+    max-height: calc(100% - 80px);
+    padding: 14px;
+    overflow: auto;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 8px 28px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.v3d-card[hidden],
+.v3d-summary[hidden] {
+    display: none;
+}
+
+.v3d-card-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 40px;
+}
+
+.v3d-card-caption {
+    margin: 0;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.v3d-close {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background: var(--button-bg);
+    color: var(--button-ink);
+    cursor: pointer;
+}
+
+.v3d-card-body {
+    display: grid;
+    align-items: start;
+    gap: 10px;
+}
+
+.apartment .v3d-photo {
+    display: block;
+    width: 100%;
+    height: 128px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 6px;
+    background: var(--surface);
+}
+
+.v3d-details {
+    display: grid;
+    align-content: start;
+    gap: 5px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.v3d-details > .v3d-room,
+.v3d-details > .v3d-code,
+.v3d-details > .v3d-name,
+.v3d-details > .v3d-size {
+    margin: 0;
+}
+
+.v3d-room,
+.v3d-code {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.v3d-name {
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.v3d-code {
+    font-variant-numeric: tabular-nums;
+}
+
+.v3d-size {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* Три варианта — один ряд, четыре — 2 × 2, пять — 3 + 2 на всю ширину. */
+.v3d-variants {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 7px;
+}
+
+.v3d-variants:has(> .v3d-variant:nth-child(4):last-child) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.v3d-variant {
+    display: grid;
+    grid-column: span 2;
+    box-sizing: border-box;
+    align-content: start;
+    gap: 5px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 4px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--button-bg);
+    color: var(--button-ink);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    text-align: center;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    cursor: pointer;
+}
+
+.v3d-variant:nth-child(4):nth-last-child(2),
+.v3d-variant:nth-child(5):last-child {
+    grid-column: span 3;
+}
+
+.v3d-variant[aria-pressed="true"] {
+    border-color: var(--gold);
+    background: var(--selected-bg);
+    color: var(--selected-ink);
+    box-shadow: inset 0 0 0 1px var(--gold);
+    font-weight: 600;
+}
+
+.apartment .v3d-variant img {
+    display: block;
+    width: 100%;
+    height: 48px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 3px;
+    background: var(--surface);
+}
+
+.v3d-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
+    padding: 16px 18px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.v3d-summary-copy {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+.v3d-summary-label {
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.v3d-summary-text {
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.v3d-summary button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    max-width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--button-bg);
+    color: var(--button-ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.v3d.is-full {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--paper);
+}
+
+.v3d.is-full > h2,
+.v3d.is-full > .v3d-hint {
+    display: none;
+}
+
+.v3d.is-full .v3d-rooms {
+    flex: 0 0 auto;
+    padding: 12px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+}
+
+.v3d.is-full .v3d-frame {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+.v3d.is-full .v3d-stage {
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+}
+
+.v3d.is-full .v3d-summary {
+    flex: 0 0 auto;
+    max-height: 25dvh;
+    overflow: auto;
+    border: 0;
+    border-top: 1px solid var(--rule);
+    border-radius: 0;
+}
+
+html.v3d-locked,
+html.v3d-locked body {
+    overflow: hidden;
+}
+
+@container (min-width: 1000px) {
+    .v3d-tool-label {
+        display: inline;
+    }
+}
+
+@container (max-width: 699px) {
+    .v3d-rooms {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .v3d-rooms button {
+        padding-inline: 10px;
+    }
+
+    .v3d-stage {
+        height: 620px;
+    }
+
+    .v3d-tools {
+        top: 10px;
+        left: 10px;
+        max-width: calc(100% - 20px);
+        gap: 4px;
+    }
+
+    .v3d-tools button {
+        width: 40px;
+        padding: 0;
+    }
+
+    .v3d-tool-label,
+    .v3d-tools [data-act="in"],
+    .v3d-tools [data-act="out"] {
+        display: none;
+    }
+
+    .v3d[data-view="room"] .v3d-tools {
+        box-sizing: border-box;
+        width: calc(100% - 20px);
+    }
+
+    .v3d-tools .v3d-exit {
+        width: auto;
+        padding-inline: 8px;
+    }
+
+    .v3d-here {
+        flex: 1 0 auto;
+        padding-inline: 4px;
+        font-size: 12px;
+    }
+
+    .v3d-card {
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: auto;
+        max-height: 38%;
+        padding: 8px 12px;
+        gap: 6px;
+        overflow: auto;
+        overscroll-behavior: contain;
+        border-right: 0;
+        border-bottom: 0;
+        border-left: 0;
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -5px 24px color-mix(in srgb, var(--ink) 16%, transparent);
+    }
+
+    .v3d-card-heading {
+        gap: 8px;
+    }
+
+    .v3d-card-body {
+        grid-template-columns: 72px minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .apartment .v3d-photo {
+        width: 72px;
+        height: 72px;
+        aspect-ratio: 1;
+        object-fit: cover;
+    }
+
+    .v3d-details {
+        gap: 2px;
+    }
+
+    .v3d-room,
+    .v3d-code {
+        font-size: 11px;
+        line-height: 14px;
+    }
+
+    .v3d-name {
+        font-size: 14px;
+        line-height: 18px;
+    }
+
+    .v3d-size {
+        font-size: 11px;
+        line-height: 15px;
+    }
+
+    /* Любые 3–5 вариантов делят один ряд поровну. */
+    .v3d-variants {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .v3d-variant {
+        flex: 1 1 0;
+        gap: 4px;
+    }
+
+    .apartment .v3d-variant img {
+        height: 32px;
+    }
+
+    .v3d-status {
+        left: 12px;
+        bottom: 12px;
+        max-width: calc(100% - 24px);
+    }
+
+    .v3d-look-hint {
+        bottom: 12px;
+        max-width: calc(100% - 24px);
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .v3d.is-full .v3d-rooms {
+        padding: 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .v3d-stage canvas {
+        transition: none;
+    }
+}
+
+/* Рейки: смена мебели на картинках комнат (swap.js). Вид перенесён из пробы swap/demo, принят 02.11. */
+@property --p { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+
+.swap-figure { container: swapfig / inline-size; }
+.swap-stage { position: relative; min-width: 0; }
+.swap-scene {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.swap-zone { position: absolute; pointer-events: none; }
+.apartment .swap-piece {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-fit: fill;
+}
+.swap-hit { position: absolute; inset: 0; z-index: 2; }
+.swap-scene[data-hot] .swap-hit { cursor: pointer; }
+
+/* Слои смены. В масках важна только непрозрачность, а не цвет. */
+.swap-fx { position: absolute; inset: 0; pointer-events: none; }
+.swap-masked {
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%, 100% 100%;
+    mask-size: 100% 100%, 100% 100%;
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+}
+.swap-outline {
+    background: var(--brass);
+    opacity: 0;
+    transition: opacity 200ms ease;
+    -webkit-mask-image: var(--line);
+    mask-image: var(--line);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+.swap-zone[data-hot] .swap-outline { opacity: 1; }
+.swap-zone[data-busy] .swap-outline { opacity: 0; }
+.swap-slats { perspective: var(--depth, 500px); perspective-origin: 50% 46%; }
+.swap-slat {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+.swap-slat b {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+.swap-slat b.back { transform: rotateY(180deg); }
+.swap-gap {
+    background: var(--shade);
+    opacity: .58;
+    -webkit-mask-image: var(--shape), linear-gradient(90deg, transparent calc(var(--o) - var(--p) - 15%), var(--ink) calc(var(--o) - var(--p)), transparent calc(var(--o) - var(--p) + 15%), transparent calc(var(--o) + var(--p) - 15%), var(--ink) calc(var(--o) + var(--p)), transparent calc(var(--o) + var(--p) + 15%));
+    mask-image: var(--shape), linear-gradient(90deg, transparent calc(var(--o) - var(--p) - 15%), var(--ink) calc(var(--o) - var(--p)), transparent calc(var(--o) - var(--p) + 15%), transparent calc(var(--o) + var(--p) - 15%), var(--ink) calc(var(--o) + var(--p)), transparent calc(var(--o) + var(--p) + 15%));
+}
+.swap-comb {
+    background-image: linear-gradient(90deg, var(--glint) 0 1.5px, transparent 1.5px);
+    background-position: calc(var(--sw) / 2) 0;
+    background-size: var(--sw) 100%;
+    -webkit-mask-image: var(--shape), linear-gradient(90deg, transparent calc(var(--o) - var(--p) - 9%), var(--ink) calc(var(--o) - var(--p)), transparent calc(var(--o) - var(--p) + 9%), transparent calc(var(--o) + var(--p) - 9%), var(--ink) calc(var(--o) + var(--p)), transparent calc(var(--o) + var(--p) + 9%));
+    mask-image: var(--shape), linear-gradient(90deg, transparent calc(var(--o) - var(--p) - 9%), var(--ink) calc(var(--o) - var(--p)), transparent calc(var(--o) - var(--p) + 9%), transparent calc(var(--o) + var(--p) - 9%), var(--ink) calc(var(--o) + var(--p)), transparent calc(var(--o) + var(--p) + 9%));
+}
+
+.swap-wait {
+    position: absolute;
+    z-index: 4;
+    left: 8px;
+    bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100% - 16px);
+    padding: 6px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1.4;
+}
+.swap-wait::before {
+    content: "";
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+}
+.swap-wait[hidden] { display: none; }
+
+/* Табличка у каждой вещи: латунная пластина на полу с барабаном, тот же поворот, что у реек. */
+.swap-plates { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.swap-plate {
+    position: absolute;
+    left: calc(var(--x) * 100%);
+    top: calc(var(--y) * 100%);
+    display: grid;
+    align-content: center;
+    gap: 1px;
+    min-height: 48px;
+    padding: 3px 11px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--shade) 30%, transparent);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    pointer-events: auto;
+    translate: calc(-50% + var(--dx, 0px)) var(--dy, 0px);
+}
+.swap-plate-lab { font-size: 11px; font-weight: 600; line-height: 1.3; white-space: nowrap; }
+.swap-plate-row { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+.swap-drum-win {
+    position: relative;
+    display: block;
+    width: 54px;
+    height: 18px;
+    overflow: hidden;
+    perspective: 150px;
+}
+.swap-drum {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transition: transform 620ms cubic-bezier(.3, 1.4, .5, 1);
+}
+.swap-face {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: var(--paper);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    line-height: 1;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+.swap-ticks { display: flex; gap: 3px; }
+.swap-ticks i { display: block; width: 3px; height: 13px; border-radius: 1px; background: var(--rule); transition: background 200ms ease; }
+.swap-ticks i[data-on] { background: var(--gold); }
+
+/* Варианты под картинкой: вещь на картинке остаётся видна. */
+.swap-panel { display: grid; gap: 6px; min-width: 0; }
+.swap-panel[hidden] { display: none; }
+.swap-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 0 0 8px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--paper);
+}
+.swap-panel-title { color: var(--muted); font-size: 11px; font-weight: 600; line-height: 1.4; letter-spacing: .06em; text-transform: uppercase; }
+.swap-close {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--button-ink);
+    cursor: pointer;
+}
+.swap-close svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 1.6; fill: none; }
+.swap-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; min-width: 0; }
+.swap-opt {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 66px;
+    padding: 5px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--button-bg);
+    color: var(--button-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transform-origin: 50% 0;
+}
+.apartment .swap-opt img, .swap-opt-ph {
+    display: block;
+    width: 72px;
+    height: 54px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #fff;
+}
+.swap-opt-tx { display: grid; min-width: 0; font-size: 12px; font-weight: 600; line-height: 1.35; }
+.swap-opt-tx b { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.swap-opt-size { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.swap-opt[aria-pressed="true"] { border-color: var(--selected-bg); background: var(--selected-bg); color: var(--selected-ink); }
+.swap-opt[aria-pressed="true"] b, .swap-opt[aria-pressed="true"] .swap-opt-size { color: var(--selected-ink); }
+.swap-stage button:focus-visible, .swap-panel button:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+}
+.swap-live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* Узко: таблички рядом под картинкой, на самой картинке им места нет. */
+@container swapfig (max-width: 599px) {
+    .swap-plates { position: static; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .swap-plate { position: static; min-height: 44px; translate: none; box-shadow: none; }
+}
+@media (hover: hover) {
+    .swap-opt:hover, .swap-plate:hover { border-color: var(--gold); }
+    .swap-close:hover { color: var(--gold); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .swap-drum, .swap-outline, .swap-ticks i, .swap-opt { transition: none !important; }
+}
+
+.plan-send { padding-top: 12px; }
+.plan-send p { max-width: 560px; color: var(--muted); font-size: 16px; }
+.plan-send-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.plan-send-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 22px;
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-decoration: none;
+}
+.plan-send-actions a + a { background: transparent; color: var(--ink); }
+.plan-send-actions a:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+@media (max-width: 560px) {
+    .plan-send-actions a { flex: 1 1 100%; }
+}
+</style>
+</head><body>
+<main class="apartment" lang="ru">
+<header class="introduction"><h1>Дизайн-план квартиры клиента</h1><p>Такой план мы бесплатно делаем по чертежу. Мебель из нашего каталога расставлена по плану квартиры. На картинках комнат она обведена золотой линией и подписана, на общем виде отмечена номерами. Номера совпадают с планом и списком.</p><div class="toggle"><button type="button" data-mode="marked" aria-pressed="true">С подписями</button><button type="button" data-mode="clean" aria-pressed="false">Без подписей</button></div></header>
+<section class="block"><h2>Общий вид</h2><img src="img/iso.marked.jpg" alt="Общий вид" width="1600" height="1200" class="overview-image" data-marked="img/iso.marked.jpg" data-clean="img/iso.clean.jpg"></section>
+<section class="block v3d" data-state="idle" data-walls="low" data-view="outside">
+    <h2>Квартира в объёме</h2>
+    <p class="v3d-hint">Крутите квартиру снаружи или выберите комнату, чтобы осмотреться внутри. Нажмите на вещь или её номер, чтобы открыть варианты замены.</p>
+    <div class="v3d-rooms" role="group" aria-label="Выбор комнаты">
+        <button type="button" data-act="outside" aria-pressed="true">Вся квартира</button>
+        <button type="button" data-room="living" aria-pressed="false">Гостиная</button>
+        <button type="button" data-room="dining" aria-pressed="false">Столовая и кухня</button>
+        <button type="button" data-room="bedroom" aria-pressed="false">Спальня</button>
+        <button type="button" data-room="room2" aria-pressed="false">Вторая комната</button>
+        <button type="button" data-room="hall" aria-pressed="false">Прихожая</button>
+        <button type="button" data-room="bath" aria-pressed="false">Ванная</button>
+    </div>
+    <div class="v3d-frame">
+        <div class="v3d-stage">
+            <img src="img/iso.clean.jpg" alt="Общий вид квартиры" width="1600" height="1200" class="v3d-poster"><canvas></canvas>
+            <div class="v3d-pins"></div>
+            <p class="v3d-status" role="status">Загружаем модель квартиры…</p>
+            <p class="v3d-look-hint">Проведите мышью или пальцем, чтобы осмотреться.</p>
+
+            <div class="v3d-tools" role="group" aria-label="Управление видом квартиры">
+                <button type="button" class="v3d-exit" data-act="outside" aria-label="Выйти из комнаты к виду на всю квартиру" title="Выйти к виду на всю квартиру">
+                    <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                        <path d="M20 12H4m6-6-6 6 6 6"/>
+                    </svg>
+                    <span class="v3d-exit-label">Выйти</span>
+                </button>
+                <p class="v3d-here"></p>
+
+                <button type="button" data-act="home" aria-label="Вернуть исходный вид" title="Вернуть исходный вид">
+                    <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                        <path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/>
+                    </svg>
+                    <span class="v3d-tool-label">Как было</span>
+                </button>
+
+                <button type="button" data-act="top" aria-label="Посмотреть сверху" title="Посмотреть сверху">
+                    <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                        <rect x="4" y="4" width="16" height="16" rx="1"/>
+                        <path d="M13 4v9h7M4 13h5M9 13v7"/>
+                    </svg>
+                    <span class="v3d-tool-label">Сверху</span>
+                </button>
+
+                <button type="button" data-act="in" aria-label="Приблизить" title="Приблизить">
+                    <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                        <path d="M5 12h14M12 5v14"/>
+                    </svg>
+                </button>
+
+                <button type="button" data-act="out" aria-label="Отдалить" title="Отдалить">
+                    <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                        <path d="M5 12h14"/>
+                    </svg>
+                </button>
+
+                <div class="v3d-walls" role="group" aria-label="Высота стен">
+                    <button type="button" data-walls-set="low" aria-pressed="true" aria-label="Низкие стены" title="Низкие стены">
+                        <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                            <path d="m4 13 8 4 8-4M4 13v4l8 4 8-4v-4M12 17v4"/>
+                            <path d="M4 4v5M20 4v5" stroke-dasharray="1 3"/>
+                        </svg>
+                        <span class="v3d-tool-label">Низкие</span>
+                    </button>
+
+                    <button type="button" data-walls-set="full" aria-pressed="false" aria-label="Полные стены" title="Полные стены">
+                        <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                            <path d="m4 4 8 4 8-4M4 4v13l8 4 8-4V4M12 8v13"/>
+                        </svg>
+                        <span class="v3d-tool-label">Полные</span>
+                    </button>
+                </div>
+
+                <button type="button" data-act="full" aria-pressed="false" aria-label="Включить или выключить полный экран" title="Весь экран">
+                    <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                        <path d="M9 4H4v5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>
+                    </svg>
+                    <span class="v3d-tool-label">Весь экран</span>
+                </button>
+            </div>
+
+            <aside class="v3d-card" aria-label="Вещь и варианты замены" hidden>
+                <div class="v3d-card-heading">
+                    <p class="v3d-card-caption">Выберите вариант</p>
+                    <button type="button" class="v3d-close" data-act="close" aria-label="Закрыть карточку вещи" title="Закрыть карточку">
+                        <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                            <path d="m6 6 12 12M18 6 6 18"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="v3d-card-body">
+                    <img class="v3d-photo" alt="">
+                    <div class="v3d-details">
+                        <p class="v3d-room"></p>
+                        <h3 class="v3d-name"></h3>
+                        <p class="v3d-code"></p>
+                        <p class="v3d-size"></p>
+                    </div>
+                </div>
+
+                <div class="v3d-variants" role="group" aria-label="Варианты мебели"></div>
+            </aside>
+        </div>
+    </div>
+
+    <div class="v3d-summary" hidden>
+        <div class="v3d-summary-copy">
+            <p class="v3d-summary-label">Ваши замены</p>
+            <p class="v3d-summary-text"></p>
+        </div>
+        <button type="button" data-act="reset" aria-label="Отменить все замены мебели" title="Отменить все замены мебели">
+            <svg class="v3d-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+                <path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/>
+            </svg>
+            <span>Вернуть как было</span>
+        </button>
+    </div>
+</section>
+
+<section class="block"><h2>План расстановки</h2><div class="plan-layout"><img src="img/plan_marked.jpg" alt="План расстановки" width="1600" height="951"><ul class="plan-key"><li><span class="number">1</span><span>Трёхместный диван</span></li><li><span class="number">2</span><span>Журнальный стол</span></li><li><span class="number">3</span><span>ТВ-тумба</span></li><li><span class="number">4</span><span>Обеденный стол</span></li><li><span class="number">5</span><span>Обеденный стул</span></li><li><span class="number">6</span><span>Кровать</span></li><li><span class="number">7</span><span>Прикроватная тумба</span></li><li><span class="number">8</span><span>Туалетный столик</span></li><li><span class="number">9</span><span>Кровать</span></li><li><span class="number">10</span><span>Стол</span></li><li><span class="number">11</span><span>Кресло к письменному столу</span></li><li><span class="number">12</span><span>Пуф</span></li><li><span class="number">13</span><span>Зеркало</span></li></ul></div><p class="note">Стены, полы, шторы, ковры и декор нарисованы для примера. Наша мебель только та, что отмечена.</p></section>
+<section class="block"><h2>Гостиная</h2><figure class="room-figure"><img src="img/living_sofa.marked.jpg" alt="Гостиная" width="1600" height="1067" data-marked="img/living_sofa.marked.jpg" data-clean="img/living_sofa.clean.jpg"><figcaption><ul class="room-key"><li><span class="number">1</span><span>Трёхместный диван</span></li><li><span class="number">2</span><span>Журнальный стол</span></li><li><span class="number">3</span><span>ТВ-тумба</span></li></ul></figcaption></figure><figure class="room-figure"><img src="img/living_tv.marked.jpg" alt="Гостиная" width="1600" height="1067" data-marked="img/living_tv.marked.jpg" data-clean="img/living_tv.clean.jpg"><figcaption><ul class="room-key"><li><span class="number">1</span><span>Трёхместный диван</span></li><li><span class="number">2</span><span>Журнальный стол</span></li><li><span class="number">3</span><span>ТВ-тумба</span></li></ul></figcaption></figure></section>
+<section class="block"><h2>Столовая и кухня</h2><figure class="room-figure"><img src="img/dining_kitchen.marked.jpg" alt="Столовая и кухня" width="1600" height="1067" data-marked="img/dining_kitchen.marked.jpg" data-clean="img/dining_kitchen.clean.jpg"><figcaption><ul class="room-key"><li><span class="number">4</span><span>Обеденный стол</span></li><li><span class="number">5</span><span>Обеденный стул</span></li></ul></figcaption></figure></section>
+<section class="block"><h2>Спальня</h2><figure class="room-figure"><img src="img/bedroom_bed.marked.jpg" alt="Спальня" width="1600" height="1067" data-marked="img/bedroom_bed.marked.jpg" data-clean="img/bedroom_bed.clean.jpg"><figcaption><ul class="room-key"><li><span class="number">6</span><span>Кровать</span></li><li><span class="number">7</span><span>Прикроватная тумба</span></li><li><span class="number">8</span><span>Туалетный столик</span></li></ul></figcaption></figure><figure class="room-figure"><img src="img/bedroom_vanity.marked.jpg" alt="Спальня" width="1600" height="1067" data-marked="img/bedroom_vanity.marked.jpg" data-clean="img/bedroom_vanity.clean.jpg"><figcaption><ul class="room-key"><li><span class="number">6</span><span>Кровать</span></li><li><span class="number">7</span><span>Прикроватная тумба</span></li><li><span class="number">8</span><span>Туалетный столик</span></li></ul></figcaption></figure></section>
+<section class="block"><h2>Вторая комната</h2><figure class="room-figure"><img src="img/room2_bed.marked.jpg" alt="Вторая комната" width="1600" height="1067" data-marked="img/room2_bed.marked.jpg" data-clean="img/room2_bed.clean.jpg"><figcaption><ul class="room-key"><li><span class="number">9</span><span>Кровать</span></li><li><span class="number">10</span><span>Стол</span></li><li><span class="number">11</span><span>Кресло к письменному столу</span></li></ul></figcaption></figure><figure class="room-figure"><img src="img/room2_desk.marked.jpg" alt="Вторая комната" width="1600" height="1067" data-marked="img/room2_desk.marked.jpg" data-clean="img/room2_desk.clean.jpg"><figcaption><ul class="room-key"><li><span class="number">9</span><span>Кровать</span></li><li><span class="number">10</span><span>Стол</span></li><li><span class="number">11</span><span>Кресло к письменному столу</span></li></ul></figcaption></figure></section>
+<section class="block"><h2>Прихожая</h2><figure class="room-figure"><img src="img/hall.marked.jpg" alt="Прихожая" width="1600" height="1067" data-marked="img/hall.marked.jpg" data-clean="img/hall.clean.jpg"><figcaption><ul class="room-key"><li><span class="number">12</span><span>Пуф</span></li><li><span class="number">13</span><span>Зеркало</span></li></ul></figcaption></figure></section>
+<section class="block"><h2>Ванная</h2><figure class="room-figure"><img src="img/bath.clean.jpg" alt="Ванная" width="1600" height="1067"></figure></section>
+<section class="block"><h2>Список мебели</h2><div class="catalog-stack"><section class="catalog-group"><h3>Гостиная</h3><div class="products"><article class="product"><img src="img/item-1.jpg" alt="Трёхместный диван" width="700" height="483" class="product-photo"><h4><span class="number">1</span><span>Трёхместный диван</span></h4><p class="product-code">PL-028</p><p class="product-size">218 × 90 × 78 см</p></article><article class="product"><img src="img/item-2.jpg" alt="Журнальный стол" width="460" height="379" class="product-photo"><h4><span class="number">2</span><span>Журнальный стол</span></h4><p class="product-code">PL-304</p><p class="product-size">100 × 100 × 40 см</p></article><article class="product"><img src="img/item-3.jpg" alt="ТВ-тумба" width="460" height="142" class="product-photo"><h4><span class="number">3</span><span>ТВ-тумба</span></h4><p class="product-code">PL-389</p><p class="product-size">200 × 45 × 52 см</p></article></div></section><section class="catalog-group"><h3>Столовая</h3><div class="products"><article class="product"><img src="img/item-4.jpg" alt="Обеденный стол" width="638" height="700" class="product-photo"><h4><span class="number">4</span><span>Обеденный стол</span></h4><p class="product-code">PD-066</p><p class="product-size">160 × 90 × 75 см</p></article><article class="product"><img src="img/item-5.jpg" alt="Обеденный стул" width="360" height="460" class="product-photo"><h4><span class="number">5</span><span>Обеденный стул</span></h4><p class="product-code">PD-105</p><p class="product-size">57 × 60 × 83 см</p></article></div></section><section class="catalog-group"><h3>Спальня</h3><div class="products"><article class="product"><img src="img/item-6.jpg" alt="Кровать" width="700" height="682" class="product-photo"><h4><span class="number">6</span><span>Кровать</span></h4><p class="product-code">PB-103</p><p class="product-size">200 × 220 × 140 см</p></article><article class="product"><img src="img/item-7.jpg" alt="Прикроватная тумба" width="460" height="449" class="product-photo"><h4><span class="number">7</span><span>Прикроватная тумба</span></h4><p class="product-code">PB-216</p><p class="product-size">55 × 45 × 55 см</p></article><article class="product"><img src="img/item-8.jpg" alt="Туалетный столик" width="386" height="460" class="product-photo"><h4><span class="number">8</span><span>Туалетный столик</span></h4><p class="product-code">PB-160</p><p class="product-size">130 × 50 × 75 см</p></article></div></section><section class="catalog-group"><h3>Вторая комната</h3><div class="products"><article class="product"><img src="img/item-9.jpg" alt="Кровать" width="700" height="587" class="product-photo"><h4><span class="number">9</span><span>Кровать</span></h4><p class="product-code">PB-080</p><p class="product-size">126 × 211 × 112 см</p></article><article class="product"><img src="img/item-10.jpg" alt="Стол" width="460" height="280" class="product-photo"><h4><span class="number">10</span><span>Стол</span></h4><p class="product-code">PB-154</p><p class="product-size">120 × 45 × 76 см</p></article><article class="product"><img src="img/item-11.jpg" alt="Кресло к письменному столу" width="252" height="460" class="product-photo"><h4><span class="number">11</span><span>Кресло к письменному столу</span></h4><p class="product-code">PB-317</p><p class="product-size">размер уточняется</p></article></div></section><section class="catalog-group"><h3>Прихожая</h3><div class="products"><article class="product"><img src="img/item-12.jpg" alt="Пуф" width="460" height="439" class="product-photo"><h4><span class="number">12</span><span>Пуф</span></h4><p class="product-code">PL-234</p><p class="product-size">50 × 50 × 45 см</p></article><article class="product"><img src="img/item-13.jpg" alt="Зеркало" width="330" height="322" class="product-photo"><h4><span class="number">13</span><span>Зеркало</span></h4><p class="product-code">PB-180</p><p class="product-size">86 × 42 × 32 см</p></article></div></section></div></section><section class="block plan-send" id="plan-send" aria-labelledby="plan-send-title"><h2 id="plan-send-title">Хотите так же у&nbsp;себя?</h2><p>Пришлите фото комнаты или чертёж. Бесплатно покажем, как наша мебель встанет у&nbsp;вас.</p><div class="plan-send-actions"><a href="../index.html#send" data-kind="photo">Прислать фото комнаты</a><a href="../index.html#send" data-kind="plan">Прислать чертёж</a></div></section></main>
+<script>
+(() => {
+    const root = document.querySelector(".apartment");
+    if (!root) return;
+
+    const box = root.querySelector(".v3d");
+    if (box) {
+        const fail = () => {
+            box.dataset.state = "failed";
+            box.querySelector(".v3d-status").textContent =
+                "Объёмная модель не открылась на этом устройстве. "
+                + "Всё то же видно на картинках ниже.";
+        };
+        const run = () => {
+            box.dataset.state = "loading";
+            import("./viewer3d.js").then((module) => module.start(box)).catch(fail);
+        };
+        const watcher = new IntersectionObserver((entries) => {
+            if (!entries.some((entry) => entry.isIntersecting)) return;
+            watcher.disconnect();
+            run();
+        }, { rootMargin: "300px 0px" });
+        watcher.observe(box);
+    }
+
+    const buttons =Array.from(root.querySelectorAll(".toggle button"));
+    const images = Array.from(root.querySelectorAll("img[data-marked][data-clean]"));
+
+    function setMode(mode) {
+        root.dataset.mode = mode;
+        for (const image of images) {
+            // Под сменённой мебелью (swap.js) картинка всегда без подписей.
+            const source = mode === "marked" && !image.hasAttribute("data-swapped") ? image.dataset.marked : image.dataset.clean;
+            if (image.getAttribute("src") !== source) {
+                image.setAttribute("src", source);
+            }
+        }
+        for (const button of buttons) {
+            button.setAttribute(
+                "aria-pressed",
+                button.dataset.mode === mode ? "true" : "false"
+            );
+        }
+    }
+
+    for (const button of buttons) {
+        button.addEventListener("click", () => setMode(button.dataset.mode));
+    }
+})();
+</script>
+<script src="swap.js" defer></script>
+<script>
+(() => {
+    "use strict";
+    const send = document.getElementById("plan-send");
+    if (new URLSearchParams(location.search).has("embed")) {
+        send.hidden = true;
+        parent.postMessage({ type: "avelio-plan-ready" }, "*");
+        return;
+    }
+    let fromPage = false;
+    try {
+        fromPage = sessionStorage.getItem("avelio-plan-from") === "1";
+    } catch (error) {}
+    send.addEventListener("click", (event) => {
+        const link = event.target.closest("a[data-kind]");
+        if (!link) return;
+        try {
+            sessionStorage.setItem("avelio-send", link.dataset.kind);
+            sessionStorage.removeItem("avelio-plan-from");
+        } catch (error) {}
+        if (fromPage) {
+            event.preventDefault();
+            history.back();
+        }
+    });
+})();
+</script>
+</body></html>
