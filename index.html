@@ -1604,8 +1604,63 @@
     font-weight: 600;
     box-shadow: 0 0 0 2px var(--white), 0 0 0 3.5px var(--brass);
   }
-  .o-name { display: grid; font-size: 15px; font-weight: 600; line-height: 1.2; }
-  .o-name small { font-size: 12px; font-weight: 400; color: var(--muted); }
+  .o-name { display: grid; flex: 1; min-width: 0; font-size: 15px; font-weight: 600; line-height: 1.2; }
+  .o-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; color: var(--muted); }
+
+  /* Видимая пилюля — 32 px, область нажатия — 100 × 40 px. */
+  .o-voice-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    gap: 5px;
+    width: 100px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 20px;
+    background: var(--clear);
+    color: var(--plate-ink);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .o-voice-toggle::before {
+    content: "";
+    position: absolute;
+    inset: 4px 0;
+    z-index: -1;
+    border: 1px solid color-mix(in srgb, var(--brass) 65%, var(--line));
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--plate) 45%, var(--white));
+  }
+  .o-voice-toggle:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .o-speaker { flex: none; width: 16px; height: 16px; fill: none; stroke: var(--brass); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .o-equalizer { display: none; align-items: center; justify-content: center; gap: 3px; height: 18px; }
+  .o-equalizer i { width: 3px; height: 10px; border-radius: 2px; background: var(--brass); transform-origin: center; }
+  .o-equalizer i:nth-child(2) { height: 16px; }
+  .o-equalizer i:nth-child(3) { height: 12px; }
+  .o-voice-toggle[aria-pressed="true"] .o-speaker,
+  .o-voice-toggle[aria-pressed="true"] .o-voice-label { display: none; }
+  .o-voice-toggle[aria-pressed="true"] .o-equalizer { display: flex; }
+  .o-voice-off { display: none; }
+  .o-voice-toggle[aria-pressed="true"] .o-voice-off { display: inline; }
+  .o-voice-toggle[aria-pressed="true"] .o-equalizer i { animation: o-voice-level 1200ms ease-in-out infinite alternate; }
+  .o-voice-toggle[aria-pressed="true"] .o-equalizer i:nth-child(2) { animation-delay: -400ms; }
+  .o-voice-toggle[aria-pressed="true"] .o-equalizer i:nth-child(3) { animation-delay: -800ms; }
+  @keyframes o-voice-level {
+    from { transform: scaleY(.5); opacity: .65; }
+    to { transform: scaleY(1); opacity: 1; }
+  }
+  @media (hover: hover) {
+    .o-voice-toggle:hover::before { background: var(--plate); border-color: var(--brass); }
+  }
 
   /* Лента прижата к низу; новый пузырь поднимает прежние без масштабирования. */
   .o-feed {
@@ -1839,7 +1894,8 @@
     .f-order .o-stop,
     .f-order .o-stop::before,
     .f-order .o-path::after { transition: none; animation: none; }
-    .f-order .o-typing i { animation: none; }
+    .f-order .o-typing i,
+    .f-order .o-voice-toggle .o-equalizer i { animation: none; }
   }
 </style>
 <style id="examples-ac-css">
@@ -3162,7 +3218,7 @@
       </dialog>
     </section>
 
-    <section class="f-block f-order" id="f-order" aria-labelledby="f-order-title">
+    <section class="f-block f-order" id="f-order" aria-labelledby="f-order-title" data-voice="off">
       <div class="f-wrap o-layout">
         <div class="o-head">
           <p class="eyebrow f-eyebrow">Как идёт заказ</p>
@@ -3170,8 +3226,8 @@
           <p class="f-lead">Фото или чертёж вы&nbsp;оставляете на&nbsp;сайте. Дальше мы&nbsp;пишем вам сами.</p>
         </div>
         <figure class="o-figure">
-          <div class="o-phone" aria-hidden="true">
-            <svg class="o-defs" xmlns="http://www.w3.org/2000/svg" width="0" height="0">
+          <div class="o-phone">
+            <svg class="o-defs" xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true">
               <defs>
                 <linearGradient id="o-panel-tone" x2="0" y2="1">
                   <stop style="stop-color: var(--plate)"/>
@@ -3311,7 +3367,7 @@
                 </g>
               </defs>
             </svg>
-            <div class="o-status">
+            <div class="o-status" aria-hidden="true">
               <span>9:41</span>
               <i class="o-island"></i>
               <span class="o-icons">
@@ -3321,11 +3377,18 @@
               </span>
             </div>
             <div class="o-bar">
-              <svg class="o-back" viewBox="0 0 10 18"><path d="M8.5 1.5 1.5 9l7 7.5"/></svg>
-              <b class="o-avatar">A</b>
-              <span class="o-name">Avelio<small>на&nbsp;связи</small></span>
+              <svg class="o-back" viewBox="0 0 10 18" aria-hidden="true"><path d="M8.5 1.5 1.5 9l7 7.5"/></svg>
+              <b class="o-avatar" aria-hidden="true">A</b>
+              <span class="o-name" aria-hidden="true">Avelio<small>на&nbsp;связи</small></span>
+              <button class="o-voice-toggle" type="button" aria-pressed="false" aria-label="Послушать историю заказа">
+                <svg class="o-speaker" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7h3l4-3v12l-4-3H3ZM13 7a5 5 0 0 1 0 6M15.5 4.5a8.5 8.5 0 0 1 0 11"/></svg>
+                <span class="o-voice-label" aria-hidden="true">Послушать</span>
+                <span class="o-equalizer" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="o-voice-off" aria-hidden="true">Выключить</span>
+              </button>
             </div>
-            <div class="o-feed">
+            <audio class="o-voice" preload="none" hidden></audio>
+            <div class="o-feed" aria-hidden="true">
               <div class="o-track">
                 <div class="o-intro"><b class="o-avatar">A</b><strong>Avelio</strong><span>Мебель с&nbsp;китайских фабрик появляется прямо в&nbsp;вашей комнате.</span></div>
                 <div class="o-note" data-stage="0" data-wait="1200" hidden><img data-src="example/room.jpg" alt="" width="1600" height="1067"><span>Заявка с&nbsp;сайта · фото комнаты</span></div>
@@ -3559,7 +3622,7 @@
                 <div class="o-msg o-mine o-photo" data-stage="5" data-wait="1600" hidden><img data-src="example/a.jpg" alt="" width="1600" height="1067"><p>Спасибо!</p></div>
               </div>
             </div>
-            <div class="o-input">
+            <div class="o-input" aria-hidden="true">
               <span class="o-field">Сообщение</span>
               <span class="o-send"><svg viewBox="0 0 16 16"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg></span>
             </div>
@@ -5063,7 +5126,7 @@
 (() => {
   "use strict";
 
-  // От снимка до адреса: 30 секунд записи, 4 секунды паузы; все движения живут на общих часах.
+  // От снимка до адреса: без голоса 30 секунд записи, 4 секунды паузы; движения живут на общих часах.
   const block = document.getElementById("f-order");
   if (!block) return;
   const phone = block.querySelector(".o-phone");
@@ -5073,6 +5136,8 @@
   const path = block.querySelector(".o-path");
   const stops = [...path.querySelectorAll(".o-stop")];
   const status = block.querySelector(".o-name small");
+  const voiceButton = block.querySelector(".o-voice-toggle");
+  const audio = block.querySelector("audio.o-voice");
   const media = matchMedia("(prefers-reduced-motion: reduce)");
   const capable = typeof Element.prototype.animate === "function"
     && typeof block.getAnimations === "function"
@@ -5098,12 +5163,129 @@
   let left = 0;
   let next = null;
   let statusVersion = 0;
+  let voiceOn = false;
+  let voiceBusy = false;
+  let voiceStage = -1;
+  let voiceWait = null;
+  let voiceEnded = false;
+  let playPending = false;
+  let playVersion = 0;
+  let prefetched = false;
 
   const stillMode = () => media.matches || !capable;
   const running = () => started && visible && document.visibilityState !== "hidden" && !stillMode();
+  const voiceRunning = () => stillMode()
+    ? visible && document.visibilityState !== "hidden"
+    : running();
+  const voiceURL = (to) => `order/voice/${String(to + 1).padStart(2, "0")}.mp3`;
   const cancel = (element, subtree = false) => {
-    if (capable) element.getAnimations({ subtree }).forEach((run) => run.cancel());
+    if (capable) {
+      element.getAnimations({ subtree }).forEach((run) => {
+        // Очистка истории не отменяет CSS-индикатор включённого голоса.
+        if (!run.effect?.target?.closest(".o-voice-toggle")) run.cancel();
+      });
+    }
   };
+
+  function voiceState(on) {
+    voiceOn = on;
+    block.dataset.voice = on ? "on" : "off";
+    voiceButton.setAttribute("aria-pressed", String(on));
+    voiceButton.setAttribute("aria-label", on ? "Выключить звук" : "Послушать историю заказа");
+  }
+
+  function pauseVoice() {
+    // Отклонение старого play() после pause()/смены src не относится к новой фразе.
+    playVersion++;
+    playPending = false;
+    audio.pause();
+  }
+
+  function stopVoice() {
+    const action = voiceWait;
+    voiceWait = null;
+    voiceBusy = false;
+    voiceEnded = false;
+    voiceStage = -1;
+    voiceState(false);
+    pauseVoice();
+    if (stillMode()) still();
+    else if (action) plan(action, 0);
+  }
+
+  function playVoice() {
+    if (!voiceOn || !voiceBusy || playPending || !audio.paused) return;
+    const version = ++playVersion;
+    playPending = true;
+    try {
+      const result = audio.play();
+      if (result && typeof result.then === "function") {
+        result.then(() => {
+          if (version === playVersion) playPending = false;
+        }, () => {
+          if (version === playVersion && voiceOn) stopVoice();
+        });
+      } else {
+        playPending = false;
+      }
+    } catch {
+      if (version === playVersion && voiceOn) stopVoice();
+    }
+  }
+
+  function phrase(to) {
+    if (!voiceOn) return;
+    pauseVoice();
+    voiceStage = to;
+    voiceBusy = true;
+    voiceEnded = false;
+    audio.src = voiceURL(to);
+    // В первом запуске эта строка достигается синхронно из обработчика клика.
+    // Все последующие фразы используют тот же, уже разрешённый жестом элемент.
+    playVoice();
+    sync();
+  }
+
+  function prefetchVoice() {
+    if (prefetched) return;
+    prefetched = true;
+    for (let to = 1; to < stops.length; to++) {
+      fetch(voiceURL(to), { cache: "force-cache" }).then((response) => {
+        if (!response.ok) throw new Error("voice");
+        return response.arrayBuffer();
+      }).catch(() => {
+        if (voiceOn) stopVoice();
+      });
+    }
+  }
+
+  function waitVoice(action) {
+    if (!voiceOn || !voiceBusy) return false;
+    voiceWait = action;
+    plan(null, 0);
+    return true;
+  }
+
+  function finishVoice() {
+    if (!voiceOn || !voiceBusy) return;
+    voiceBusy = false;
+    voiceEnded = false;
+    const to = voiceStage;
+    if (stillMode()) {
+      if (to === stops.length - 1) {
+        stopVoice();
+      } else {
+        history(ends[to + 1], to + 1);
+        phrase(to + 1);
+      }
+      return;
+    }
+    const action = voiceWait;
+    voiceWait = null;
+    // Это те же часы plan/sync: 350 мс не расходуются вне экрана.
+    if (action) plan(action, 350);
+    if (to === stops.length - 1) stopVoice();
+  }
 
   // У одного свойства — одна дорожка, в том числе при нескольких интервалах.
   function motion(part, property, values, times, curves = soft) {
@@ -5251,7 +5433,7 @@
     }, () => {});
   }
 
-  // Часы останавливаются одновременно с WAAPI, включая отложенные движения.
+  // Часы останавливаются одновременно с WAAPI и голосом, включая отложенные движения.
   function sync() {
     const active = running();
     if (capable) {
@@ -5272,6 +5454,16 @@
       clearTimeout(timer);
       timer = 0;
       left = Math.max(0, due - performance.now());
+    }
+    if (voiceOn) {
+      if (!voiceRunning()) {
+        if (!audio.paused || playPending) pauseVoice();
+      } else if (voiceEnded) {
+        voiceEnded = false;
+        finishVoice();
+      } else if (voiceBusy) {
+        playVoice();
+      }
     }
   }
 
@@ -5356,6 +5548,7 @@
   }
 
   function show(n) {
+    const changed = stage !== stages[n];
     const previous = items[step];
     if (previous.dataset.card) finishCard(previous);
     else cancel(previous, true);
@@ -5374,6 +5567,7 @@
       ], { duration: 640, easing: soft });
     }
     enter(items[n]);
+    if (changed) phrase(stages[n]);
   }
 
   function advance() {
@@ -5381,17 +5575,20 @@
       plan(fade, 3700);
       return;
     }
+    if (stages[step + 1] !== stage && waitVoice(advance)) return;
     show(step + 1);
     plan(advance, waits[step]);
   }
 
   function fade() {
+    if (waitVoice(fade)) return;
     cancel(track);
     animate(track, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: carry });
     plan(() => begin(true), 300);
   }
 
   function clearAll() {
+    voiceWait = null;
     plan(null, 0);
     statusVersion++;
     cancel(block, true);
@@ -5411,6 +5608,7 @@
       animate(track, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: soft });
     }
     enter(items[0]);
+    phrase(0);
     plan(advance, waits[0]);
   }
 
@@ -5429,13 +5627,42 @@
     started = true;
     history(ends[to], to);
     if (!visible) phone.scrollIntoView({ behavior: stillMode() ? "auto" : "smooth", block: "center" });
-    if (!stillMode()) plan(step === last ? () => begin(true) : advance, 8000);
+    if (voiceOn) {
+      if (!stillMode()) voiceWait = step === last ? fade : advance;
+      phrase(to);
+    } else if (!stillMode()) {
+      plan(step === last ? () => begin(true) : advance, 8000);
+    }
   }
 
   function still() {
     started = false;
     history(last, 5);
   }
+
+  voiceButton.addEventListener("click", () => {
+    if (voiceOn) {
+      stopVoice();
+      return;
+    }
+    voiceState(true);
+    if (stillMode()) {
+      history(ends[0], 0);
+      phrase(0);
+    } else {
+      begin(true);
+    }
+    // Ни fetch, ни src до первого жеста пользователя.
+    prefetchVoice();
+  });
+  audio.addEventListener("ended", () => {
+    if (!voiceOn || !voiceBusy || !audio.ended) return;
+    if (voiceRunning()) finishVoice();
+    else voiceEnded = true;
+  });
+  audio.addEventListener("error", () => {
+    if (voiceOn && audio.error) stopVoice();
+  });
 
   stops.forEach((stop, k) => stop.addEventListener("click", () => jump(k)));
   if (typeof ResizeObserver === "function") new ResizeObserver(measure).observe(path);
@@ -5464,10 +5691,22 @@
     }, { threshold: [0, .35] }).observe(phone);
   } else {
     loadPhotos();
+    // Без IntersectionObserver остаётся статичный режим, но голос тоже учитывает экран.
+    const visibility = () => {
+      const rect = phone.getBoundingClientRect();
+      const width = Math.max(0, Math.min(rect.right, innerWidth) - Math.max(rect.left, 0));
+      const height = Math.max(0, Math.min(rect.bottom, innerHeight) - Math.max(rect.top, 0));
+      visible = rect.width * rect.height > 0 && width * height / (rect.width * rect.height) >= .35;
+      sync();
+    };
+    addEventListener("scroll", visibility, { passive: true });
+    addEventListener("resize", visibility);
+    visibility();
   }
 
   document.addEventListener("visibilitychange", sync);
   media.addEventListener("change", () => {
+    if (voiceOn) stopVoice();
     if (stillMode()) still();
     else begin();
   });
