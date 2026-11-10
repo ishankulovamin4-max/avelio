@@ -1,11 +1,8 @@
 (() => {
   "use strict";
 
-  // Выбор вида — только по ссылке с ?variants (показ владельцу); без неё сайт показывает текущую подачу now.
-  // После выбора: выбранный вариант становится вариантом по умолчанию, переключатель убирается.
-  const VARIANT_QUERY = new URLSearchParams(location.search).get("variants");
-  const VARIANT_PICKER = VARIANT_QUERY !== null;
-  const DEFAULT_VARIANT = VARIANT_PICKER ? "a" : "now";
+  // Вид сцены — вариант A «Картина в галерее» (выбран 10.11). now/b/c остаются данными, переключаются только window.__founders.variant(name) для замеров.
+  const DEFAULT_VARIANT = "a";
 
   // Сцена «Комната с фотографии» — content/avelio-concept/team/room-photo/spec.md.
   // Весь анимируемый мир рисуется на одном canvas: точное наложение поз
@@ -148,7 +145,6 @@
     cardShadowBlur: "--fr-card-shadow-blur"
   };
 
-  const VARIANT_STORAGE_KEY = "avelio-founders-variant";
   const smoothPose = t => t * t * (3 - 2 * t);
   const softPose = t => t * t * t * (t * (6 * t - 15) + 10);
   const VARIANTS = {
@@ -260,17 +256,7 @@
     }
   };
   let variantName = DEFAULT_VARIANT;
-  try {
-    const saved = VARIANT_PICKER ? localStorage.getItem(VARIANT_STORAGE_KEY) : null;
-    if (typeof saved === "string" && Object.prototype.hasOwnProperty.call(VARIANTS, saved)) variantName = saved;
-  } catch {
-    // Недоступное хранилище не мешает сцене и выбору варианта в текущей вкладке.
-  }
-  // ?variants=b — ссылка сразу на вариант; важнее сохранённого выбора.
-  if (VARIANT_QUERY && Object.prototype.hasOwnProperty.call(VARIANTS, VARIANT_QUERY)) variantName = VARIANT_QUERY;
   let variant = VARIANTS[variantName];
-  let variantPicker;
-  let variantStyle;
 
   let ready = false;
   let sceneFailed = false;
@@ -392,12 +378,6 @@
     variantName = name;
     variant = VARIANTS[name];
     POSE_FADE_MS = variant.poseFadeMs;
-    try {
-      localStorage.setItem(VARIANT_STORAGE_KEY, name);
-    } catch {
-      // Выбор уже применён в памяти; сохранение не обязательно для работы.
-    }
-    updateVariantPicker();
     if (ready) {
       readLook();
       for (const key of KEYS) {
@@ -410,107 +390,6 @@
       wake();
     }
     return variantName;
-  }
-
-  function updateVariantPicker() {
-    if (!variantPicker) return;
-    variantPicker.querySelector(".founders-variant-title").textContent = variant.title;
-    for (const button of variantPicker.querySelectorAll(".founders-variant-button")) {
-      button.setAttribute("aria-pressed", String(button.dataset.variant === variantName));
-    }
-  }
-
-  function buildVariantPicker() {
-    if (!VARIANT_PICKER || navigator.webdriver === true || variantPicker) return;
-    variantStyle = element("style");
-    variantStyle.id = "founders-variant-style";
-    variantStyle.textContent = `
-      .founders-variant-picker {
-        box-sizing: border-box;
-        position: fixed;
-        right: max(10px, env(safe-area-inset-right, 0px));
-        bottom: max(10px, env(safe-area-inset-bottom, 0px));
-        z-index: 1000;
-        width: 168px;
-        max-width: calc(100vw - 20px);
-        margin: 0;
-        padding: 8px;
-        border: 1px solid rgba(0, 0, 0, .14);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, .95);
-        color: #222;
-        box-shadow: 0 3px 16px rgba(0, 0, 0, .06);
-        font-family: inherit;
-        font-size: 12px;
-        line-height: 1.3;
-        letter-spacing: normal;
-      }
-      .founders-variant-title {
-        margin: 0 0 6px;
-        padding: 0;
-        color: inherit;
-        font: inherit;
-        white-space: nowrap;
-      }
-      .founders-variant-buttons {
-        display: grid;
-        grid-template-columns: 1.8fr repeat(3, 1fr);
-        gap: 3px;
-      }
-      .founders-variant-button {
-        box-sizing: border-box;
-        display: block;
-        width: 100%;
-        min-width: 0;
-        min-height: 32px;
-        margin: 0;
-        padding: 4px 2px;
-        border: 1px solid rgba(0, 0, 0, .14);
-        border-radius: 4px;
-        background: #fff;
-        color: #222;
-        box-shadow: none;
-        font: inherit;
-        letter-spacing: normal;
-        text-align: center;
-        text-transform: none;
-        cursor: pointer;
-        appearance: none;
-        touch-action: manipulation;
-      }
-      .founders-variant-button[aria-pressed="true"] {
-        border-color: #222;
-        background: #222;
-        color: #fff;
-      }
-      .founders-variant-button:focus-visible {
-        outline: 2px solid #222;
-        outline-offset: 2px;
-      }
-      /* Телефон: над нижней кнопкой «Пришлите фото комнаты» (.sticky-cta, 68px). */
-      @media (max-width: 599px) {
-        .founders-variant-picker { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
-      }
-    `;
-    document.head.append(variantStyle);
-
-    variantPicker = element("div", "founders-variant-picker");
-    variantPicker.setAttribute("role", "group");
-    variantPicker.setAttribute("aria-label", "Вариант сцены основателей");
-    const title = element("div", "founders-variant-title", variant.title);
-    title.setAttribute("aria-live", "polite");
-    const buttons = element("div", "founders-variant-buttons");
-    for (const [name, label] of [["now", "Сейчас"], ["a", "A"], ["b", "B"], ["c", "C"]]) {
-      const button = element("button", "founders-variant-button", label);
-      button.type = "button";
-      button.dataset.variant = name;
-      button.setAttribute("aria-label", `${label}: ${VARIANTS[name].title}`);
-      button.addEventListener("click", () => selectVariant(name));
-      buttons.append(button);
-    }
-    variantPicker.append(title, buttons);
-    document.body.append(variantPicker);
-    updateVariantPicker();
   }
 
   function scratch() {
@@ -723,10 +602,6 @@
     group = null;
     probe = null;
     if (dialog) dialog.remove();
-    if (variantPicker) variantPicker.remove();
-    if (variantStyle) variantStyle.remove();
-    variantPicker = null;
-    variantStyle = null;
   }
 
   function buildDialog() {
@@ -1994,7 +1869,6 @@
       q = filtered = p;
       lastKey = "";
       render(true);
-      buildVariantPicker();
 
       resizeObserver = new ResizeObserver(scheduleMeasure);
       resizeObserver.observe(stage);
