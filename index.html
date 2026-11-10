@@ -1530,7 +1530,7 @@
   }
   /*
     От снимка до адреса: путь заказа из шести остановок и живой телефон с перепиской.
-    Телефон — пример, смысл несёт путь. Наши сообщения слева (бумага, латунь), сообщения человека справа, чёрные.
+    Телефон — пример, смысл несёт путь. Наши сообщения слева, сообщения человека справа.
   */
   .f-order { --o-halo: rgb(190 146 74 / .22); }
   .o-layout { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "phone" "path" "terms" "cta"; }
@@ -1555,6 +1555,7 @@
     isolation: isolate;
     user-select: none;
   }
+  .o-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
   .o-status {
     position: absolute;
     inset: 0 0 auto;
@@ -1606,7 +1607,7 @@
   .o-name { display: grid; font-size: 15px; font-weight: 600; line-height: 1.2; }
   .o-name small { font-size: 12px; font-weight: 400; color: var(--muted); }
 
-  /* Лента прижата к низу и уходит под шапку; новое сообщение поднимает её (order.js). */
+  /* Лента прижата к низу; новый пузырь поднимает прежние без масштабирования. */
   .o-feed {
     position: absolute;
     top: 96px;
@@ -1619,6 +1620,7 @@
     mask-image: linear-gradient(var(--clear), var(--ink) 22px);
   }
   .o-track { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 6px; padding: 16px 12px 12px; }
+  .o-track [hidden] { display: none !important; }
   .o-msg {
     align-self: flex-start;
     max-width: 80%;
@@ -1627,16 +1629,13 @@
     background: var(--plate);
     color: var(--plate-ink);
     box-shadow: inset 0 0 0 1px var(--plate-rule);
-    transform-origin: 0 100%;
   }
   .o-msg p { line-height: inherit; text-wrap: pretty; }
-  .o-mine { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: var(--ink); color: var(--white); box-shadow: none; transform-origin: 100% 100%; }
-  .o-photo, .o-fly { width: min(74%, 260px); max-width: none; }
-  .o-photo { padding: 4px 4px 8px; }
-  .o-photo img { width: 100%; height: auto; border-radius: 14px; background: var(--plate-rule); }
+  .o-mine { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: var(--ink); color: var(--white); box-shadow: none; }
+  .o-photo { width: min(74%, 260px); max-width: none; padding: 4px 4px 8px; }
+  .o-photo img { display: block; width: 100%; height: auto; border-radius: 14px; background: var(--plate-rule); }
   .o-photo p { padding: 7px 8px 0; }
   .o-mine.o-photo img { background: var(--dark-line); }
-  /* Начало чата: карточка Avelio, как у деловых чатов, и заявка с сайта с фото комнаты — экран не пустой. */
   .o-intro { display: grid; justify-items: center; gap: 3px; padding: 4px 22px 12px; color: var(--muted); font-size: 12px; line-height: 1.35; text-align: center; text-wrap: balance; }
   .o-intro .o-avatar { width: 50px; height: 50px; margin-bottom: 7px; font-size: 21px; }
   .o-intro strong { color: var(--ink); font-size: 15px; font-weight: 600; }
@@ -1654,9 +1653,8 @@
     font-size: 12px;
     line-height: 1.3;
     text-align: center;
-    transform-origin: 50% 100%;
   }
-  .o-note img { width: 100%; height: auto; border-radius: 12px; background: var(--line); }
+  .o-note img { display: block; width: 100%; height: auto; border-radius: 12px; background: var(--line); }
   .o-typing {
     align-self: flex-start;
     display: flex;
@@ -1665,24 +1663,76 @@
     border-radius: 18px 18px 18px 6px;
     background: var(--plate);
     box-shadow: inset 0 0 0 1px var(--plate-rule);
-    transform-origin: 0 100%;
   }
-  .o-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--brass); animation: o-dot 1.2s ease-in-out infinite; }
-  .o-typing i:nth-child(2) { animation-delay: .16s; }
-  .o-typing i:nth-child(3) { animation-delay: .32s; }
-  @keyframes o-dot {
-    0%, 60%, 100% { opacity: .35; transform: none; }
-    30% { opacity: 1; transform: translateY(-3px); }
-  }
+  .o-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--brass); opacity: .35; }
 
-  /* Заказ ушёл на фабрику: латунный самолётик по пунктирной дуге, пунктир дорисовывается за ним. */
-  .o-fly svg { display: block; width: 100%; height: auto; margin-bottom: 4px; overflow: visible; }
-  .o-origin { fill: var(--brass); }
-  .o-trail { fill: none; stroke: var(--brass); stroke-width: 1.5; stroke-dasharray: 1.5 5; stroke-linecap: round; }
-  .o-reveal { fill: none; stroke: var(--white); stroke-width: 10; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
-  .o-factory { fill: none; stroke: var(--brass); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transform-box: fill-box; transform-origin: 50% 100%; }
-  .o-plane path { fill: var(--brass); }
-  .o-plane .o-fold { fill: none; stroke: var(--gold); stroke-width: 1; }
+  /* Предметные сцены: статичные материалы и свет, движение — только в order.js. */
+  .o-live { box-sizing: border-box; width: 84%; max-width: 280px; padding: 8px 8px 10px; font-size: 14px; line-height: 1.35; }
+  .o-live p { margin: 8px 0 0; padding: 0; }
+  .o-live p + p { margin-top: 4px; }
+  .o-caption { display: block; margin: 0 0 6px; color: var(--plate-muted); font-size: 12px; line-height: 1.25; }
+  .o-art {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 240 / 160;
+    overflow: hidden;
+    border-radius: 12px;
+    fill: none;
+    stroke: var(--plate-ink);
+    stroke-width: 1.25;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .o-art [data-part] { transform-box: view-box; transform-origin: 0 0; }
+  .o-art .o-center { transform-box: fill-box; transform-origin: center; }
+  .o-workshop { display: grid; grid-template-columns: 112fr 120fr; gap: calc(100% / 30); aspect-ratio: 240 / 140; align-items: start; }
+  .o-workshop img { display: block; width: 100%; height: auto; aspect-ratio: 512 / 640; border-radius: 10px; background: var(--plate-rule); }
+  .o-workshop .o-art { aspect-ratio: 120 / 140; }
+
+  .o-panel-fill { fill: url(#o-panel-tone); stroke: none; }
+  .o-floor { fill: color-mix(in srgb, var(--chair-fill) 90%, var(--plate-muted)); stroke: none; }
+  .o-outline { fill: none; stroke: var(--plate-ink); stroke-width: 1.25; }
+  .o-rule { fill: none; stroke: var(--plate-rule); stroke-width: 1; }
+  .o-seam { fill: none; stroke: var(--plate-muted); stroke-opacity: .8; stroke-width: .7; }
+  .o-sofa-fill { fill: url(#o-fabric-tone); stroke: var(--plate-ink); stroke-width: 1.25; }
+  .o-seat-fill { fill: url(#o-seat-tone); stroke: var(--plate-ink); stroke-width: 1.25; }
+  .o-chair-fill { fill: color-mix(in srgb, var(--chair-fill) 90%, var(--plate-muted)); stroke: var(--plate-ink); stroke-width: 1.25; }
+  .o-paper-fill { fill: url(#o-paper-tone); stroke: var(--plate-ink); stroke-width: 1.25; }
+  .o-metal-fill { fill: url(#o-metal-tone); stroke: var(--plate-ink); stroke-width: 1.25; }
+  .o-wood-fill { fill: url(#o-wood-tone); stroke: var(--plate-ink); stroke-width: 1.25; }
+  .o-brass-metal { fill: url(#o-brass-tone); stroke: color-mix(in srgb, var(--brass) 80%, var(--gold)); stroke-width: 1.25; }
+  .o-highlight { fill: none; stroke: var(--plate); stroke-opacity: .9; stroke-width: 1; }
+  .o-facet { fill: color-mix(in srgb, var(--sofa-fill) 65%, var(--plate-muted)); stroke: none; }
+  .o-shadow { fill: var(--shade); stroke: none; opacity: .18; }
+  .o-support { fill: var(--plate-ink); stroke: none; }
+  .o-recess { fill: var(--plate-ink); stroke: none; }
+  .o-glass { fill: color-mix(in srgb, var(--sofa-fill) 35%, var(--plate-muted)); stroke: var(--plate-ink); stroke-width: 1.25; }
+  .o-window-light { fill: url(#o-window-tone); stroke: none; }
+  .o-door-light { fill: var(--glint); stroke: none; }
+  .o-crate-gap { fill: color-mix(in srgb, var(--plate-muted) 75%, var(--plate-ink)); stroke: none; }
+  .o-distant { fill: var(--plate-rule); fill-opacity: .38; stroke: none; }
+  .o-gear { fill: color-mix(in srgb, var(--chair-fill) 90%, var(--plate-muted)); stroke: var(--plate-ink); stroke-width: 1.25; }
+  .o-grain { fill: none; stroke: var(--plate-muted); stroke-opacity: .55; stroke-width: .65; }
+  .o-fasteners { fill: none; stroke: var(--plate-ink); stroke-opacity: .65; stroke-width: 2; }
+  .o-brass-fill { fill: color-mix(in srgb, var(--brass) 80%, var(--gold)); stroke: none; }
+  .o-brass-line { fill: none; stroke: color-mix(in srgb, var(--brass) 80%, var(--gold)); stroke-width: 1.5; }
+  .o-stamp { fill: var(--plate); stroke: color-mix(in srgb, var(--brass) 80%, var(--gold)); stroke-width: 1.5; }
+  .o-check { fill: none; stroke: color-mix(in srgb, var(--brass) 80%, var(--gold)); stroke-width: 1.8; }
+  .o-draw { stroke-dasharray: 1 1; }
+  .o-stamp-text { font: 600 11px/1 inherit; font-family: inherit; font-size: 11px; font-weight: 600; fill: color-mix(in srgb, var(--brass) 80%, var(--gold)); stroke: none; }
+  .o-route-text { font-family: inherit; font-size: 10px; font-weight: 400; fill: var(--plate-muted); stroke: none; }
+  .o-hill-far { fill: var(--plate-rule); fill-opacity: .45; stroke: none; }
+  .o-hill-near { fill: var(--chair-fill); fill-opacity: .65; stroke: none; }
+  .o-tree { fill: none; stroke: var(--plate-muted); stroke-opacity: .38; stroke-width: 1.2; }
+  .o-posts { fill: none; stroke: var(--plate-muted); stroke-opacity: .6; stroke-width: 2; }
+  .o-road-fill { fill: color-mix(in srgb, var(--chair-fill) 80%, var(--plate-muted)); stroke: none; }
+  .o-road-edge { fill: none; stroke: var(--plate-muted); stroke-opacity: .75; stroke-width: 1; }
+  .o-road-marks { fill: none; stroke: var(--plate); stroke-width: 2; stroke-dasharray: 18 22; }
+  .o-tire { fill: var(--ink); stroke: none; }
+  .o-hub { fill: var(--table-fill); stroke: none; }
+  .o-wheel-spoke { fill: none; stroke: var(--plate); stroke-opacity: .8; stroke-width: .8; }
+  .o-plant { fill: var(--plate-muted); stroke: var(--plate-ink); stroke-width: 1.25; }
 
   .o-input {
     position: absolute;
@@ -1703,7 +1753,7 @@
   .o-send { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--ink); }
   .o-send svg { width: 15px; height: 15px; fill: none; stroke: var(--white); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* Путь: остановки — кнопки, латунная линия заполняется до текущей (длины считает order.js). */
+  /* Путь меряется по серединам остановок; его движение тоже умеет ждать. */
   .o-path {
     --o-top: 28px;
     --o-rail: 0px;
@@ -1730,7 +1780,6 @@
     background: var(--brass);
     transform: scaleY(var(--o-k));
     transform-origin: 50% 0;
-    transition: transform .8s cubic-bezier(.65, 0, .35, 1);
   }
   .o-stop {
     position: relative;
@@ -1750,7 +1799,6 @@
     letter-spacing: -.025em;
     text-align: left;
     text-wrap: balance;
-    transition: color .4s ease;
   }
   .o-stop::before {
     content: "";
@@ -1760,7 +1808,6 @@
     border: 1px solid var(--dark-line);
     border-radius: 50%;
     background: var(--white);
-    transition: background-color .4s ease, border-color .4s ease, box-shadow .4s ease, transform .4s ease;
   }
   .o-stop.is-done,
   .o-stop[aria-current] { color: var(--ink); }
@@ -1788,10 +1835,11 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .o-path::after,
-    .o-stop,
-    .o-stop::before { transition: none; }
-    .o-typing i { animation: none; opacity: .7; }
+    .f-order .o-track,
+    .f-order .o-stop,
+    .f-order .o-stop::before,
+    .f-order .o-path::after { transition: none; animation: none; }
+    .f-order .o-typing i { animation: none; }
   }
 </style>
 <style id="examples-ac-css">
@@ -3123,6 +3171,146 @@
         </div>
         <figure class="o-figure">
           <div class="o-phone" aria-hidden="true">
+            <svg class="o-defs" xmlns="http://www.w3.org/2000/svg" width="0" height="0">
+              <defs>
+                <linearGradient id="o-panel-tone" x2="0" y2="1">
+                  <stop style="stop-color: var(--plate)"/>
+                  <stop offset="1" style="stop-color: var(--chair-fill)" stop-opacity=".48"/>
+                </linearGradient>
+                <linearGradient id="o-paper-tone" x2=".25" y2="1">
+                  <stop style="stop-color: var(--plate)"/>
+                  <stop offset="1" style="stop-color: color-mix(in srgb, var(--table-fill) 92%, var(--plate-muted))"/>
+                </linearGradient>
+                <linearGradient id="o-fabric-tone" x2=".18" y2="1">
+                  <stop style="stop-color: var(--table-fill)"/>
+                  <stop offset=".42" style="stop-color: color-mix(in srgb, var(--sofa-fill) 90%, var(--plate-muted))"/>
+                  <stop offset="1" style="stop-color: color-mix(in srgb, var(--sofa-fill) 75%, var(--plate-muted))"/>
+                </linearGradient>
+                <linearGradient id="o-seat-tone" x2="0" y2="1">
+                  <stop style="stop-color: var(--plate)"/>
+                  <stop offset=".28" style="stop-color: color-mix(in srgb, var(--sofa-fill) 90%, var(--plate-muted))"/>
+                  <stop offset="1" style="stop-color: color-mix(in srgb, var(--sofa-fill) 75%, var(--plate-muted))"/>
+                </linearGradient>
+                <linearGradient id="o-wood-tone" x2=".1" y2="1">
+                  <stop style="stop-color: var(--table-fill)"/>
+                  <stop offset=".45" style="stop-color: color-mix(in srgb, var(--chair-fill) 90%, var(--plate-muted))"/>
+                  <stop offset="1" style="stop-color: color-mix(in srgb, var(--sofa-fill) 78%, var(--plate-muted))"/>
+                </linearGradient>
+                <linearGradient id="o-metal-tone" x2="0" y2="1">
+                  <stop style="stop-color: var(--plate)"/>
+                  <stop offset=".6" style="stop-color: color-mix(in srgb, var(--table-fill) 94%, var(--plate-muted))"/>
+                  <stop offset="1" style="stop-color: color-mix(in srgb, var(--chair-fill) 85%, var(--plate-muted))"/>
+                </linearGradient>
+                <linearGradient id="o-brass-tone" x2=".8" y2="1">
+                  <stop style="stop-color: color-mix(in srgb, var(--brass) 70%, var(--glint))"/>
+                  <stop offset=".45" style="stop-color: color-mix(in srgb, var(--brass) 80%, var(--gold))"/>
+                  <stop offset="1" style="stop-color: var(--gold)"/>
+                </linearGradient>
+                <linearGradient id="o-window-tone" x2="0" y2="1">
+                  <stop style="stop-color: var(--glint)"/>
+                  <stop offset="1" style="stop-color: var(--chair-fill)"/>
+                </linearGradient>
+                <clipPath id="o-panel-clip"><rect width="240" height="160" rx="12"/></clipPath>
+                <clipPath id="o-photo-clip"><rect x="8" y="8" width="160" height="96" rx="6"/></clipPath>
+                <clipPath id="o-order-photo-clip"><rect x="12" y="20" width="70" height="58" rx="4"/></clipPath>
+
+                <g id="o-panel">
+                  <rect class="o-panel-fill" width="240" height="160" rx="12"/>
+                  <path class="o-floor" d="M0 126H240V148Q240 160 228 160H12Q0 160 0 148Z"/>
+                  <path class="o-rule" d="M0 126H240"/>
+                </g>
+
+                <g id="o-sofa-back">
+                  <rect class="o-sofa-fill" x="12" y="8" width="72" height="30" rx="8"/>
+                  <path class="o-facet" d="M14 29Q48 34 82 29V38H14Z"/>
+                  <path class="o-highlight" d="M17 15Q17 11 23 11H73Q79 11 79 15"/>
+                  <path class="o-seam" d="M48 13V31"/>
+                </g>
+                <g id="o-sofa-seat">
+                  <rect class="o-seat-fill" x="12" y="34" width="72" height="16" rx="4"/>
+                  <path class="o-facet" d="M13 44H83V47Q83 50 79 50H17Q13 50 13 47Z"/>
+                  <path class="o-highlight" d="M18 36H78"/>
+                </g>
+                <g id="o-sofa-left">
+                  <rect class="o-sofa-fill" x="4" y="26" width="12" height="28" rx="4"/>
+                  <path class="o-highlight" d="M7 46V31Q7 29 10 29"/>
+                </g>
+                <g id="o-sofa-right">
+                  <rect class="o-sofa-fill" x="80" y="26" width="12" height="28" rx="4"/>
+                  <path class="o-highlight" d="M83 46V31Q83 29 86 29"/>
+                </g>
+                <g id="o-sofa">
+                  <path class="o-support" d="M13 50H19V60H13ZM77 50H83V60H77Z"/>
+                  <use href="#o-sofa-back"/>
+                  <use href="#o-sofa-seat"/>
+                  <path class="o-seam" d="M48 35V47"/>
+                  <use href="#o-sofa-left"/>
+                  <use href="#o-sofa-right"/>
+                </g>
+
+                <g id="o-pack-base">
+                  <path class="o-wood-fill" d="M34 132H206V140H34Z"/>
+                  <path class="o-support" d="M42 140H58V147H42ZM182 140H198V147H182Z"/>
+                  <path class="o-grain" d="M40 136H115M127 136H198"/>
+                </g>
+                <g id="o-pack-left">
+                  <rect class="o-wood-fill" x="24" y="32" width="12" height="100"/>
+                  <path class="o-highlight" d="M26 35V128"/>
+                  <path class="o-grain" d="M31 40V78M32 91V122"/>
+                </g>
+                <g id="o-pack-right">
+                  <rect class="o-wood-fill" x="204" y="32" width="12" height="100"/>
+                  <path class="o-highlight" d="M206 35V128"/>
+                  <path class="o-grain" d="M212 41V67M211 81V124"/>
+                </g>
+                <g id="o-pack-rail">
+                  <rect class="o-wood-fill" x="24" y="88" width="192" height="9"/>
+                  <path class="o-highlight" d="M27 90H213"/>
+                  <path class="o-grain" d="M40 94H92M109 94H198"/>
+                </g>
+                <g id="o-pack-lid">
+                  <rect class="o-wood-fill" x="20" y="24" width="200" height="10"/>
+                  <path class="o-highlight" d="M23 26H217"/>
+                  <path class="o-grain" d="M32 31H104M122 30H209"/>
+                </g>
+                <g id="o-pack-brace">
+                  <path class="o-wood-fill" d="M36 123 196 38 201 46 41 131Z"/>
+                  <path class="o-highlight" d="M41 123 195 41"/>
+                  <path class="o-grain" d="M51 123 112 90M132 79 188 49"/>
+                  <path class="o-fasteners" d="M43 125h.1M195 44h.1"/>
+                </g>
+                <g id="o-crate">
+                  <use href="#o-sofa" transform="translate(31 28) scale(1.85)"/>
+                  <use href="#o-pack-base"/>
+                  <use href="#o-pack-left"/>
+                  <use href="#o-pack-right"/>
+                  <use href="#o-pack-rail"/>
+                  <use href="#o-pack-lid"/>
+                  <use href="#o-pack-brace"/>
+                </g>
+
+                <g id="o-trailer">
+                  <rect class="o-metal-fill" x="0" y="4" width="94" height="42" rx="3"/>
+                  <path class="o-highlight" d="M4 7H90M4 8V39"/>
+                  <path class="o-facet" d="M1 39H93V43Q93 46 90 46H4Q1 46 1 43Z"/>
+                  <path class="o-brass-line" d="M3 35H91"/>
+                  <path class="o-seam" d="M86 10V31"/>
+                </g>
+                <g id="o-cab">
+                  <path class="o-chair-fill" d="M98 46V18H119L136 33V46Z"/>
+                  <path class="o-facet" d="M99 39H136V46H99Z"/>
+                  <path class="o-glass" d="M104 23H116L128 34H104Z"/>
+                  <path class="o-highlight" d="M106 25H115L122 31M101 20H118"/>
+                  <path class="o-seam" d="M102 36V43M105 38H109"/>
+                  <path class="o-highlight" d="M132 38H135"/>
+                </g>
+                <g id="o-wheel-static">
+                  <circle class="o-tire" r="8"/>
+                  <circle class="o-hub" r="3"/>
+                  <path class="o-wheel-spoke" d="M-5 0H5M0-5V5"/>
+                </g>
+              </defs>
+            </svg>
             <div class="o-status">
               <span>9:41</span>
               <i class="o-island"></i>
@@ -3140,28 +3328,235 @@
             <div class="o-feed">
               <div class="o-track">
                 <div class="o-intro"><b class="o-avatar">A</b><strong>Avelio</strong><span>Мебель с&nbsp;китайских фабрик появляется прямо в&nbsp;вашей комнате.</span></div>
-                <div class="o-note" data-stage="0" data-wait="1300"><img data-src="example/room.jpg" alt="" width="1600" height="1067"><span>Заявка с&nbsp;сайта · фото комнаты</span></div>
-                <div class="o-msg" data-stage="0" data-wait="1400" hidden><p>Здравствуйте! Это Avelio. Получили фото вашей комнаты.</p></div>
-                <div class="o-msg" data-stage="0" data-wait="1500" hidden><p>Подготовим дизайн-план с&nbsp;нашей мебелью и&nbsp;пришлём сюда.</p></div>
-                <div class="o-typing" data-stage="1" data-wait="1400" data-transient hidden><i></i><i></i><i></i></div>
-                <div class="o-msg o-photo" data-stage="1" data-wait="2300" hidden><img data-src="example/a.jpg" alt="" width="1600" height="1067"><p>Вот ваша комната с&nbsp;нашей мебелью.</p></div>
+                <div class="o-note" data-stage="0" data-wait="1200" hidden><img data-src="example/room.jpg" alt="" width="1600" height="1067"><span>Заявка с&nbsp;сайта · фото комнаты</span></div>
+                <div class="o-msg" data-stage="0" data-wait="1600" hidden><p>Здравствуйте! Это Avelio. Получили фото вашей комнаты.</p></div>
+                <div class="o-msg" data-stage="0" data-wait="1800" hidden><p>Подготовим дизайн-план с&nbsp;нашей мебелью и&nbsp;пришлём сюда.</p></div>
+                <div class="o-typing" data-stage="1" data-wait="900" data-transient hidden><i></i><i></i><i></i></div>
+                <div class="o-msg o-photo" data-stage="1" data-wait="2400" hidden><img data-src="example/a.jpg" alt="" width="1600" height="1067"><p>Вот ваша комната с&nbsp;нашей мебелью.</p></div>
                 <div class="o-msg o-mine" data-stage="1" data-wait="1300" hidden><p>Нравится. Оформляем!</p></div>
-                <div class="o-msg o-fly" data-stage="2" data-wait="2300" hidden>
-                  <svg viewBox="0 0 240 72">
-                    <mask id="o-trail-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="72"><path class="o-reveal" d="M12 60C70 6 150 0 194 40" pathLength="1"/></mask>
-                    <circle class="o-origin" cx="12" cy="60" r="3"/>
-                    <path class="o-trail" d="M12 60C70 6 150 0 194 40" mask="url(#o-trail-mask)"/>
-                    <path class="o-factory" d="M199 62h37M203 62V46l8-6v6l8-6v6l8-6v22M227 62V31h5v31"/>
-                    <g class="o-plane"><path d="M-9-7 10 0-9 7-4.5 0Z"/><path class="o-fold" d="M-4.5 0H10"/></g>
+                <div class="o-msg o-live" data-card="A" data-stage="2" data-wait="3600" hidden>
+                  <svg class="o-art" viewBox="0 0 240 160" width="240" height="160">
+                    <use href="#o-panel"/>
+                    <path class="o-distant" d="M8 126V84L36 70V126ZM200 126V48H232V126Z"/>
+                    <g data-part="building">
+                      <ellipse class="o-shadow" cx="120" cy="141" rx="103" ry="6"/>
+                      <path class="o-metal-fill" data-check="building" d="M20 138V52L54 32V52L88 32V52L122 32V52H156V28H220V138Z"/>
+                      <path class="o-facet" d="M156 28H168V138H156ZM20 128H220V138H20Z"/>
+                      <path class="o-highlight" d="M23 54 52 37M58 53 86 37M92 53 120 37M171 31H217"/>
+                      <path class="o-glass" d="M32 66H74V83H32ZM32 96H74V113H32ZM174 45H206V67H174Z"/>
+                      <path class="o-window-light" data-part="light-one" d="M33 67H73V82H33Z"/>
+                      <path class="o-window-light" data-part="light-two" d="M33 97H73V112H33Z"/>
+                      <path class="o-window-light" data-part="light-three" d="M175 46H205V66H175Z"/>
+                      <path class="o-seam" d="M46 67V82M60 67V82M46 97V112M60 97V112M190 46V66"/>
+                      <rect class="o-recess" x="88" y="74" width="68" height="64" rx="2"/>
+                      <path class="o-highlight" d="M86 137V72H158"/>
+                      <path class="o-brass-line o-draw" data-part="belt" d="M30 125H75" pathLength="1"/>
+                      <g transform="translate(190 109)">
+                        <g class="o-center" data-part="gear">
+                          <path class="o-gear" d="M-4-15H4L5-10 10-6 15-5V3L10 5 6 10 4 15H-4L-5 10-10 6-15 4V-4L-10-6-6-10Z"/>
+                          <circle class="o-paper-fill" r="6"/>
+                          <path class="o-brass-line" d="M0-3V3M-3 0H3"/>
+                        </g>
+                      </g>
+                    </g>
+                    <ellipse class="o-shadow o-center" data-part="shadow" cx="120" cy="140" rx="88" ry="6"/>
+                    <g data-part="document">
+                      <rect class="o-paper-fill" data-check="document" width="176" height="112" rx="8"/>
+                      <path class="o-highlight" d="M7 4H169"/>
+                      <image href="example/a.jpg" x="12" y="20" width="70" height="58" preserveAspectRatio="xMidYMid slice" clip-path="url(#o-order-photo-clip)"/>
+                      <path class="o-seam" d="M96 23H160M96 34H145M96 46H153M96 58H133M13 91H76M13 99H61"/>
+                      <g data-part="imprint">
+                        <rect class="o-stamp" x="98" y="78" width="66" height="22" rx="11"/>
+                        <text class="o-stamp-text" x="131" y="92" text-anchor="middle">Принято</text>
+                      </g>
+                      <image data-part="photo" href="example/a.jpg" x="8" y="8" width="160" height="96" preserveAspectRatio="xMidYMid slice" clip-path="url(#o-photo-clip)"/>
+                      <g data-part="press">
+                        <path class="o-brass-metal" d="M121 48Q121 41 131 41Q141 41 141 48L137 61V73H125V61Z"/>
+                        <rect class="o-brass-metal" x="104" y="73" width="54" height="10" rx="3"/>
+                        <path class="o-highlight" d="M108 75H153M126 47Q131 44 136 47"/>
+                      </g>
+                    </g>
+                    <g transform="translate(88 74)">
+                      <g data-part="gate">
+                        <rect class="o-metal-fill" data-check="gate" width="68" height="64" rx="2"/>
+                        <path class="o-seam" d="M3 9H65M3 18H65M3 27H65M3 36H65M3 45H65M3 54H65"/>
+                        <path class="o-highlight" d="M3 2H65"/>
+                        <path class="o-brass-line" d="M28 59H40"/>
+                      </g>
+                    </g>
                   </svg>
+                  <p>Приняли в&nbsp;работу.</p>
                   <p>Заказ ушёл на&nbsp;фабрику.</p>
                 </div>
-                <div class="o-msg o-photo" data-stage="3" data-wait="1900" hidden><img data-src="order/factory.jpg" alt="" width="512" height="640"><p>Мебель собирают на&nbsp;фабрике.</p></div>
-                <div class="o-msg o-photo" data-stage="3" data-wait="1900" hidden><img data-src="order/crate.jpg" alt="" width="640" height="480"><p>Проверили и&nbsp;упаковали в&nbsp;обрешётку.</p></div>
-                <div class="o-msg o-photo" data-stage="4" data-wait="1900" hidden><img data-src="order/truck.jpg" alt="" width="640" height="640"><p>Отгрузили. Фура едет к&nbsp;вам.</p></div>
-                <div class="o-msg" data-stage="5" data-wait="1500" hidden><p>Груз приехал. Вы&nbsp;уже получили?</p></div>
-                <div class="o-msg o-mine o-photo" data-stage="5" data-wait="1900" hidden><img data-src="order/door.jpg" alt="" width="640" height="640"><p>Да, получили. Распаковываем.</p></div>
-                <div class="o-msg o-mine o-photo" data-stage="5" data-wait="1800" hidden><img data-src="example/a.jpg" alt="" width="1600" height="1067"><p>Спасибо!</p></div>
+                <div class="o-msg o-live" data-card="B" data-stage="3" data-wait="3400" hidden>
+                  <div class="o-workshop">
+                    <img data-src="order/factory.jpg" alt="" width="512" height="640">
+                    <svg class="o-art" viewBox="0 0 120 140" width="120" height="140">
+                      <rect class="o-panel-fill" width="120" height="140" rx="12"/>
+                      <path class="o-distant" d="M8 106V18H14V106ZM106 106V18H112V106ZM14 18H106V24H14Z"/>
+                      <path class="o-rule" d="M14 24 60 41 106 24M60 24V41"/>
+                      <path class="o-floor" d="M0 106H120V128Q120 140 108 140H12Q0 140 0 128Z"/>
+                      <path class="o-rule" d="M0 106H120M16 140 34 106M103 140 86 106"/>
+                      <ellipse class="o-shadow" cx="60" cy="112" rx="52" ry="5"/>
+                      <g transform="translate(9 45) scale(1.06)">
+                        <path class="o-support" d="M13 50H19V60H13ZM77 50H83V60H77Z"/>
+                        <use href="#o-sofa-back" data-part="back" data-check="back"/>
+                        <g data-part="seat">
+                          <use href="#o-sofa-seat" data-check="seat"/>
+                          <path class="o-seam o-draw" data-part="seam" d="M48 35V47" pathLength="1"/>
+                        </g>
+                        <use href="#o-sofa-left" data-part="left" data-check="left"/>
+                        <use href="#o-sofa-right" data-part="right" data-check="right"/>
+                      </g>
+                      <g data-part="ready">
+                        <circle class="o-stamp" cx="98" cy="38" r="9"/>
+                        <path class="o-check o-draw" data-part="ready-check" d="M94 38 97 41 102 35" pathLength="1"/>
+                      </g>
+                    </svg>
+                  </div>
+                  <p>Мебель собирают на&nbsp;фабрике.</p>
+                </div>
+                <div class="o-msg o-live" data-card="C" data-stage="3" data-wait="3200" hidden>
+                  <svg class="o-art" viewBox="0 0 240 160" width="240" height="160">
+                    <use href="#o-panel"/>
+                    <path class="o-distant" d="M10 126V18H16V126ZM224 126V18H230V126ZM16 18H224V23H16Z"/>
+                    <path class="o-rule" d="M16 23 60 38H179L224 23M19 152H221"/>
+                    <ellipse class="o-shadow" cx="120" cy="148" rx="103" ry="6"/>
+                    <use href="#o-sofa" data-check="sofa" transform="translate(31 28) scale(1.85)"/>
+                    <use href="#o-pack-base" data-part="base" data-check="base"/>
+                    <use href="#o-pack-left" data-part="left" data-check="left"/>
+                    <use href="#o-pack-right" data-part="right" data-check="right"/>
+                    <use href="#o-pack-rail" data-part="rail" data-check="rail"/>
+                    <use href="#o-pack-lid" data-part="lid" data-check="lid"/>
+                    <use href="#o-pack-brace" data-part="brace" data-check="brace"/>
+                    <g data-part="stamp">
+                      <path class="o-brass-line" d="M201 25V16"/>
+                      <rect class="o-stamp" x="184" y="16" width="30" height="22" rx="3"/>
+                      <circle class="o-brass-fill" cx="199" cy="19" r="1"/>
+                      <path class="o-check o-draw" data-part="check" d="M192 27 197 32 206 23" pathLength="1"/>
+                    </g>
+                  </svg>
+                  <p>Проверили и&nbsp;упаковали в&nbsp;обрешётку.</p>
+                </div>
+                <div class="o-msg o-live" data-card="D" data-stage="4" data-wait="4200" hidden>
+                  <span class="o-caption">В&nbsp;пути</span>
+                  <svg class="o-art" viewBox="0 0 240 160" width="240" height="160">
+                    <use href="#o-panel"/>
+                    <g clip-path="url(#o-panel-clip)" data-o-clip>
+                      <g data-part="distance">
+                        <path class="o-hill-far" d="M0 91Q42 45 94 78T185 75T290 71L340 111H0Z"/>
+                      </g>
+                      <g data-part="hills">
+                        <path class="o-hill-near" d="M0 109Q36 74 79 99T166 96T250 93T340 101V130H0Z"/>
+                      </g>
+                      <g data-part="verge">
+                        <path class="o-tree" d="M18 112V88M88 116V91M174 112V83M267 115V88M360 112V84"/>
+                        <path class="o-hill-near" d="M8 93 18 70 28 93ZM78 97 88 77 98 97ZM163 91 174 65 185 91ZM257 95 267 73 277 95ZM349 92 360 68 371 92Z"/>
+                        <path class="o-posts" d="M45 126V117M132 126V117M219 126V117M306 126V117M393 126V117"/>
+                      </g>
+                      <path class="o-road-fill" d="M0 139H240V160H0Z"/>
+                      <path class="o-road-edge" d="M0 139H240"/>
+                      <path class="o-road-marks" data-part="road" d="M0 151H800"/>
+                    </g>
+                    <text class="o-route-text" x="14" y="18">Фабрика</text>
+                    <text class="o-route-text" x="226" y="18" text-anchor="end">Ваш адрес</text>
+                    <path class="o-rule" d="M24 30H216"/>
+                    <circle class="o-brass-fill" cx="24" cy="30" r="2"/>
+                    <circle class="o-stamp" cx="216" cy="30" r="3"/>
+                    <circle class="o-brass-fill" data-part="route" data-check="route" cx="24" cy="30" r="3"/>
+                    <g data-part="truck">
+                      <ellipse class="o-shadow" cx="68" cy="60" rx="68" ry="3"/>
+                      <use href="#o-trailer" data-check="trailer"/>
+                      <path class="o-outline" d="M94 43H102M6 47H136"/>
+                      <use href="#o-cab" data-check="cab"/>
+                      <g transform="translate(18 52)">
+                        <circle class="o-tire" r="8"/>
+                        <g class="o-center" data-part="wheel">
+                          <circle class="o-hub" r="3"/>
+                          <path class="o-wheel-spoke" d="M-5 0H5M0-5V5"/>
+                        </g>
+                      </g>
+                      <g transform="translate(78 52)">
+                        <circle class="o-tire" r="8"/>
+                        <g class="o-center" data-part="wheel">
+                          <circle class="o-hub" r="3"/>
+                          <path class="o-wheel-spoke" d="M-5 0H5M0-5V5"/>
+                        </g>
+                      </g>
+                      <g transform="translate(119 52)">
+                        <circle class="o-tire" r="8"/>
+                        <g class="o-center" data-part="wheel">
+                          <circle class="o-hub" r="3"/>
+                          <path class="o-wheel-spoke" d="M-5 0H5M0-5V5"/>
+                        </g>
+                      </g>
+                    </g>
+                  </svg>
+                  <p>Отгрузили. Фура едет к&nbsp;вам.</p>
+                </div>
+                <div class="o-msg o-live" data-card="E" data-stage="5" data-wait="2600" hidden>
+                  <span class="o-caption">Ваш адрес</span>
+                  <svg class="o-art" viewBox="0 0 240 160" width="240" height="160">
+                    <use href="#o-panel"/>
+                    <path class="o-distant" d="M8 126V57H52V126ZM55 126V42H77V126Z"/>
+                    <path class="o-rule" d="M8 70H52M8 89H52"/>
+                    <path class="o-metal-fill" data-check="house" d="M102 30H230V126H102Z"/>
+                    <path class="o-facet" d="M102 30H112V126H102ZM102 120H230V126H102Z"/>
+                    <path class="o-paper-fill" d="M98 27H234V34H98Z"/>
+                    <path class="o-highlight" d="M115 37H225"/>
+                    <rect class="o-glass" data-check="window" x="203" y="48" width="23" height="36" rx="2"/>
+                    <path class="o-window-light" d="M205 50H224V82H205Z" opacity=".55"/>
+                    <path class="o-outline" d="M214.5 49V83M204 66H225"/>
+                    <path class="o-paper-fill" d="M200 84H229V89H200Z"/>
+                    <rect class="o-recess" x="162" y="49" width="36" height="77" rx="2"/>
+                    <rect class="o-door-light" data-part="warmth" x="165" y="52" width="30" height="74" rx="1"/>
+                    <g transform="translate(165 52)">
+                      <g data-part="door">
+                        <rect class="o-wood-fill" data-check="door" width="30" height="74" rx="1"/>
+                        <path class="o-highlight" d="M3 3V71"/>
+                        <path class="o-seam" d="M7 9H23V32H7ZM7 40H23V65H7Z"/>
+                        <path class="o-brass-line" d="M24 35V42"/>
+                      </g>
+                    </g>
+                    <path class="o-paper-fill" d="M161 126H200V130H161Z"/>
+                    <path class="o-facet" d="M159 130H202V133H159Z"/>
+                    <path class="o-plant" d="M226 112V94M226 106Q214 102 217 94Q228 97 226 106M226 101Q235 97 234 90Q225 93 226 101"/>
+                    <path class="o-chair-fill" d="M217 111H236L233 126H220Z"/>
+                    <path class="o-highlight" d="M220 114H233"/>
+                    <g clip-path="url(#o-panel-clip)" data-o-clip>
+                      <g data-part="delivery">
+                        <ellipse class="o-shadow" cx="68" cy="60" rx="68" ry="3"/>
+                        <use href="#o-trailer" data-check="parked-trailer"/>
+                        <path class="o-outline" d="M94 43H102M6 47H136"/>
+                        <use href="#o-cab" data-check="parked-cab"/>
+                        <g transform="translate(18 52)"><use class="o-center" data-part="wheel" href="#o-wheel-static"/></g>
+                        <g transform="translate(78 52)"><use class="o-center" data-part="wheel" href="#o-wheel-static"/></g>
+                        <g transform="translate(119 52)"><use class="o-center" data-part="wheel" href="#o-wheel-static"/></g>
+                      </g>
+                    </g>
+                    <g data-part="arrival">
+                      <ellipse class="o-shadow" cx="134" cy="127" rx="29" ry="2"/>
+                      <g data-check="crate">
+                        <rect class="o-wood-fill" data-check="crate-backing" x="109" y="87" width="50" height="35"/>
+                        <path class="o-crate-gap" d="M118 98Q118 94 122 94H146Q150 94 150 98V100H118ZM117 113H151V116H117Z"/>
+                        <path class="o-support" d="M113 124H120V126H113ZM148 124H155V126H148Z"/>
+                        <path class="o-wood-fill" d="M110 91H115V121H110ZM153 91H158V121H153Z"/>
+                        <path class="o-wood-fill" d="M110 104H158V108H110ZM110 121H158V124H110Z"/>
+                        <path class="o-wood-fill" d="M108 86H160V91H108Z"/>
+                        <path class="o-wood-fill" d="M115 117 150 92 153 96 118 121Z"/>
+                        <path class="o-highlight" d="M111 88H157M112 94V101M119 117 150 95"/>
+                        <path class="o-grain" d="M119 106H136M128 89H151M128 121H148"/>
+                      </g>
+                    </g>
+                    <g class="o-center" data-part="address">
+                      <path class="o-brass-metal" data-check="address" d="M155 6C149 6 146 10 146 15C146 21 155 27 155 27S164 21 164 15C164 10 161 6 155 6Z"/>
+                      <circle class="o-paper-fill" cx="155" cy="14" r="3"/>
+                    </g>
+                  </svg>
+                  <p>Груз приехал. Вы&nbsp;уже получили?</p>
+                </div>
+                <div class="o-msg o-mine o-photo" data-stage="5" data-wait="2200" hidden><img data-src="order/door.jpg" alt="" width="640" height="640"><p>Да, получили. Распаковываем.</p></div>
+                <div class="o-msg o-mine o-photo" data-stage="5" data-wait="1600" hidden><img data-src="example/a.jpg" alt="" width="1600" height="1067"><p>Спасибо!</p></div>
               </div>
             </div>
             <div class="o-input">
@@ -4663,49 +5058,218 @@
 (() => {
   "use strict";
 
-  // От снимка до адреса: живой телефон с перепиской и путь заказа из шести остановок. Переписка идёт сама
-  // (круг около 22 с, пауза 4 с, заново), путь показывает её этап. Нажатие остановки переводит переписку
-  // на этот этап, через 8 с без нажатий запись идёт дальше. Вне экрана и на скрытой вкладке она стоит.
+  // От снимка до адреса: 30 секунд записи, 4 секунды паузы; все движения живут на общих часах.
   const block = document.getElementById("f-order");
+  if (!block) return;
   const phone = block.querySelector(".o-phone");
   const track = block.querySelector(".o-track");
   const items = [...track.querySelectorAll("[data-stage]")];
+  const cards = [...track.querySelectorAll("[data-card]")];
   const path = block.querySelector(".o-path");
   const stops = [...path.querySelectorAll(".o-stop")];
-  const flight = track.querySelector(".o-fly");
-  const trail = flight.querySelector(".o-trail");
-  const reveal = flight.querySelector(".o-reveal");
-  const plane = flight.querySelector(".o-plane");
-  const factory = flight.querySelector(".o-factory");
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
-  const animates = typeof track.animate === "function" && typeof track.getAnimations === "function";
-  const soft = "cubic-bezier(.16, 1, .3, 1)";
-  const inOut = "cubic-bezier(.65, 0, .35, 1)";
-  const hold = 8000;
-  const rest = 4000;
+  const status = block.querySelector(".o-name small");
+  const media = matchMedia("(prefers-reduced-motion: reduce)");
+  const capable = typeof Element.prototype.animate === "function"
+    && typeof block.getAnimations === "function"
+    && typeof IntersectionObserver === "function";
+  const soft = "cubic-bezier(0.16, 1, 0.3, 1)";
+  const carry = "cubic-bezier(0.65, 0, 0.35, 1)";
+  const accelerate = "cubic-bezier(0.42, 0, 1, 1)";
+  const texts = ["на связи", "дизайн-план", "заказ в работе", "сборка и упаковка", "в пути", "по вашему адресу"];
+  const stages = items.map((item) => Number(item.dataset.stage));
+  const waits = items.map((item) => Number(item.dataset.wait));
+  const ends = stops.map((_, stage) => stages.lastIndexOf(stage));
   const last = items.length - 1;
-  const stageOf = items.map((item) => +item.dataset.stage);
-  const waitOf = items.map((item) => +item.dataset.wait);
-  // Нажатие остановки ведёт к последнему сообщению её этапа.
-  const endOf = stops.map((stop, stage) => stageOf.lastIndexOf(stage));
-  // Самолётик встаёт у фабрики, чуть не долетая до конца дуги.
-  const reach = .93;
+  const scenes = new Map();
+  const versions = new WeakMap();
 
   let step = 0;
   let stage = 0;
-  let fill = stops.map(() => 0);
-  let route = null;
-  let started = false;
   let visible = false;
+  let started = false;
+  let fill = stops.map(() => 0);
   let timer = 0;
   let due = 0;
   let left = 0;
   let next = null;
+  let statusVersion = 0;
 
-  const running = () => started && visible && !document.hidden && !reduceMotion.matches;
-  const settle = (element) => element.getAnimations().forEach((run) => run.cancel());
+  const stillMode = () => media.matches || !capable;
+  const running = () => started && visible && document.visibilityState !== "hidden" && !stillMode();
+  const cancel = (element, subtree = false) => {
+    if (capable) element.getAnimations({ subtree }).forEach((run) => run.cancel());
+  };
 
-  // Часы записи: вне экрана и на скрытой вкладке стоят, потом идут с того же места.
+  // У одного свойства — одна дорожка, в том числе при нескольких интервалах.
+  function motion(part, property, values, times, curves = soft) {
+    return { part, property, values, times, curves };
+  }
+  const m = motion;
+  const appear = (part, start, end) => m(part, "opacity", [0, 1], [start, end]);
+  const draw = (part, start, end, curve = soft) => m(part, "strokeDashoffset", [1, 0], [start, end], curve);
+  const move = (part, from, to, start, end, curve = soft) => m(part, "transform", [from, to], [start, end], curve);
+  const assembled = (part, from, start, end) => [
+    move(part, from, "translate(0px, 0px)", start, end),
+    m(part, "opacity", [.65, 1], [start, end])
+  ];
+  const truckTimes = [640, 1040, 2840, 3440];
+  const truckCurves = [accelerate, "linear", soft];
+
+  const boards = {
+    A: [
+      m("photo", "opacity", [1, 0], [640, 1000]),
+      appear("building", 1460, 1900),
+      move("building", "translateY(8px)", "translateY(0px)", 1460, 1900),
+      m("press", "opacity", [0, 1, 1, 0], [1000, 1100, 1400, 1560]),
+      m("press", "transform", [
+        "translateY(-28px)", "translateY(2px)", "translateY(0px)", "translateY(-24px)"
+      ], [1000, 1260, 1340, 1560], [carry, soft, soft]),
+      appear("imprint", 1260, 1400),
+      move("document", "translate(32px, 24px) scale(1)", "translate(95px, 80px) scale(.29)", 1600, 2320, carry),
+      m("document", "opacity", [1, 0], [2240, 2400]),
+      move("shadow", "scaleX(1)", "scaleX(.35)", 1600, 2320, carry),
+      m("shadow", "opacity", [.12, 0], [2240, 2400]),
+      appear("gate", 2320, 2360),
+      move("gate", "scaleY(0)", "scaleY(1)", 2320, 2640, carry),
+      appear("light-one", 2640, 2820),
+      appear("light-two", 2790, 2970),
+      appear("light-three", 2940, 3120),
+      move("gear", "rotate(0deg)", "rotate(135deg)", 2680, 3180, carry),
+      draw("belt", 2720, 3180, "linear")
+    ],
+    B: [
+      ...assembled("back", "translateY(-22px)", 640, 1240),
+      ...assembled("seat", "translateY(9px)", 1060, 1560),
+      ...assembled("left", "translateX(-8px)", 1420, 2020),
+      ...assembled("right", "translateX(8px)", 1420, 2020),
+      draw("seam", 2020, 2260),
+      appear("ready", 2260, 2440),
+      draw("ready-check", 2340, 2620)
+    ],
+    C: [
+      appear("base", 640, 820),
+      move("base", "translateY(-18px)", "translateY(0px)", 640, 1000),
+      appear("left", 820, 980),
+      move("left", "translateY(-22px)", "translateY(0px)", 820, 1200),
+      appear("right", 1060, 1220),
+      move("right", "translateY(-22px)", "translateY(0px)", 1060, 1440),
+      appear("rail", 1320, 1500),
+      move("rail", "translateY(-28px)", "translateY(0px)", 1320, 1710),
+      appear("lid", 1640, 1820),
+      move("lid", "translateY(-20px)", "translateY(0px)", 1640, 2080),
+      appear("brace", 1940, 2120),
+      move("brace", "translateY(-20px)", "translateY(0px)", 1940, 2380),
+      appear("stamp", 2440, 2640),
+      move("stamp", "translateY(-5px)", "translateY(0px)", 2440, 2640),
+      draw("check", 2530, 2840)
+    ],
+    D: [
+      m("truck", "transform", [
+        "translate(8px, 57px) scale(1.4)", "translate(16px, 57px) scale(1.4)",
+        "translate(35px, 57px) scale(1.4)", "translate(40px, 57px) scale(1.4)"
+      ], truckTimes, truckCurves),
+      m("road", "transform", [
+        "translateX(0px)", "translateX(-64px)", "translateX(-440px)", "translateX(-520px)"
+      ], truckTimes, truckCurves),
+      m("wheel", "transform", [
+        "rotate(0deg)", "rotate(368deg)", "rotate(2389deg)", "rotate(2824deg)"
+      ], truckTimes, truckCurves),
+      move("distance", "translateX(0px)", "translateX(-36px)", 640, 3440, carry),
+      move("hills", "translateX(0px)", "translateX(-70px)", 640, 3440, carry),
+      move("verge", "translateX(0px)", "translateX(-180px)", 640, 3440, "linear"),
+      move("route", "translateX(0px)", "translateX(192px)", 640, 3440, "linear")
+    ],
+    E: [
+      move("delivery", "translate(-96px, 85.2px) scale(.68)", "translate(4px, 85.2px) scale(.68)", 640, 1420, soft),
+      move("wheel", "rotate(0deg)", "rotate(1053deg)", 640, 1420, soft),
+      appear("arrival", 1460, 1780),
+      move("arrival", "translateY(-6px)", "translateY(0px)", 1460, 1780),
+      appear("warmth", 1780, 2020),
+      move("door", "scaleX(1)", "scaleX(.72)", 1780, 2120, carry),
+      appear("address", 2120, 2300),
+      move("address", "scale(.8)", "scale(1)", 2120, 2300)
+    ]
+  };
+
+  cards.forEach((card) => {
+    scenes.set(card, boards[card.dataset.card].flatMap((entry) =>
+      [...card.querySelectorAll(`[data-part="${entry.part}"]`)].map((element) => ({ ...entry, element }))
+    ));
+  });
+
+  function animate(element, frames, options) {
+    const run = element.animate(frames, { fill: "both", ...options });
+    // У отменяемых анимаций не оставляем отклонённых Promise.
+    run.finished.catch(() => {});
+    if (!running()) run.pause();
+    return run;
+  }
+
+  function initialCard(card) {
+    versions.set(card, (versions.get(card) || 0) + 1);
+    cancel(card, true);
+    scenes.get(card).forEach(({ element, property, values }) => {
+      element.style[property] = String(values[0]);
+    });
+  }
+
+  // Единственный конечный кадр: берётся из тех же дорожек, что и движение.
+  function finishCard(card) {
+    versions.set(card, (versions.get(card) || 0) + 1);
+    cancel(card, true);
+    scenes.get(card).forEach(({ element, property, values }) => {
+      element.style[property] = String(values[values.length - 1]);
+    });
+  }
+
+  function playCard(card) {
+    initialCard(card);
+    const version = versions.get(card);
+    let ending = null;
+    let endTime = -1;
+    scenes.get(card).forEach(({ element, property, values, times, curves }) => {
+      const start = times[0];
+      const end = times[times.length - 1];
+      const frames = values.map((value, i) => ({
+        [property]: String(value),
+        offset: (times[i] - start) / (end - start),
+        easing: Array.isArray(curves) ? (curves[i] || "linear") : curves
+      }));
+      const run = animate(element, frames, { delay: start, duration: end - start });
+      if (end > endTime) {
+        endTime = end;
+        ending = run;
+      }
+    });
+    ending.finished.then(() => {
+      if (versions.get(card) === version) finishCard(card);
+    }, () => {});
+  }
+
+  // Часы останавливаются одновременно с WAAPI, включая отложенные движения.
+  function sync() {
+    const active = running();
+    if (capable) {
+      block.getAnimations({ subtree: true }).forEach((run) => {
+        if (!active && (run.playState === "running" || run.pending)) run.pause();
+        else if (active && run.playState === "paused") run.play();
+      });
+    }
+    if (active && next && !timer) {
+      due = performance.now() + left;
+      timer = setTimeout(() => {
+        timer = 0;
+        const action = next;
+        next = null;
+        if (action) action();
+      }, left);
+    } else if (!active && timer) {
+      clearTimeout(timer);
+      timer = 0;
+      left = Math.max(0, due - performance.now());
+    }
+  }
+
   function plan(action, ms) {
     clearTimeout(timer);
     timer = 0;
@@ -4713,67 +5277,17 @@
     left = ms;
     sync();
   }
-  function sync() {
-    if (running()) {
-      if (next && !timer) {
-        due = performance.now() + left;
-        timer = setTimeout(() => {
-          timer = 0;
-          const action = next;
-          next = null;
-          action();
-        }, left);
-      }
-    } else if (timer) {
-      clearTimeout(timer);
-      timer = 0;
-      left = Math.max(0, due - performance.now());
-    }
-  }
 
-  // Точки дуги для самолётика: считаются один раз, когда сообщение уже видно.
-  function routeOf() {
-    if (route) return route;
-    const length = trail.getTotalLength();
-    const at = (share) => trail.getPointAtLength(Math.min(length, Math.max(0, share * length)));
-    route = [];
-    for (let k = 0; k <= 32; k++) {
-      const share = reach * k / 32;
-      const point = at(share);
-      const ahead = at(share + .02);
-      const behind = at(share - .02);
-      const angle = Math.atan2(ahead.y - behind.y, ahead.x - behind.x) * 180 / Math.PI;
-      route.push({ transform: `translate(${point.x.toFixed(2)}px, ${point.y.toFixed(2)}px) rotate(${angle.toFixed(1)}deg)` });
-    }
-    return route;
-  }
-  // Долетел: самолётик стоит у фабрики, пунктир дорисован до него.
-  function land() {
-    const way = routeOf();
-    plane.style.transform = way[way.length - 1].transform;
-    reveal.style.strokeDashoffset = String(1 - reach);
-  }
-  function fly() {
-    land();
-    if (!animates) return;
-    [plane, reveal, factory].forEach(settle);
-    const timing = { duration: 1700, delay: 250, easing: inOut, fill: "backwards" };
-    plane.animate(route, timing);
-    reveal.animate([{ strokeDashoffset: "1" }, { strokeDashoffset: String(1 - reach) }], timing);
-    factory.animate([{ transform: "none" }, { transform: "scale(1.16)" }, { transform: "none" }], { duration: 650, delay: 1800, easing: soft });
-  }
-
-  // Видны все сообщения до n; «печатает» — только пока оно последнее.
   function layout(n) {
     items.forEach((item, k) => {
       const on = k <= n && (!item.hasAttribute("data-transient") || k === n);
       if (item.hidden === on) item.hidden = !on;
     });
-    if (!flight.hidden) land();
   }
 
-  // Этап на пути: остановки до него пройдены, латунная линия дотягивается до текущей.
-  function mark(to) {
+  function mark(to, instant = false) {
+    const changed = stage !== to;
+    const oldFill = fill[stage];
     stage = to;
     stops.forEach((stop, k) => {
       stop.classList.toggle("is-done", k < to);
@@ -4781,112 +5295,178 @@
       else stop.removeAttribute("aria-current");
     });
     path.style.setProperty("--o-k", String(fill[to]));
+    if (instant || !changed) {
+      if (instant) {
+        statusVersion++;
+        cancel(status);
+        cancel(path);
+        status.textContent = texts[to];
+      }
+      return;
+    }
+    cancel(path);
+    animate(path, [
+      { transform: `scaleY(${oldFill})` },
+      { transform: `scaleY(${fill[to]})` }
+    ], { duration: 800, easing: carry, pseudoElement: "::after" });
+
+    const version = ++statusVersion;
+    cancel(status);
+    const out = animate(status, [{ opacity: 1 }, { opacity: 0 }], { duration: 100, easing: soft });
+    out.finished.then(() => {
+      if (version !== statusVersion) return;
+      out.cancel();
+      status.textContent = texts[to];
+      animate(status, [{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: soft });
+    }, () => {});
   }
-  // Высоты остановок зависят от переноса строк: линию меряем по их серединам.
+
   function measure() {
     const centers = stops.map((stop) => stop.offsetTop + stop.offsetHeight / 2);
     const top = centers[0];
     const span = centers[centers.length - 1] - top;
-    fill = centers.map((y) => (span > 0 ? (y - top) / span : 0));
+    fill = centers.map((y) => span > 0 ? (y - top) / span : 0);
     path.style.setProperty("--o-top", `${top}px`);
     path.style.setProperty("--o-rail", `${span}px`);
     path.style.setProperty("--o-k", String(fill[stage]));
+    cancel(path);
   }
 
   function enter(item) {
-    item.animate([{ opacity: 0, transform: "translateY(10px) scale(.94)" }, { opacity: 1, transform: "none" }], { duration: 480, delay: 80, easing: soft, fill: "backwards" });
-    if (item === flight) fly();
+    // Сначала сюжет карточки: initialCard отменяет анимации всего пузыря, вход идёт после.
+    if (item.dataset.card) playCard(item);
+    animate(item, [
+      { opacity: 0, transform: "translateY(8px)" },
+      { opacity: 1, transform: "translateY(0px)" }
+    ], { duration: 360, easing: soft });
+    if (item.hasAttribute("data-transient")) {
+      item.querySelectorAll("i").forEach((dot, i) => {
+        animate(dot, [
+          { opacity: .35, transform: "translateY(0px)", easing: soft },
+          { opacity: .8, transform: "translateY(-2px)", easing: soft },
+          { opacity: .35, transform: "translateY(0px)" }
+        ], { delay: 200 + i * 150, duration: 300 });
+      });
+    }
   }
-  // Новое сообщение: лента прижата к низу, прежние плавно уезжают вверх на прирост высоты.
+
   function show(n) {
+    const previous = items[step];
+    if (previous.dataset.card) finishCard(previous);
+    else cancel(previous, true);
     const before = track.offsetHeight;
-    const offset = animates ? new DOMMatrixReadOnly(getComputedStyle(track).transform).m42 : 0;
+    const transform = getComputedStyle(track).transform;
+    const offset = transform === "none" ? 0 : new DOMMatrixReadOnly(transform).m42;
+    cancel(track);
     step = n;
     layout(n);
-    mark(stageOf[n]);
-    if (!animates) return;
+    mark(stages[n]);
     const from = track.offsetHeight - before + offset;
-    settle(track);
-    if (Math.abs(from) > .5) track.animate([{ transform: `translateY(${from}px)` }, { transform: "none" }], { duration: 640, easing: soft });
+    if (Math.abs(from) > .5) {
+      animate(track, [
+        { transform: `translateY(${from}px)` },
+        { transform: "translateY(0px)" }
+      ], { duration: 640, easing: soft });
+    }
     enter(items[n]);
   }
+
   function advance() {
-    if (step >= last) return restart();
+    if (step === last) {
+      plan(fade, 3700);
+      return;
+    }
     show(step + 1);
-    plan(step < last ? advance : restart, waitOf[step] + (step < last ? 0 : rest));
+    plan(advance, waits[step]);
   }
-  // Круг закончен: лента гаснет, переписка начинается с заявки.
-  function restart() {
-    const begin = () => {
-      step = 0;
-      layout(0);
-      mark(0);
-      plan(advance, waitOf[0]);
-    };
-    if (!animates) return begin();
-    settle(track);
-    const out = track.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, easing: inOut, fill: "forwards" });
-    out.finished.then(() => {
-      begin();
-      out.cancel();
-      track.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { duration: 600, easing: soft });
-    }, () => {});
+
+  function fade() {
+    cancel(track);
+    animate(track, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: carry });
+    plan(() => begin(true), 300);
   }
-  // Нажата остановка: переписка сразу на её этапе, запись встаёт на 8 с.
-  function jump(to) {
-    if (animates) settle(track);
-    step = endOf[to];
-    layout(step);
-    mark(to);
-    // На телефоне путь стоит под примером: если пример почти не виден, подводим его в экран.
-    if (!visible) phone.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "nearest" });
-    if (reduceMotion.matches) return;
-    if (animates) enter(items[step]);
-    plan(step < last ? advance : restart, hold);
-  }
-  // Меньше движения: последний кадр без движения, остановки меняют кадр сразу.
-  function still() {
+
+  function clearAll() {
     plan(null, 0);
-    if (animates) settle(track);
-    step = last;
-    layout(last);
-    mark(stageOf[last]);
+    statusVersion++;
+    cancel(block, true);
+    cards.forEach((card) => versions.set(card, (versions.get(card) || 0) + 1));
+  }
+
+  function begin(fadeIn = false) {
+    clearAll();
+    cards.forEach(initialCard);
+    // Снятие hidden у заявки также отмечает начало нового круга.
+    items.forEach((item) => { item.hidden = true; });
+    step = 0;
+    started = true;
+    layout(0);
+    mark(0, true);
+    if (fadeIn) {
+      animate(track, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: soft });
+    }
+    enter(items[0]);
+    plan(advance, waits[0]);
+  }
+
+  function history(n, to) {
+    clearAll();
+    step = n;
+    layout(n);
+    cards.forEach((card) => {
+      if (!card.hidden) finishCard(card);
+      else initialCard(card);
+    });
+    mark(to, true);
+  }
+
+  function jump(to) {
+    started = true;
+    history(ends[to], to);
+    if (!visible) phone.scrollIntoView({ behavior: stillMode() ? "auto" : "smooth", block: "center" });
+    if (!stillMode()) plan(step === last ? () => begin(true) : advance, 8000);
+  }
+
+  function still() {
+    started = false;
+    history(last, 5);
   }
 
   stops.forEach((stop, k) => stop.addEventListener("click", () => jump(k)));
   if (typeof ResizeObserver === "function") new ResizeObserver(measure).observe(path);
   else addEventListener("resize", measure);
   measure();
-  if (reduceMotion.matches) still();
+  cards.forEach(initialCard);
 
-  // Фото переписки грузятся, когда блок близко.
-  const near = new IntersectionObserver((entries) => {
-    if (!entries.some((entry) => entry.isIntersecting)) return;
-    near.disconnect();
+  function loadPhotos() {
     track.querySelectorAll("img[data-src]").forEach((img) => {
       img.src = img.dataset.src;
       img.removeAttribute("data-src");
     });
-  }, { rootMargin: "800px 0px" });
-  near.observe(phone);
-  // Запись идёт, пока телефон виден хотя бы на 35 %.
-  new IntersectionObserver(([entry]) => {
-    visible = entry.intersectionRatio >= .35;
-    if (visible && !started && !reduceMotion.matches) {
-      started = true;
-      if (!next) plan(advance, 700);
-    }
-    sync();
-  }, { threshold: [0, .35] }).observe(phone);
+  }
+
+  if (typeof IntersectionObserver === "function") {
+    const near = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      near.disconnect();
+      loadPhotos();
+    }, { rootMargin: "800px 0px" });
+    near.observe(phone);
+    new IntersectionObserver(([entry]) => {
+      visible = entry.intersectionRatio >= .35;
+      if (visible && !started && !stillMode()) begin();
+      sync();
+    }, { threshold: [0, .35] }).observe(phone);
+  } else {
+    loadPhotos();
+  }
+
   document.addEventListener("visibilitychange", sync);
-  reduceMotion.addEventListener("change", () => {
-    if (reduceMotion.matches) return still();
-    step = 0;
-    layout(0);
-    mark(0);
-    started = visible;
-    plan(advance, 700);
+  media.addEventListener("change", () => {
+    if (stillMode()) still();
+    else begin();
   });
+  if (stillMode()) still();
 })();
 </script>
 <script id="examples-ac-photo">
