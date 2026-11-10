@@ -2616,6 +2616,7 @@
   @media (min-width: 600px) { .sc + .examples { padding-top: 56px; } }
   @media (min-width: 1000px) { .sc + .examples { padding-top: 80px; } }
 </style>
+<link rel="stylesheet" href="founders/founders.css">
 
 <div id="avelio-start" lang="ru">
   <header class="site-header shell">
@@ -2648,6 +2649,9 @@
   </header>
 
   <main>
+    <!-- Первый экран со сценой основателей: высокая обёртка, внутри липкий экран; сцену строит founders/founders.js -->
+    <div class="founders" id="founders">
+    <div class="founders-pin">
     <section class="hero" id="hero" aria-labelledby="hero-title">
       <div class="hero-copy shell">
         <h1 id="hero-title">Ваш вкус задаёт интерьер.</h1>
@@ -2657,7 +2661,7 @@
         <div class="video-column">
           <div class="video-frame">
             <!-- Замените video/hero.mp4; если в новом ролике есть голос, уберите data-has-sound. -->
-            <video id="hero-video" muted playsinline autoplay loop preload="metadata" poster="video/hero.jpg" data-has-sound="false" aria-label="Как устроена работа: от заказа до отгрузки на адрес">
+            <video id="hero-video" muted playsinline autoplay loop preload="metadata" poster="video/hero.jpg" aria-label="Ролик Avelio: шоурум в Фошане">
               <source src="video/hero.mp4" type="video/mp4">
               Ваш браузер не поддерживает видео.
             </video>
@@ -2672,7 +2676,7 @@
           <div class="hero-action-content">
             <p class="hero-aside" id="hero-aside" hidden>
               Сначала — увидеть<br>у&nbsp;себя дома.
-              <small>Мы сами подберём под ваш интерьер мебель. В&nbsp;ролике — как устроена работа, от&nbsp;заказа до&nbsp;отгрузки на&nbsp;адрес.</small>
+              <small>Мы сами подберём под ваш интерьер мебель. В&nbsp;ролике — шоурум Avelio в&nbsp;Фошане, диваны и&nbsp;материалы для интерьера.</small>
             </p>
             <a class="button" id="hero-cta" href="#send" data-upload-kind="photo">Пришлите фото комнаты</a>
             <a class="text-link hero-plan-link" href="#send" data-upload-kind="plan">Есть чертёж квартиры?</a>
@@ -2681,6 +2685,8 @@
         </div>
       </div>
     </section>
+    </div>
+    </div>
 
     <section class="sc" id="showcase" data-motion="glide" aria-labelledby="showcase-title" aria-roledescription="карусель">
       <div class="sc-shell">
@@ -3497,6 +3503,12 @@
   desktop.addEventListener("change", updateResponsiveElements);
   phone.addEventListener("change", updateResponsiveElements);
   updateResponsiveElements();
+  // Первый экран меняется и без прокрутки (founders.js растягивает ролик после загрузки).
+  if ("IntersectionObserver" in window) {
+    const stickyWatch = new IntersectionObserver(() => updateSticky());
+    stickyWatch.observe($("hero-cta"));
+    stickyWatch.observe($("send"));
+  }
 
   const imageCache = new Map();
   function loadImage(src) {
@@ -6051,5 +6063,6 @@
   paint(swap.current());
 })();
 </script>
-
+<script src="founders/founders.js" defer></script>
+<script src="founders/hero-overlay.js" defer></script>
 </body></html>

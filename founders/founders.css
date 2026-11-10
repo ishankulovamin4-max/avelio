@@ -1,0 +1,1076 @@
+/* До is-ready исходный первый экран остаётся нетронутым. */
+.founder-stage {
+  display: none;
+}
+
+.founders.is-ready {
+  position: relative;
+  height: 300svh;
+  background: #fffdf8;
+}
+
+.founders.is-ready .founders-pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: clip;
+  isolation: isolate;
+  background: #fffdf8;
+}
+
+.founders.is-ready #hero {
+  --founder-content-h: min(calc(100svh - 96px), 840px);
+
+  box-sizing: border-box;
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    min(calc(var(--founder-content-h) * .5625), 44%)
+    minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "video copy"
+    "video scene"
+    "video actions";
+  align-content: start;
+  align-items: start;
+  column-gap: clamp(24px, 3.4vw, 56px);
+  row-gap: 8px;
+  width: 100%;
+  max-width: 1600px;
+  height: 100%;
+  min-height: 0;
+  margin-inline: auto;
+  padding-top: 16px;
+  padding-bottom: calc(100svh - var(--founder-content-h) - 16px);
+  padding-left: max(32px, env(safe-area-inset-left, 0px));
+  padding-right: max(32px, env(safe-area-inset-right, 0px));
+}
+
+.founders.is-ready #hero .hero-stage,
+.founders.is-ready #hero .founder-track,
+.founders.is-ready #hero .founder-group {
+  display: contents;
+}
+
+.founders.is-ready #hero .hero-copy {
+  position: relative;
+  z-index: 5;
+  grid-area: copy;
+  align-self: start;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  container-type: inline-size;
+}
+
+.founders.is-ready #hero .hero-copy h1 {
+  max-width: none;
+  font-size: clamp(36px, 6cqw, 48px);
+  font-weight: 600;
+  line-height: 1.015;
+  letter-spacing: -.055em;
+  text-wrap: balance;
+}
+
+.founders.is-ready #hero .hero-copy p {
+  max-width: none;
+  margin-top: 10px;
+  font-size: clamp(14px, 2.1cqw, 17px);
+  line-height: 1.4;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.founders.is-ready #hero .video-column {
+  position: relative;
+  z-index: 6;
+  grid-area: video;
+  align-self: start;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  isolation: isolate;
+}
+
+.founders.is-ready #hero .video-column::before {
+  content: none;
+}
+
+.founders.is-ready #hero .video-frame {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  background: var(--paper);
+}
+
+.founders.is-ready #hero #hero-video {
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--video-ratio);
+  object-fit: contain;
+}
+
+.founders.is-ready #hero .hero-actions {
+  position: relative;
+  z-index: 5;
+  grid-area: actions;
+  align-self: end;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: #fffdf8;
+}
+
+.founders.is-ready #hero .hero-action-content {
+  width: 100%;
+  max-width: 410px;
+}
+
+.founders.is-ready #hero #hero-cta {
+  width: 100%;
+  min-height: 54px;
+  border-radius: 3px;
+  box-shadow: 0 8px 24px rgb(38 30 18 / 9%);
+}
+
+.founders.is-ready #hero .hero-plan-link {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 40px;
+}
+
+.founders.is-ready #hero .hero-facts {
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--muted);
+}
+
+.founders.is-ready #hero .hero-facts span {
+  display: inline;
+}
+
+.founders.is-ready #hero .hero-facts span + span {
+  margin-left: .4em;
+}
+
+.founders.is-ready #hero #hero-aside {
+  display: none;
+}
+
+/* W × H — полный прямоугольник строки scene.
+   Абсолютные слои и подписи не участвуют в расчёте строк сетки. */
+.founders.is-ready .founder-stage {
+  --fr-frame: #e6d3b5;
+  --fr-frame-edge: rgba(142, 116, 83, 0.52);
+  --fr-frame-inner: rgba(142, 116, 83, 0.32);
+  --fr-screen-shadow: rgba(58, 44, 26, 0.14);
+  --fr-screen-shadow-blur: 0.035;
+  --fr-screen-shadow-y: 0.014;
+  --fr-contact-shadow: rgba(48, 36, 20, 0.16);
+  --fr-room-shadow: rgba(84, 58, 28, 0.24);
+  --fr-card-shadow: rgba(40, 30, 15, 0.12);
+  --fr-card-shadow-blur: 0.012;
+
+  position: relative;
+  z-index: 1;
+  display: block;
+  grid-area: scene;
+  align-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+/* Свечение заканчивается до защитного просвета имён.
+   Холст ограничивает рисуемый мир, но не обрезает DOM-подписи и их фокус. */
+.founders.is-ready .founder-stage::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 4% 2% 16%;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse at 58% 44%,
+      rgb(242 228 201 / 22%),
+      rgb(250 247 239 / 14%) 43%,
+      transparent 72%
+    );
+  pointer-events: none;
+}
+
+.founders.is-ready .founder-canvas {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Геометрию неподвижного корпуса задаёт только founders.js. */
+.founders.is-ready .founder-body {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  appearance: none;
+}
+
+.founders.is-ready .founder-name {
+  box-sizing: border-box;
+  position: absolute;
+  z-index: 3;
+  top: 86%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 140px;
+  min-width: 44px;
+  height: auto;
+  min-height: 52px;
+  margin: 0;
+  padding: 7px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+  letter-spacing: 0;
+  text-align: center;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  appearance: none;
+}
+
+.founders.is-ready .founder-name--amin {
+  left: 18%;
+}
+
+.founders.is-ready .founder-name--roman {
+  left: 82%;
+}
+
+.founders.is-ready .founder-name-title {
+  flex: none;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 22px;
+  color: #30291f;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: #b9aa96;
+}
+
+.founders.is-ready .founder-name-role {
+  flex: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 14px;
+  color: #6c6256;
+}
+
+.founders.is-ready .founder-name:hover .founder-name-title {
+  text-decoration-color: #30291f;
+}
+
+.founders.is-ready .founder-name:focus-visible {
+  outline: 2px solid #30291f;
+  outline-offset: 2px;
+}
+
+/* Горизонтальный исходник не меняет порядок правой колонки. */
+.founders.is-ready #hero.is-landscape {
+  grid-template-columns: minmax(0, 44%) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "video copy"
+    "video scene"
+    "video actions";
+}
+
+.founders.is-ready #hero.is-landscape .video-column {
+  align-self: center;
+}
+
+.founders.is-ready #hero.is-landscape .video-frame {
+  max-width: none;
+}
+
+@media (min-width: 1400px) {
+  .founders.is-ready #hero {
+    padding-left: max(64px, env(safe-area-inset-left, 0px));
+    padding-right: max(64px, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* Планшет: размеры сетки и ролика сохранены. */
+@media (min-width: 700px) and (max-width: 1099px) {
+  .founders.is-ready #hero {
+    --founder-content-h: min(calc(100svh - 84px), 840px);
+
+    grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+    column-gap: 20px;
+    row-gap: 8px;
+    padding-top: 16px;
+    padding-bottom: calc(100svh - var(--founder-content-h) - 16px);
+    padding-left: max(24px, env(safe-area-inset-left, 0px));
+    padding-right: max(24px, env(safe-area-inset-right, 0px));
+  }
+
+  .founders.is-ready #hero .video-frame {
+    width: min(100%, calc(var(--founder-content-h) * var(--video-ratio)));
+  }
+
+  .founders.is-ready #hero .hero-copy h1 {
+    max-width: 13ch;
+    font-size: clamp(30px, 9.4cqw, 40px);
+  }
+
+  .founders.is-ready #hero .hero-copy p {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .founders.is-ready #hero #hero-cta {
+    padding-inline: 12px;
+    font-size: 14px;
+  }
+
+  .founders.is-ready .founder-name {
+    width: 128px;
+    padding: 8px 0;
+  }
+
+  .founders.is-ready .founder-name--amin {
+    left: 20%;
+  }
+
+  .founders.is-ready .founder-name--roman {
+    left: 80%;
+  }
+
+  .founders.is-ready .founder-name-title {
+    font-size: 16px;
+    line-height: 20px;
+  }
+}
+
+@media (min-width: 1000px) and (max-width: 1099px) {
+  .founders.is-ready #hero {
+    --founder-content-h: min(calc(100svh - 96px), 840px);
+  }
+}
+
+/* Телефон: заголовок → строка → ролик → локально закрепляемая группа.
+   Высоту группы определяет содержимое: 356 + 12 + 52 + 40 + 32 + 12. */
+@media (max-width: 699px) {
+  .founders.is-ready {
+    /* Высоты шапки и CTA без safe-area; уточняются по замерам страницы. */
+    --fh-header: 44px;
+    --fh-cta: 68px;
+    --fh-sound-row: 0px;
+    --fh-header-safe: env(safe-area-inset-top, 0px);
+    --fh-bottom-safe: env(safe-area-inset-bottom, 0px);
+
+    height: auto;
+  }
+
+  .founders.is-ready .founders-pin {
+    position: relative;
+    top: auto;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Новый порядок: ролик → текст → прежняя сцена основателей. */
+  .founders.is-ready #hero,
+  .founders.is-ready #hero.is-landscape {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "video"
+      "copy"
+      "track";
+    align-content: start;
+    align-items: start;
+    column-gap: 0;
+    row-gap: 0;
+    height: auto;
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  .founders.is-ready #hero .hero-copy {
+    box-sizing: border-box;
+    padding: 32px max(24px, env(safe-area-inset-right, 0px))
+      24px max(24px, env(safe-area-inset-left, 0px));
+  }
+
+  .founders.is-ready #hero .hero-copy h1 {
+    max-width: 15ch;
+    margin: 0;
+    font-size: 36px;
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -.045em;
+  }
+
+  .founders.is-ready #hero .hero-copy p {
+    max-width: 45ch;
+    margin: 12px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .founders.is-ready #hero .video-column,
+  .founders.is-ready #hero.is-landscape .video-column {
+    align-self: start;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .founders.is-ready #hero .video-frame,
+  .founders.is-ready #hero.is-landscape .video-frame {
+    box-sizing: border-box;
+    position: relative;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0 0 var(--fh-sound-row);
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: #fffdf8;
+    box-shadow: none;
+  }
+
+  .founders.is-ready #hero #hero-video {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    height: calc(
+      100vh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
+      - var(--fh-header-safe) - var(--fh-bottom-safe)
+    );
+    height: calc(
+      100svh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
+      - var(--fh-header-safe) - var(--fh-bottom-safe)
+    );
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    aspect-ratio: auto;
+    object-fit: cover;
+    object-position: center;
+    box-shadow: none;
+  }
+
+  /* На обычном телефоне плашка занимает только свободный низ кадра. */
+  .founders.is-ready #hero #sound-toggle.sound-plate,
+  .founders.is-ready #hero #sound-off {
+    box-sizing: border-box;
+    position: absolute;
+    z-index: 2;
+    top: auto;
+    left: 50%;
+    right: auto;
+    bottom: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 280px;
+    max-width: calc(
+      100% - max(16px, env(safe-area-inset-left, 0px))
+      - max(16px, env(safe-area-inset-right, 0px))
+    );
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
+    gap: 8px;
+    margin: 0;
+    padding: 4px 12px;
+    border: 1px solid rgb(255 255 255 / 22%);
+    border-radius: 8px;
+    background: #252525;
+    color: #fff;
+    box-shadow: none;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    translate: -50% 0;
+    transform: none;
+    animation: none;
+    transition: none;
+    cursor: pointer;
+  }
+
+  @supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+    .founders.is-ready #hero #sound-toggle.sound-plate,
+    .founders.is-ready #hero #sound-off {
+      background: rgb(20 20 20 / 62%);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+    }
+  }
+
+  .founders.is-ready #hero #sound-toggle[hidden],
+  .founders.is-ready #hero #sound-off[hidden] {
+    display: none;
+  }
+
+  .founders.is-ready #hero #sound-toggle:focus-visible,
+  .founders.is-ready #hero #sound-off:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  .founders.is-ready #hero #sound-off span {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+    font: inherit;
+  }
+
+  .founders.is-ready #hero .sound-dot {
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgb(255 255 255 / 45%);
+    background: transparent;
+    color: inherit;
+  }
+
+  .founders.is-ready #hero .sound-dot::after {
+    content: none;
+    display: none;
+    animation: none;
+  }
+
+  .founders.is-ready #hero .sound-dot svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .founders.is-ready #hero .sound-lab {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  .founders.is-ready #hero #sound-time {
+    color: rgb(255 255 255 / 78%);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .founders.is-ready #hero .founder-track {
+    box-sizing: border-box;
+    position: relative;
+    display: block;
+    grid-area: track;
+    /* Сохраняем прежнюю ширину сцены после снятия боковых полей #hero. */
+    width: calc(
+      100% - max(16px, env(safe-area-inset-left, 0px))
+      - max(16px, env(safe-area-inset-right, 0px))
+    );
+    min-width: 0;
+    height: calc(504px + 150svh);
+    margin: 12px max(16px, env(safe-area-inset-right, 0px))
+      0 max(16px, env(safe-area-inset-left, 0px));
+    padding: 0;
+    overflow: visible;
+  }
+
+  .founders.is-ready #hero .founder-group {
+    box-sizing: border-box;
+    position: sticky;
+    top: max(56px, calc((100svh - 504px) / 2));
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    margin: 0;
+    padding: 0 0 12px;
+    overflow: visible;
+    background: #fffdf8;
+  }
+
+  .founders.is-ready .founder-stage {
+    box-sizing: border-box;
+    width: 100%;
+    height: 356px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .founders.is-ready .founder-name {
+    width: 112px;
+    min-height: 44px;
+    padding: 4px 0;
+  }
+
+  .founders.is-ready .founder-name-title {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .founders.is-ready .founder-name-role {
+    font-size: 10px;
+    line-height: 14px;
+  }
+
+  .founders.is-ready #hero .hero-actions {
+    display: block;
+    margin: 12px 0 0;
+    padding: 0;
+  }
+
+  .founders.is-ready #hero .hero-action-content {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .founders.is-ready #hero #hero-cta {
+    box-sizing: border-box;
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: auto;
+    min-height: 52px;
+    margin: 0;
+    padding: 0 12px;
+    font-size: 16px;
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .founders.is-ready #hero .hero-plan-link {
+    box-sizing: border-box;
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: auto;
+    min-height: 40px;
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+    line-height: 20px;
+    text-align: center;
+  }
+
+  .founders.is-ready #hero .hero-facts {
+    box-sizing: border-box;
+    display: block;
+    flex: none;
+    min-height: 32px;
+    margin: 0;
+    padding: 0;
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+  }
+
+  .founders.is-ready #hero .hero-facts span {
+    display: block;
+    margin: 0;
+  }
+
+  .founders.is-ready #hero .hero-facts span + span {
+    margin-left: 0;
+  }
+
+  .founders.is-ready.is-static #hero .founder-track,
+  .founders.is-ready.is-reduced #hero .founder-track {
+    height: auto;
+  }
+
+  .founders.is-ready.is-static #hero .founder-group,
+  .founders.is-ready.is-reduced #hero .founder-group {
+    position: static;
+    top: auto;
+  }
+}
+
+@media (max-width: 699px) and (max-height: 700px) {
+  .founders.is-ready #hero .hero-copy h1 {
+    max-width: 17ch;
+    font-size: 30px;
+    line-height: 1.1;
+  }
+
+  .founders.is-ready #hero .hero-copy p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .founders.is-ready #hero .hero-facts {
+    font-size: 10px;
+  }
+}
+
+/* С 600 точек шапка 52px, а .sticky-cta страница не показывает (phone = max-width 599px). */
+@media (min-width: 600px) and (max-width: 699px) {
+  .founders.is-ready {
+    --fh-header: 52px;
+    --fh-cta: 0px;
+  }
+}
+
+@media (max-width: 699px) and (min-aspect-ratio: 239/500) {
+  .founders.is-ready {
+    --fh-sound-row: 76px;
+  }
+
+  /* Резерв под видео: 8px + кнопка 44px + 24px.
+     Обе кнопки занимают одно место, независимо от состояния звука. */
+  .founders.is-ready #hero #sound-toggle.sound-plate,
+  .founders.is-ready #hero #sound-off {
+    bottom: 24px;
+    background: #252525;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Наложение шапки и снятие её вычета включаются только вместе.
+   Без :has остаются исходные шапка в потоке и расчёт высоты ролика. */
+@supports selector(:has(*)) {
+  @media (max-width: 699px) {
+    #avelio-start:has(.founders.is-ready) {
+      position: relative;
+    }
+
+    #avelio-start:has(.founders.is-ready) .founders.is-ready {
+      --fh-header: 0px;
+      --fh-header-safe: 0px;
+    }
+
+    #avelio-start:has(.founders.is-ready) > .site-header {
+      position: absolute;
+      z-index: 10;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      max-width: none;
+      border: 0;
+      background: transparent;
+      color: #fff;
+      box-shadow: none;
+      isolation: isolate;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      text-shadow: 0 1px 8px rgb(0 0 0 / 28%);
+      transition: opacity 180ms ease, visibility 0s linear;
+    }
+
+    #avelio-start:has(.founders.is-ready) > .site-header::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: calc(144px + env(safe-area-inset-top, 0px));
+      background: linear-gradient(
+        to bottom,
+        rgb(0 0 0 / 58%) 0%,
+        rgb(0 0 0 / 28%) 45%,
+        rgb(0 0 0 / 0%) 100%
+      );
+      pointer-events: none;
+    }
+
+    #avelio-start:has(.founders.is-ready) > .site-header .brand,
+    #avelio-start:has(.founders.is-ready) > .site-header .catalog-link {
+      color: #fff;
+    }
+
+    #avelio-start:has(.founders.is-ready) > .site-header .brand svg {
+      filter: drop-shadow(0 1px 6px rgb(0 0 0 / 28%));
+    }
+
+    #avelio-start:has(.founders.is-ready) > .site-header .catalog-link {
+      text-decoration-line: underline;
+      text-decoration-color: currentColor;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 5px;
+    }
+
+    #avelio-start:has(.founders.is-ready) > .site-header :focus-visible {
+      outline-color: #fff;
+    }
+
+    #avelio-start:has(.founders.is-ready) > .site-header.is-chrome-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 180ms ease, visibility 0s linear 180ms;
+    }
+  }
+
+  @media (max-width: 699px) and (prefers-reduced-motion: reduce) {
+    #avelio-start:has(.founders.is-ready) > .site-header,
+    #avelio-start:has(.founders.is-ready) > .site-header.is-chrome-hidden {
+      transition: none;
+    }
+  }
+}
+
+/* Нативное окно остаётся в верхнем слое, вне обрезки pin. */
+.founder-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(940px, calc(100vw - 48px));
+  max-width: none;
+  max-height: calc(100svh - 48px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--plate-rule);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow:
+    0 32px 100px rgb(38 30 18 / 24%),
+    0 2px 12px rgb(38 30 18 / 8%);
+}
+
+.founder-dialog:not([open]) {
+  display: none;
+}
+
+.founder-dialog[open] {
+  animation: founder-dialog-enter 220ms ease-out both;
+}
+
+.founder-dialog::backdrop {
+  background: rgb(28 25 20 / 44%);
+  backdrop-filter: blur(7px);
+}
+
+.founder-dialog-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  min-height: 480px;
+}
+
+.founder-dialog-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  object-fit: cover;
+  object-position: 50% 28%;
+  background: var(--plate);
+}
+
+.founder-dialog-body {
+  align-self: center;
+  min-width: 0;
+  padding: 64px 36px 36px;
+}
+
+.founder-dialog-title {
+  margin: 0;
+  font-size: clamp(36px, 4vw, 52px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -.045em;
+}
+
+.founder-dialog-role {
+  margin: 8px 0 24px;
+  color: var(--plate-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.founder-dialog-bio {
+  display: grid;
+  gap: 16px;
+}
+
+.founder-dialog-bio p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.founder-dialog .founder-dialog-cta {
+  width: 100%;
+  margin-top: 26px;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+.founder-dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--plate-rule);
+  border-radius: 7px;
+  background: var(--plate);
+  color: var(--plate-ink);
+  box-shadow: 0 3px 12px rgb(38 30 18 / 8%);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.founder-dialog-close:hover {
+  background: var(--white, #fff);
+}
+
+.founder-dialog :focus-visible {
+  outline: 2px solid var(--plate-ink);
+  outline-offset: 4px;
+}
+
+@keyframes founder-dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 699px) {
+  .founder-dialog {
+    width: calc(100vw - 24px);
+    max-height: calc(100svh - 24px);
+    border-radius: 12px;
+  }
+
+  .founder-dialog-card {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .founder-dialog-photo {
+    height: clamp(180px, 29svh, 260px);
+    min-height: 0;
+    object-position: 50% 27%;
+  }
+
+  .founder-dialog-body {
+    padding: 24px;
+  }
+
+  .founder-dialog-title {
+    font-size: 36px;
+  }
+
+  .founder-dialog-role {
+    margin-bottom: 18px;
+  }
+
+  .founder-dialog-bio p {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .founder-dialog-close {
+    top: 10px;
+    right: 10px;
+  }
+}
+
+/* Без движения — статичный результат; биографии остаются доступны. */
+.founders.is-ready.is-reduced {
+  height: auto;
+}
+
+.founders.is-ready.is-reduced .founders-pin {
+  position: relative;
+  top: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .founders.is-ready {
+    height: auto;
+  }
+
+  .founders.is-ready .founders-pin {
+    position: relative;
+    top: auto;
+  }
+
+  .founder-dialog[open] {
+    animation: none;
+  }
+}
+
+@media (max-width: 699px) and (prefers-reduced-motion: reduce) {
+  .founders.is-ready #hero .founder-track {
+    height: auto;
+  }
+
+  .founders.is-ready #hero .founder-group {
+    position: static;
+    top: auto;
+  }
+}

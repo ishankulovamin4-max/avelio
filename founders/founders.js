@@ -1,0 +1,1548 @@
+(() => {
+  "use strict";
+
+  // Сцена «Комната с фотографии» — content/avelio-concept/team/room-photo/spec.md.
+  // Весь анимируемый мир рисуется на одном canvas: точное наложение поз
+  // (lighter = предумноженное смешение), маски пальцев и ладони, экран с рамкой,
+  // тенями и растворением. Подписи имён и нажатие на корпус — кнопки поверх.
+  // Цвета рамки и теней задаёт founders.css переменными --fr-* на .founder-stage.
+
+  const root = document.getElementById("founders");
+  const hero = document.getElementById("hero");
+  const pin = root && root.querySelector(".founders-pin");
+  const actions = hero && hero.querySelector(".hero-actions");
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  const phoneQuery = matchMedia("(max-width: 699px)");
+  const tabletQuery = matchMedia("(min-width: 700px) and (max-width: 1099px)");
+
+  const ROOM_DIR = "founders/room/";
+  const KEYS = ["amin", "roman"];
+
+  const clamp = (n, min = 0, max = 1) => Math.min(max, Math.max(min, n));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const radians = degrees => degrees * Math.PI / 180;
+
+  // Решаем x(t), а не подставляем прогресс вместо параметра кривой.
+  function bezier(x1, y1, x2, y2) {
+    const coordinate = (t, a, b) =>
+      3 * (1 - t) * (1 - t) * t * a +
+      3 * (1 - t) * t * t * b + t * t * t;
+
+    return value => {
+      const x = clamp(value);
+      if (x === 0 || x === 1) return x;
+      let low = 0;
+      let high = 1;
+      for (let index = 0; index < 22; index++) {
+        const middle = (low + high) / 2;
+        if (coordinate(middle, x1, x2) < x) low = middle;
+        else high = middle;
+      }
+      return coordinate((low + high) / 2, y1, y2);
+    };
+  }
+
+  // §7: E — позы, прозрачность, реакции; M — карточка и диван; D — уход экрана вниз.
+  const E = bezier(0.42, 0, 0.58, 1);
+  const M = bezier(0.33, 0, 0.20, 1);
+  const D = bezier(0.40, 0, 0.60, 1);
+  const span = (value, a, b, curve) => curve(clamp((value - a) / (b - a)));
+
+  // §4. Доли ширины W и высоты H области анимации.
+  // screen — (x/W, y/H, ширина/W, высота/H); sofa — внешний диван (x/W, y/H, ширина/W),
+  // высота рамки дивана всегда ширина / 2,5; card — ширина карточки / W.
+  const LAYOUTS = {
+    wide: { amin: 0.18, roman: 0.82, screen: [0.29, 0.20, 0.42, 0.43], sofa: [0.25, 0.50, 0.50], card: 0.075 },
+    tablet: { amin: 0.20, roman: 0.80, screen: [0.15, 0.28, 0.70, 0.44], sofa: [0.10, 0.59, 0.80], card: 0.11 },
+    phone: { amin: 0.18, roman: 0.82, screen: [0.27, 0.24, 0.46, 0.43], sofa: [0.25, 0.58982, 0.50], card: 0.09 }
+  };
+
+  // §3: видимая высота фигуры 0,68H, ступни на 0,80H.
+  const FIGURE_HEIGHT = 0.68;
+  const FEET_Y = 0.80;
+
+  // §7.1. Сегменты поз по возрастанию q: [начало, конец, из, в]. Между сегментами
+  // держится последняя поза. Всё — функции q, без таймеров и направления прокрутки.
+  const TRACKS = {
+    amin: [
+      [0.04, 0.06, "calm", "blink"],
+      [0.06, 0.08, "blink", "calm"],
+      [0.10, 0.26, "calm", "apply"],
+      [0.28, 0.36, "apply", "calm"],
+      [0.80, 0.86, "calm", "pleased"],
+      [0.86, 0.92, "pleased", "calm"]
+    ],
+    roman: [
+      [0.07, 0.09, "calm", "blink"],
+      [0.09, 0.11, "blink", "calm"],
+      [0.36, 0.44, "calm", "push"],
+      [0.58, 0.64, "push", "calm"],
+      [0.64, 0.72, "calm", "switch"],
+      [0.83, 0.89, "switch", "pleased"],
+      [0.92, 0.98, "pleased", "calm"]
+    ]
+  };
+
+  // Всё ниже — в единицах рамки поз 1024×1536 (manifest.frame).
+  // Корпус для нажатия: §3, спокойный корпус x 300…724 от волос до подошв.
+  const BODY = [300, 108, 724, 1428];
+  // Щепоть Амина держит карточку за нижнюю кромку: точка захвата лежит на (0; 0,44)
+  // размера карточки от её центра (в белой кайме) и поворачивается вместе с наклоном.
+  const CARD_HOLD = [0, 0.44];
+  // Участок пальцев поверх карточки — мягкий круг вокруг текущей точки захвата:
+  // на полпути карточка закрывает обе гаснущие руки, двух щепотей поверх фото нет.
+  const FINGERS = { radius: 46, core: 0.62 };
+  // Кисть Романа поверх спинки: мягкий эллипс от точки руки к запястью.
+  const PALMS = [
+    { pose: "calm", dx: 8, dy: -42, rx: 64, ry: 92 },
+    { pose: "push", dx: 12, dy: -26, rx: 80, ry: 62 }
+  ];
+  // Кивок Амина (§3, §7.1): наклон головы до 2,5° вокруг шеи, только на весе позы pleased.
+  const NOD = { degrees: 2.5, pivot: [512, 362], feather: [352, 384], half: 140 };
+  // Овалы лиц (cx, cy, rx, ry) — те же, что в tools/room-photo-pose.py; для проверки.
+  const FACES = { amin: [523, 272, 82, 78], roman: [528, 285, 72, 78] };
+  // Высота головы с волосами и подбородком (§3): 108…348.
+  const HEAD = { top: 108, bottom: 348, half: 118 };
+
+  const LOOK_DEFAULTS = {
+    frame: "#efe8dd",
+    frameEdge: "rgba(140, 118, 92, 0.30)",
+    frameInner: "rgba(140, 118, 92, 0.22)",
+    screenShadow: "rgba(58, 44, 26, 0.14)",
+    screenShadowBlur: 0.07,
+    screenShadowY: 0.035,
+    contactShadow: "rgba(48, 36, 20, 0.20)",
+    roomShadow: "rgba(84, 58, 28, 0.30)",
+    cardShadow: "rgba(40, 30, 15, 0.18)",
+    cardShadowBlur: 0.02
+  };
+  const LOOK_VARS = {
+    frame: "--fr-frame",
+    frameEdge: "--fr-frame-edge",
+    frameInner: "--fr-frame-inner",
+    screenShadow: "--fr-screen-shadow",
+    screenShadowBlur: "--fr-screen-shadow-blur",
+    screenShadowY: "--fr-screen-shadow-y",
+    contactShadow: "--fr-contact-shadow",
+    roomShadow: "--fr-room-shadow",
+    cardShadow: "--fr-card-shadow",
+    cardShadowBlur: "--fr-card-shadow-blur"
+  };
+
+  let ready = false;
+  let visible = false;
+  let forced = null;
+  let p = 0;
+  let q = 0;
+  let filtered = 0;
+  let raf = 0;
+  let lastFrame = null;
+  let recording = false;
+  let journal = [];
+  let lastKey = "";
+
+  let manifest;
+  let texts;
+  let stage;
+  let canvas;
+  let ctx;
+  let track;
+  let group;
+  let probe;
+  let dialog;
+  let mode = "wide";
+  let staticMode = false;
+  let scroll = null;
+  let geo = null;
+  let look = { ...LOOK_DEFAULTS };
+  let resizeObserver;
+  let intersectionObserver;
+  let measurePending = 0;
+  let opener = null;
+  let ownsLock = false;
+  let backdropDown = false;
+
+  const images = {};
+  const people = {};
+  const work = {};
+
+  window.__founders = {
+    setProgress(value) {
+      if (value === null) {
+        forced = null;
+        filtered = q;
+        lastFrame = null;
+        updateTarget();
+        wake();
+        return;
+      }
+      if (typeof value !== "number" || !Number.isFinite(value)) return;
+      forced = clamp(value);
+      p = q = filtered = forced;
+      lastFrame = null;
+      if (ready) render(true);
+    },
+    state() {
+      const st = currentState();
+      return {
+        ready,
+        mode,
+        static: staticMode,
+        reduced: motion.matches,
+        p,
+        q,
+        forced,
+        scroll: scroll ? { ...scroll } : null,
+        mFit: geo ? geo.mFit : null,
+        poses: { amin: { ...st.amin }, roman: { ...st.roman } },
+        card: { ...st.card },
+        reveal: st.reveal,
+        move: st.move,
+        swap: st.swap,
+        down: st.down,
+        fade: st.fade,
+        nod: st.nod
+      };
+    },
+    geometry(value) {
+      return ready && geo ? describe(value) : null;
+    },
+    layers(value) {
+      return ready && geo ? debugLayers(value) : null;
+    },
+    journal(enabled) {
+      if (enabled === true) {
+        journal = [];
+        recording = true;
+        return true;
+      }
+      if (enabled === false) {
+        recording = false;
+        return journal;
+      }
+      return journal;
+    }
+  };
+
+  if (!root || !hero || !pin || !actions) return;
+
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function decorative(node) {
+    node.setAttribute("aria-hidden", "true");
+    return node;
+  }
+
+  function scratch() {
+    const node = document.createElement("canvas");
+    const context = node.getContext("2d");
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    return { canvas: node, ctx: context };
+  }
+
+  function sizeCanvas(target, width, height) {
+    const w = Math.max(1, Math.round(width));
+    const h = Math.max(1, Math.round(height));
+    if (target.canvas.width !== w) target.canvas.width = w;
+    if (target.canvas.height !== h) target.canvas.height = h;
+    target.ctx.imageSmoothingEnabled = true;
+    target.ctx.imageSmoothingQuality = "high";
+  }
+
+  // Для холстов, у которых размер меняется каждый кадр (кисть, щепоть, смена дивана):
+  // холст только растёт с запасом и не пересоздаётся; рисуется участок w×h в левом верхнем углу.
+  function fitCanvas(target, width, height) {
+    const w = Math.max(1, Math.round(width));
+    const h = Math.max(1, Math.round(height));
+    if (target.canvas.width < w || target.canvas.height < h) {
+      target.canvas.width = Math.max(target.canvas.width, Math.ceil(w / 64) * 64);
+      target.canvas.height = Math.max(target.canvas.height, Math.ceil(h / 64) * 64);
+      target.ctx.imageSmoothingEnabled = true;
+      target.ctx.imageSmoothingQuality = "high";
+    }
+    return { w, h };
+  }
+
+  async function fetchJSON(url) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+    return response.json();
+  }
+
+  async function loadImage(file) {
+    const image = new Image();
+    image.decoding = "async";
+    const loaded = new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error(`Не загружено: ${file}`));
+    });
+    image.src = ROOM_DIR + file;
+    await loaded;
+    await image.decode();
+    return image;
+  }
+
+  function validateData() {
+    const positive = value => Number.isFinite(value) && value > 0;
+    const point = value => Array.isArray(value) && value.length === 2 && value.every(Number.isFinite);
+    const rect = value => Array.isArray(value) && value.length === 4 && value.every(Number.isFinite) &&
+      value[2] > 0 && value[3] > 0;
+    const text = value => typeof value === "string" && value.length > 0;
+    const frame = manifest.frame;
+    const poses = { amin: ["calm", "blink", "apply", "pleased"], roman: ["calm", "blink", "push", "switch", "pleased"] };
+
+    const ok = frame && positive(frame.w) && positive(frame.h) &&
+      Number.isFinite(frame.hairTop) && Number.isFinite(frame.soles) && frame.soles > frame.hairTop &&
+      Number.isFinite(frame.axis) &&
+      KEYS.every(key => {
+        const data = manifest.people && manifest.people[key];
+        const copy = texts.people && texts.people[key];
+        return data && rect(data.crop) && data.poses && poses[key].every(pose => text(data.poses[pose])) &&
+          copy && text(copy.name) && text(copy.role) && text(copy.aria) &&
+          Array.isArray(copy.bio) && copy.bio.length > 0 && copy.bio.every(text);
+      }) &&
+      point(manifest.people.amin.grip && manifest.people.amin.grip.calm) &&
+      point(manifest.people.amin.grip.apply) &&
+      point(manifest.people.roman.hand && manifest.people.roman.hand.calm) &&
+      point(manifest.people.roman.hand.push) &&
+      manifest.sofa && text(manifest.sofa.a && manifest.sofa.a.file) && text(manifest.sofa.b && manifest.sofa.b.file) &&
+      positive(manifest.sofa.w) && positive(manifest.sofa.h) &&
+      Math.abs(manifest.sofa.w / manifest.sofa.h - 2.5) < 0.01 &&
+      manifest.room && text(manifest.room.file) && text(manifest.room.sketch) &&
+      manifest.card && text(manifest.card.file) && positive(manifest.card.w) && positive(manifest.card.h) &&
+      texts.stage && text(texts.stage.eyebrow) &&
+      texts.dialog && text(texts.dialog.cta) && text(texts.dialog.close);
+
+    if (!ok) throw new Error("founders/room/manifest.json или texts.json не соответствует сцене");
+  }
+
+  async function loadImages() {
+    const jobs = [];
+    for (const key of KEYS) {
+      for (const [pose, file] of Object.entries(manifest.people[key].poses)) {
+        jobs.push(loadImage(file).then(image => { images[`${key}-${pose}`] = image; }));
+      }
+    }
+    jobs.push(loadImage(manifest.sofa.a.file).then(image => { images.sofaA = image; }));
+    jobs.push(loadImage(manifest.sofa.b.file).then(image => { images.sofaB = image; }));
+    jobs.push(loadImage(manifest.room.file).then(image => { images.room = image; }));
+    jobs.push(loadImage(manifest.room.sketch).then(image => { images.sketch = image; }));
+    jobs.push(loadImage(manifest.card.file).then(image => { images.card = image; }));
+    await Promise.all(jobs);
+  }
+
+  function buildScene() {
+    stage = element("div", "founder-stage");
+    stage.setAttribute("role", "group");
+    stage.setAttribute("aria-label", texts.stage.eyebrow);
+
+    canvas = decorative(element("canvas", "founder-canvas"));
+    ctx = canvas.getContext("2d");
+    stage.append(canvas);
+
+    for (const key of KEYS) {
+      const copy = texts.people[key];
+
+      // Неподвижный корпус: нажатие мышью или пальцем. С клавиатуры — подпись имени.
+      const body = decorative(element("button", `founder-body founder-body--${key}`));
+      body.type = "button";
+      body.tabIndex = -1;
+
+      const name = element("button", `founder-name founder-name--${key}`);
+      name.type = "button";
+      name.setAttribute("aria-label", copy.aria);
+      name.setAttribute("aria-haspopup", "dialog");
+      name.append(
+        element("span", "founder-name-title", copy.name),
+        element("span", "founder-name-role", copy.role)
+      );
+
+      body.addEventListener("click", () => openDialog(key, name));
+      name.addEventListener("click", () => openDialog(key, name));
+      stage.append(body, name);
+
+      const art = scratch();
+      people[key] = { key, body, name, art, cache: "" };
+    }
+
+    for (const name of ["screen", "reveal", "blend", "overlay", "mask", "occluder", "head", "headMask"]) {
+      work[name] = scratch();
+    }
+
+    // §4.3: на телефоне закрепляется только группа «сцена → кнопка → ссылка → факты».
+    // На компьютере и планшете обе обёртки — display: contents, сетка первого экрана прежняя.
+    track = element("div", "founder-track");
+    group = element("div", "founder-group");
+    actions.before(track);
+    group.append(stage, actions);
+    track.append(group);
+
+    // Замер 100svh и нижнего безопасного поля для проверки «группа помещается».
+    probe = decorative(element("div", "founder-probe"));
+    probe.style.cssText =
+      "position:fixed;left:0;top:0;width:0;box-sizing:border-box;visibility:hidden;pointer-events:none;" +
+      "height:100vh;height:100svh;padding:0 0 env(safe-area-inset-bottom, 0px) 0;";
+    document.body.append(probe);
+  }
+
+  function teardownScene() {
+    if (track && track.isConnected) {
+      track.before(actions);
+      track.remove();
+    }
+    if (probe) probe.remove();
+    if (dialog) dialog.remove();
+  }
+
+  function buildDialog() {
+    dialog = element("dialog", "founder-dialog");
+    dialog.setAttribute("aria-labelledby", "founder-dialog-title");
+    dialog.setAttribute("aria-describedby", "founder-dialog-role");
+
+    const card = element("div", "founder-dialog-card");
+    const photo = element("img", "founder-dialog-photo");
+    photo.alt = "";
+    photo.decoding = "async";
+
+    const body = element("div", "founder-dialog-body");
+    const title = element("h2", "founder-dialog-title");
+    title.id = "founder-dialog-title";
+
+    const role = element("p", "founder-dialog-role");
+    role.id = "founder-dialog-role";
+
+    const bio = element("div", "founder-dialog-bio");
+    const cta = element("a", "button founder-dialog-cta", texts.dialog.cta);
+    cta.href = "#send";
+
+    const close = element("button", "founder-dialog-close", texts.dialog.close);
+    close.type = "button";
+    close.autofocus = true;
+    close.addEventListener("click", () => dialog.close());
+    cta.addEventListener("click", () => dialog.close());
+
+    body.append(title, role, bio, cta);
+    card.append(photo, body, close);
+    dialog.append(card);
+    root.append(dialog);
+
+    function outside(event) {
+      const box = dialog.getBoundingClientRect();
+      return event.clientX < box.left || event.clientX > box.right ||
+        event.clientY < box.top || event.clientY > box.bottom;
+    }
+
+    dialog.addEventListener("pointerdown", event => {
+      backdropDown = event.target === dialog && outside(event);
+    });
+    dialog.addEventListener("click", event => {
+      if (backdropDown && event.target === dialog && outside(event)) dialog.close();
+      backdropDown = false;
+    });
+
+    dialog.addEventListener("close", () => {
+      if (ownsLock) document.documentElement.classList.remove("f-plan-locked");
+      ownsLock = false;
+      if (opener && opener.isConnected) opener.focus({ preventScroll: true });
+      opener = null;
+      wake();
+    });
+  }
+
+  function openDialog(key, button) {
+    if (!dialog || dialog.open) return;
+
+    const copy = texts.people[key];
+    const photo = dialog.querySelector(".founder-dialog-photo");
+    photo.src = `founders/img/${key}-photo.webp`;
+    photo.alt = copy.name;
+    photo.width = key === "amin" ? 640 : 749;
+    photo.height = key === "amin" ? 640 : 1000;
+
+    dialog.querySelector(".founder-dialog-title").textContent = copy.name;
+    dialog.querySelector(".founder-dialog-role").textContent = copy.role;
+    dialog.querySelector(".founder-dialog-bio").replaceChildren(
+      ...copy.bio.map(text => element("p", "", text))
+    );
+
+    opener = button;
+    dialog.showModal();
+    ownsLock = !document.documentElement.classList.contains("f-plan-locked");
+    document.documentElement.classList.add("f-plan-locked");
+  }
+
+  // ---------- Состояние сцены как функция q (§7.1) ----------
+
+  function poseAt(segments, value) {
+    let pose = "calm";
+    for (const [a, b, from, to] of segments) {
+      if (value < a) break;
+      if (value < b) return { from, to, w: E((value - a) / (b - a)) };
+      pose = to;
+    }
+    return { from: pose, to: pose, w: 0 };
+  }
+
+  function weightOf(pose, name) {
+    if (pose.from === name && pose.to === name) return 1;
+    if (pose.to === name) return pose.w;
+    if (pose.from === name) return 1 - pose.w;
+    return 0;
+  }
+
+  function stateAt(value) {
+    const amin = poseAt(TRACKS.amin, value);
+    const roman = poseAt(TRACKS.roman, value);
+    return {
+      q: value,
+      amin,
+      roman,
+      nod: weightOf(amin, "pleased"),
+      card: { t: span(value, 0.10, 0.26, M), alpha: 1 - span(value, 0.26, 0.32, E) },
+      reveal: span(value, 0.24, 0.36, E),
+      move: span(value, 0.38, 0.64, M),
+      swap: span(value, 0.72, 0.80, E),
+      down: span(value, 0.88, 0.98, D),
+      fade: 1 - span(value, 0.90, 0.98, E)
+    };
+  }
+
+  // §10: один кадр результата до финального ухода экрана.
+  function restingState() {
+    const calm = { from: "calm", to: "calm", w: 0 };
+    return {
+      q: null,
+      amin: { ...calm },
+      roman: { ...calm },
+      nod: 0,
+      card: { t: 0, alpha: 0 },
+      reveal: 1,
+      move: 1,
+      swap: 1,
+      down: 0,
+      fade: 1
+    };
+  }
+
+  function isResting() {
+    return motion.matches || staticMode;
+  }
+
+  function currentState() {
+    return isResting() ? restingState() : stateAt(q);
+  }
+
+  function stateKey(st) {
+    const pose = value => `${value.from}${value.to}${value.w.toFixed(5)}`;
+    return [
+      pose(st.amin), pose(st.roman), st.nod, st.card.t, st.card.alpha,
+      st.reveal, st.move, st.swap, st.down, st.fade
+    ].map(value => typeof value === "number" ? value.toFixed(5) : value).join("|");
+  }
+
+  // ---------- Геометрия (§3–§5) ----------
+
+  function computeGeometry(W, H, layoutName, kx, ky) {
+    const layout = LAYOUTS[layoutName];
+    const frame = manifest.frame;
+    const s = FIGURE_HEIGHT * H / (frame.soles - frame.hairTop);
+    const feetY = FEET_Y * H;
+    const g = { W, H, kx, ky, dpr: Math.min(window.devicePixelRatio || 1, 2), mode: layoutName, s, feetY, people: {} };
+
+    for (const key of KEYS) {
+      const cx = layout[key] * W;
+      const crop = manifest.people[key].crop;
+      const map = (fx, fy) => [cx + (fx - frame.axis) * s, feetY + (fy - frame.soles) * s];
+      const [bx, by] = map(BODY[0], BODY[1]);
+      g.people[key] = {
+        cx,
+        map,
+        crop,
+        rect: { x: cx + (crop[0] - frame.axis) * s, y: feetY + (crop[1] - frame.soles) * s, w: crop[2] * s, h: crop[3] * s },
+        body: { x: bx, y: by, w: (BODY[2] - BODY[0]) * s, h: (BODY[3] - BODY[1]) * s }
+      };
+    }
+
+    const [sx, sy, sw, sh] = [layout.screen[0] * W, layout.screen[1] * H, layout.screen[2] * W, layout.screen[3] * H];
+    const small = Math.min(sw, sh);
+    g.screen = { x: sx, y: sy, w: sw, h: sh, r: 0.04 * small };
+    g.inner = { x: sx + 0.02 * sw, y: sy + 0.02 * sh, w: 0.96 * sw, h: 0.96 * sh, r: Math.max(0, 0.02 * small) };
+
+    const outerWidth = layout.sofa[2] * W;
+    g.sofaOut = { x: layout.sofa[0] * W, y: layout.sofa[1] * H, w: outerWidth, h: outerWidth / 2.5 };
+    const innerWidth = 0.68 * g.inner.w;
+    g.sofaIn = {
+      x: g.inner.x + 0.16 * g.inner.w,
+      y: g.inner.y + 0.88 * g.inner.h - innerWidth / 2.5,
+      w: innerWidth,
+      h: innerWidth / 2.5
+    };
+    g.mFit = findFit(g);
+
+    const cardWidth = layout.card * W;
+    g.card = { w: cardWidth, h: cardWidth * manifest.card.h / manifest.card.w };
+    const grip = manifest.people.amin.grip;
+    g.grip = { calm: g.people.amin.map(...grip.calm), apply: g.people.amin.map(...grip.apply) };
+
+    const hand = manifest.people.roman.hand;
+    g.palms = PALMS.filter(item => hand[item.pose]).map(item => {
+      const [hx, hy] = hand[item.pose];
+      const [x, y] = g.people.roman.map(hx + item.dx, hy + item.dy);
+      return { x, y, rx: item.rx * s, ry: item.ry * s };
+    });
+
+    // Центр раскрытия цвета — место приложенной карточки, внутри окна экрана.
+    const applied = cardPlacement(g, 1);
+    g.reveal = {
+      x: clamp(applied.cx - g.inner.x, 0, g.inner.w),
+      y: clamp(applied.cy - g.inner.y, 0, g.inner.h)
+    };
+    const corners = [[0, 0], [g.inner.w, 0], [0, g.inner.h], [g.inner.w, g.inner.h]];
+    g.reveal.far = Math.max(...corners.map(([x, y]) => Math.hypot(x - g.reveal.x, y - g.reveal.y)));
+
+    return g;
+  }
+
+  function sofaRect(g, m) {
+    const a = g.sofaOut;
+    const b = g.sofaIn;
+    const w = lerp(a.w, b.w, m);
+    const cx = lerp(a.x + a.w / 2, b.x + b.w / 2, m);
+    const cy = lerp(a.y + a.h / 2, b.y + b.h / 2, m);
+    return { x: cx - w / 2, y: cy - w / 5, w, h: w / 2.5 };
+  }
+
+  function insideInner(g, r, tolerance = 0.5) {
+    return r.x >= g.inner.x - tolerance && r.y >= g.inner.y - tolerance &&
+      r.x + r.w <= g.inner.x + g.inner.w + tolerance && r.y + r.h <= g.inner.y + g.inner.h + tolerance;
+  }
+
+  // Первый m, с которого рамка дивана целиком во внутреннем окне (§6): с этой точки
+  // диван живёт в слое экрана, а копия перед героями плавно гаснет к m = 1.
+  function findFit(g) {
+    if (insideInner(g, sofaRect(g, 0))) return 0;
+    let low = 0;
+    let high = 1;
+    for (let index = 0; index < 30; index++) {
+      const middle = (low + high) / 2;
+      if (insideInner(g, sofaRect(g, middle))) high = middle;
+      else low = middle;
+    }
+    return Math.min(1, high);
+  }
+
+  function frontAlpha(g, m) {
+    if (m < g.mFit) return 1;
+    if (m >= 1) return 0;
+    return 1 - E((m - g.mFit) / Math.max(1e-6, 1 - g.mFit));
+  }
+
+  function cardPlacement(g, t) {
+    const pinchX = lerp(g.grip.calm[0], g.grip.apply[0], t);
+    const pinchY = lerp(g.grip.calm[1], g.grip.apply[1], t);
+    const angle = radians(lerp(-8, 0, t));
+    const hx = CARD_HOLD[0] * g.card.w;
+    const hy = CARD_HOLD[1] * g.card.h;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    return {
+      cx: pinchX - (hx * cos - hy * sin),
+      cy: pinchY - (hx * sin + hy * cos),
+      angle,
+      pinch: [pinchX, pinchY]
+    };
+  }
+
+  // ---------- Рисование ----------
+
+  function parseColor(value) {
+    const probeCtx = work.mask.ctx;
+    probeCtx.fillStyle = "#000";
+    probeCtx.fillStyle = value;
+    const normalized = probeCtx.fillStyle;
+    if (normalized.startsWith("#")) {
+      const hex = normalized.slice(1);
+      return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16), 1];
+    }
+    const parts = normalized.match(/[\d.]+/g) || ["0", "0", "0", "1"];
+    return [Number(parts[0]), Number(parts[1]), Number(parts[2]), parts[3] === undefined ? 1 : Number(parts[3])];
+  }
+
+  function rgba(color, factor) {
+    const [r, g, b, a] = color;
+    return `rgba(${r}, ${g}, ${b}, ${clamp(a * factor)})`;
+  }
+
+  function readLook() {
+    const style = getComputedStyle(stage);
+    const next = { ...LOOK_DEFAULTS };
+    for (const [key, name] of Object.entries(LOOK_VARS)) {
+      const raw = style.getPropertyValue(name).trim();
+      if (!raw) continue;
+      if (typeof LOOK_DEFAULTS[key] === "number") {
+        const number = parseFloat(raw);
+        if (Number.isFinite(number) && number >= 0) next[key] = number;
+      } else {
+        next[key] = raw;
+      }
+    }
+    for (const key of ["contactShadow", "roomShadow"]) next[`${key}Color`] = parseColor(next[key]);
+    look = next;
+  }
+
+  function roundRect(c, x, y, w, h, r) {
+    const radius = Math.max(0, Math.min(r, w / 2, h / 2));
+    c.beginPath();
+    c.moveTo(x + radius, y);
+    c.arcTo(x + w, y, x + w, y + h, radius);
+    c.arcTo(x + w, y + h, x, y + h, radius);
+    c.arcTo(x, y + h, x, y, radius);
+    c.arcTo(x, y, x + w, y, radius);
+    c.closePath();
+  }
+
+  function drawCover(c, image, box) {
+    const iw = image.naturalWidth;
+    const ih = image.naturalHeight;
+    const scale = Math.max(box.w / iw, box.h / ih);
+    const sw = box.w / scale;
+    const sh = box.h / scale;
+    c.drawImage(image, (iw - sw) / 2, (ih - sh) / 2, sw, sh, box.x, box.y, box.w, box.h);
+  }
+
+  // Мягкий эллипс: ровный цвет до core, затем спад к прозрачному краю; альфа больше 0 только внутри.
+  function softEllipse(c, cx, cy, rx, ry, color, alpha, core = 0) {
+    if (alpha <= 0.001 || rx <= 0 || ry <= 0) return;
+    c.save();
+    c.translate(cx, cy);
+    c.scale(rx, ry);
+    const gradient = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+    gradient.addColorStop(0, rgba(color, alpha));
+    if (core > 0) gradient.addColorStop(core, rgba(color, alpha));
+    const middle = core > 0 ? core + (1 - core) * 0.5 : 0.55;
+    gradient.addColorStop(middle, rgba(color, alpha * (core > 0 ? 0.5 : 0.55)));
+    gradient.addColorStop(1, rgba(color, 0));
+    c.fillStyle = gradient;
+    c.beginPath();
+    c.arc(0, 0, 1, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+  }
+
+  function setScene(c, g) {
+    c.setTransform(g.kx, 0, 0, g.ky, 0, 0);
+    c.globalAlpha = 1;
+    c.globalCompositeOperation = "source-over";
+  }
+
+  function clearCanvas(target) {
+    const c = target.ctx;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalAlpha = 1;
+    c.globalCompositeOperation = "source-over";
+    c.clearRect(0, 0, target.canvas.width, target.canvas.height);
+  }
+
+  // Поза героя на его собственном холсте: две соседние картинки в общей рамке,
+  // (1 − w)·A + w·B в предумноженном виде (§7.2). Там, где альфа поз совпадает,
+  // фигура не просвечивает ни на одном весе.
+  // Фаза 17 Task 2: на экране всегда одна поза — та, к которой ближе прокрутка. Переход через
+  // середину — наплыв по времени POSE_FADE_MS, поэтому полупрозрачные «вторые руки» не зависают,
+  // когда прокрутка стоит посреди смены поз. При setProgress (проверка) и без анимаций — сразу.
+  const POSE_FADE_MS = 160;
+  function shownPose(person, pose, now) {
+    // Разбор слоёв для проверки (debugLayers) рисует позу ровно по прокрутке и не трогает показ.
+    if (now === undefined) return pose;
+    const target = pose.w >= 0.5 ? pose.to : pose.from;
+    if (!person.shown || forced !== null || motion.matches) {
+      person.shown = target;
+      person.fade = null;
+    } else if (target !== person.shown) {
+      person.fade = { from: person.shown, start: now };
+      person.shown = target;
+    }
+    if (person.fade) {
+      const t = clamp((now - person.fade.start) / POSE_FADE_MS);
+      if (t >= 1) person.fade = null;
+      else return { from: person.fade.from, to: person.shown, w: t * t * (3 - 2 * t) };
+    }
+    return { from: person.shown, to: person.shown, w: 0 };
+  }
+
+  function fading() {
+    return KEYS.some(key => people[key].fade);
+  }
+
+  function renderPerson(key, scrollPose, nod, now) {
+    const person = people[key];
+    const pose = shownPose(person, scrollPose, now);
+    const cacheKey = `${pose.from}|${pose.to}|${pose.w.toFixed(5)}|${nod.toFixed(5)}`;
+    if (person.cache === cacheKey) return;
+    person.cache = cacheKey;
+
+    const art = person.art;
+    clearCanvas(art);
+    const c = art.ctx;
+    const w = art.canvas.width;
+    const h = art.canvas.height;
+    const a = poseArt(person, pose.from, w, h);
+    const b = poseArt(person, pose.to, w, h);
+
+    if (pose.from === pose.to || pose.w <= 0) {
+      c.drawImage(a, 0, 0);
+    } else if (pose.w >= 1) {
+      c.drawImage(b, 0, 0);
+    } else {
+      c.globalAlpha = 1 - pose.w;
+      c.drawImage(a, 0, 0);
+      c.globalCompositeOperation = "lighter";
+      c.globalAlpha = pose.w;
+      c.drawImage(b, 0, 0);
+      c.globalCompositeOperation = "source-over";
+      c.globalAlpha = 1;
+    }
+
+    if (key === "amin" && nod > 0.0001) applyNod(person, nod);
+  }
+
+  // Фаза 17 Task 1: каждая поза уменьшается до размера на экране один раз (при смене размера окна),
+  // затем мягкое повышение резкости — браузерное уменьшение в 2–3 раза мылит лицо и ткань.
+  // В кадре поза рисуется готовой, 1:1, без пересчёта.
+  const SHARPEN = 0.22;
+  function poseArt(person, name, w, h) {
+    const sizeKey = `${w}x${h}`;
+    if (person.posesSize !== sizeKey) {
+      person.poses = {};
+      person.posesSize = sizeKey;
+    }
+    let ready = person.poses[name];
+    if (ready) return ready;
+    // Резкость считается на холсте для чтения (он в обычной памяти), а в кадр идёт копия
+    // на обычном холсте: иначе браузер перекладывает позу в видеокарту каждый кадр.
+    const src = document.createElement("canvas");
+    src.width = w;
+    src.height = h;
+    const c = src.getContext("2d", { willReadFrequently: true });
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = "high";
+    c.drawImage(images[`${person.key}-${name}`], 0, 0, w, h);
+    if (SHARPEN > 0 && w > 2 && h > 2) sharpen(c, w, h, SHARPEN);
+    const node = document.createElement("canvas");
+    node.width = w;
+    node.height = h;
+    node.getContext("2d").drawImage(src, 0, 0);
+    person.poses[name] = node;
+    return node;
+  }
+
+  // Готовим все позы по одной в паузах браузера, чтобы первая смена позы при прокрутке не тормозила кадр.
+  let prewarmHandle = 0;
+  function prewarmPoses() {
+    const idle = window.requestIdleCallback || (callback => setTimeout(() => callback({ timeRemaining: () => 8 }), 50));
+    const cancel = window.cancelIdleCallback || clearTimeout;
+    if (prewarmHandle) cancel(prewarmHandle);
+    const queue = [];
+    for (const key of KEYS) {
+      for (const name of Object.keys(manifest.people[key].poses)) queue.push([people[key], name]);
+    }
+    const step = deadline => {
+      prewarmHandle = 0;
+      while (queue.length && deadline.timeRemaining() > 4) {
+        const [person, name] = queue.shift();
+        poseArt(person, name, person.art.canvas.width, person.art.canvas.height);
+      }
+      if (queue.length) prewarmHandle = idle(step, { timeout: 500 });
+    };
+    prewarmHandle = idle(step, { timeout: 500 });
+  }
+
+  // Нерезкая маска 3×3 по премультиплицированным каналам — без тёмных ореолов на краю фигуры.
+  function sharpen(c, w, h, k) {
+    const data = c.getImageData(0, 0, w, h);
+    const px = data.data;
+    const n = w * h;
+    const pre = new Float32Array(n * 4);
+    for (let i = 0; i < n; i += 1) {
+      const a = px[i * 4 + 3] / 255;
+      pre[i * 4] = px[i * 4] * a;
+      pre[i * 4 + 1] = px[i * 4 + 1] * a;
+      pre[i * 4 + 2] = px[i * 4 + 2] * a;
+      pre[i * 4 + 3] = px[i * 4 + 3];
+    }
+    // Альфу не трогаем — без просветов внутри и без новых краёв.
+    for (let y = 1; y < h - 1; y += 1) {
+      for (let x = 1; x < w - 1; x += 1) {
+        const i = (y * w + x) * 4;
+        const alpha = pre[i + 3];
+        if (alpha <= 0) continue;
+        const unpremultiply = 255 / alpha;
+        for (let ch = 0; ch < 3; ch += 1) {
+          const centre = pre[i + ch];
+          const around = pre[i - 4 + ch] + pre[i + 4 + ch] + pre[i - w * 4 + ch] + pre[i + w * 4 + ch];
+          const value = (centre + k * (4 * centre - around)) * unpremultiply;
+          px[i + ch] = value < 0 ? 0 : value > 255 ? 255 : value;
+        }
+      }
+    }
+    c.putImageData(data, 0, 0);
+  }
+
+  // Голова поворачивается вокруг шеи; полоса шеи смешивается lighter, поэтому
+  // сумма весов там ровно 1 и шва нет. Смещение у шеи меньше 0,5 точки.
+  function applyNod(person, nod) {
+    const art = person.art;
+    const crop = person.cropFrame;
+    const w = art.canvas.width;
+    const h = art.canvas.height;
+    const k = w / crop[2];
+    const toX = fx => (fx - crop[0]) * k;
+    const toY = fy => (fy - crop[1]) * k;
+    const pivotX = toX(NOD.pivot[0]);
+    const pivotY = toY(NOD.pivot[1]);
+
+    const mask = work.headMask;
+    sizeCanvas(mask, w, h);
+    clearCanvas(mask);
+    const gradient = mask.ctx.createLinearGradient(0, toY(NOD.feather[0]), 0, toY(NOD.feather[1]));
+    gradient.addColorStop(0, "rgba(0, 0, 0, 1)");
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+    mask.ctx.fillStyle = gradient;
+    mask.ctx.fillRect(toX(manifest.frame.axis - NOD.half), 0, 2 * NOD.half * k, toY(NOD.feather[1]) + 1);
+
+    const head = work.head;
+    sizeCanvas(head, w, h);
+    clearCanvas(head);
+    head.ctx.drawImage(art.canvas, 0, 0);
+    head.ctx.globalCompositeOperation = "destination-in";
+    head.ctx.drawImage(mask.canvas, 0, 0);
+    head.ctx.globalCompositeOperation = "source-over";
+
+    const c = art.ctx;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalCompositeOperation = "destination-out";
+    c.drawImage(mask.canvas, 0, 0);
+    c.globalCompositeOperation = "lighter";
+    c.translate(pivotX, pivotY);
+    c.rotate(radians(NOD.degrees * nod));
+    c.translate(-pivotX, -pivotY);
+    c.drawImage(head.canvas, 0, 0);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalCompositeOperation = "source-over";
+  }
+
+  function drawFigure(c, key) {
+    // Фигура уже отрисована в размер экрана: ставим её на целую точку без растяжения (Task 1 фазы 17).
+    const r = geo.people[key].rect;
+    const m = c.getTransform();
+    c.save();
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.drawImage(people[key].art.canvas, Math.round(m.a * r.x + m.e), Math.round(m.d * r.y + m.f));
+    c.restore();
+  }
+
+  // Слой 2: мягкие контактные тени у ступней и под внешним диваном.
+  function drawGroundShadows(c, st) {
+    const g = geo;
+    const color = look.contactShadowColor;
+    for (const key of KEYS) {
+      softEllipse(c, g.people[key].cx, g.feetY - 0.004 * g.H, 175 * g.s, 0.014 * g.H, color, 1);
+    }
+    const r = sofaRect(g, st.move);
+    const alpha = 1 - st.move;
+    if (alpha > 0) {
+      const bottom = r.y + r.h * (556 / 560);
+      softEllipse(c, r.x + r.w / 2, bottom - 0.004 * g.H, 0.47 * r.w, Math.min(0.016 * g.H, 0.06 * r.w), color, alpha);
+    }
+  }
+
+  function drawSofa(c, r, swap) {
+    if (swap <= 0) {
+      c.drawImage(images.sofaA, r.x, r.y, r.w, r.h);
+      return;
+    }
+    if (swap >= 1) {
+      c.drawImage(images.sofaB, r.x, r.y, r.w, r.h);
+      return;
+    }
+    // Смена А → Б в одной посадочной рамке: точное наложение, без «дыры» на 50 %.
+    const blend = work.blend;
+    const { w, h } = fitCanvas(blend, r.w * geo.kx, r.h * geo.ky);
+    clearCanvas(blend);
+    const b = blend.ctx;
+    b.globalAlpha = 1 - swap;
+    b.drawImage(images.sofaA, 0, 0, w, h);
+    b.globalCompositeOperation = "lighter";
+    b.globalAlpha = swap;
+    b.drawImage(images.sofaB, 0, 0, w, h);
+    b.globalCompositeOperation = "source-over";
+    b.globalAlpha = 1;
+    c.drawImage(blend.canvas, 0, 0, w, h, r.x, r.y, r.w, r.h);
+  }
+
+  // Слои 2–4 экрана в отдельном холсте: тень, рамка, комната, внутренний диван и его тень.
+  // Потом весь экран уходит вниз, растворяется и режется нижней маской (§7.1, 0,88–0,98).
+  function renderScreenLayer(st) {
+    const g = geo;
+    const target = work.screen;
+    sizeCanvas(target, canvas.width, canvas.height);
+    clearCanvas(target);
+    const c = target.ctx;
+    setScene(c, g);
+
+    const offset = st.down * 0.10 * g.H;
+    const screen = g.screen;
+    const inner = g.inner;
+    c.save();
+    c.translate(0, offset);
+
+    c.save();
+    c.shadowColor = look.screenShadow;
+    c.shadowBlur = look.screenShadowBlur * screen.h * g.dpr;
+    c.shadowOffsetY = look.screenShadowY * screen.h * g.dpr;
+    roundRect(c, screen.x, screen.y, screen.w, screen.h, screen.r);
+    c.fillStyle = look.frame;
+    c.fill();
+    c.restore();
+
+    c.save();
+    roundRect(c, inner.x, inner.y, inner.w, inner.h, inner.r);
+    c.clip();
+    if (st.reveal < 1) drawCover(c, images.sketch, inner);
+    if (st.reveal >= 1) {
+      drawCover(c, images.room, inner);
+    } else if (st.reveal > 0) {
+      const reveal = work.reveal;
+      sizeCanvas(reveal, inner.w * g.kx, inner.h * g.ky);
+      clearCanvas(reveal);
+      const rc = reveal.ctx;
+      rc.setTransform(g.kx, 0, 0, g.ky, 0, 0);
+      drawCover(rc, images.room, { x: 0, y: 0, w: inner.w, h: inner.h });
+      const feather = 0.45 * g.reveal.far;
+      const outer = st.reveal * (g.reveal.far + feather);
+      const core = Math.max(0, outer - feather);
+      rc.globalCompositeOperation = "destination-in";
+      const gradient = rc.createRadialGradient(g.reveal.x, g.reveal.y, core, g.reveal.x, g.reveal.y, Math.max(core + 0.01, outer));
+      gradient.addColorStop(0, "rgba(0, 0, 0, 1)");
+      gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+      rc.fillStyle = gradient;
+      rc.fillRect(0, 0, inner.w, inner.h);
+      rc.globalCompositeOperation = "source-over";
+      c.drawImage(reveal.canvas, 0, 0, reveal.canvas.width, reveal.canvas.height, inner.x, inner.y, inner.w, inner.h);
+    }
+
+    const r = sofaRect(g, st.move);
+    if (st.move > 0) {
+      softEllipse(c, r.x + r.w / 2, r.y + r.h * 0.985, 0.47 * r.w, 0.09 * r.h, look.roomShadowColor, st.move);
+    }
+    if (st.move >= g.mFit) drawSofa(c, r, st.swap);
+    c.restore();
+
+    c.lineWidth = 1;
+    c.strokeStyle = look.frameEdge;
+    roundRect(c, screen.x + 0.5, screen.y + 0.5, screen.w - 1, screen.h - 1, screen.r);
+    c.stroke();
+    c.strokeStyle = look.frameInner;
+    roundRect(c, inner.x - 0.5, inner.y - 0.5, inner.w + 1, inner.h + 1, inner.r);
+    c.stroke();
+    c.restore();
+
+    // Полная видимость до 0,78H, ноль на 0,84H — экран не доходит до подписей.
+    c.globalCompositeOperation = "destination-in";
+    const fade = c.createLinearGradient(0, 0.78 * g.H, 0, 0.84 * g.H);
+    fade.addColorStop(0, "rgba(0, 0, 0, 1)");
+    fade.addColorStop(1, "rgba(0, 0, 0, 0)");
+    c.fillStyle = fade;
+    c.fillRect(0, 0, g.W, g.H);
+    c.globalCompositeOperation = "source-over";
+  }
+
+  function drawScreen(c, st) {
+    if (st.fade <= 0) return;
+    renderScreenLayer(st);
+    c.save();
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalAlpha = st.fade;
+    c.drawImage(work.screen.canvas, 0, 0);
+    c.restore();
+  }
+
+  function drawFrontSofa(c, st) {
+    if (st.move >= 1) return;
+    const alpha = frontAlpha(geo, st.move);
+    if (alpha <= 0) return;
+    c.save();
+    c.globalAlpha = alpha;
+    drawSofa(c, sofaRect(geo, st.move), 0);
+    c.restore();
+  }
+
+  function drawCardImage(c, st, withShadow) {
+    const g = geo;
+    const place = cardPlacement(g, st.card.t);
+    c.save();
+    c.globalAlpha = st.card.alpha;
+    c.translate(place.cx, place.cy);
+    c.rotate(place.angle);
+    if (withShadow) {
+      const blur = look.cardShadowBlur * g.H * g.dpr;
+      c.shadowColor = look.cardShadow;
+      c.shadowBlur = blur;
+      c.shadowOffsetY = 0.35 * blur;
+    }
+    c.drawImage(images.card, -g.card.w / 2, -g.card.h / 2, g.card.w, g.card.h);
+    c.restore();
+  }
+
+  function drawCard(c, st) {
+    if (st.card.alpha <= 0) return;
+    drawCardImage(c, st, true);
+  }
+
+  // Участок героя поверх заслоняющего слоя: (холст героя) ∩ (мягкая маска кисти) ∩
+  // (альфа заслонителя). Где заслонителя нет, ничего не рисуется — без двойной кисти.
+  function drawOverlay(c, key, spots, occlude) {
+    const g = geo;
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    for (const spot of spots) {
+      left = Math.min(left, spot.x - spot.rx);
+      top = Math.min(top, spot.y - spot.ry);
+      right = Math.max(right, spot.x + spot.rx);
+      bottom = Math.max(bottom, spot.y + spot.ry);
+    }
+    left = Math.max(0, Math.floor(left));
+    top = Math.max(0, Math.floor(top));
+    right = Math.min(Math.ceil(g.W), Math.ceil(right));
+    bottom = Math.min(Math.ceil(g.H), Math.ceil(bottom));
+    if (right <= left || bottom <= top) return;
+
+    const width = Math.round((right - left) * g.kx);
+    const height = Math.round((bottom - top) * g.ky);
+    const local = target => {
+      fitCanvas(target, width, height);
+      clearCanvas(target);
+      target.ctx.setTransform(g.kx, 0, 0, g.ky, -left * g.kx, -top * g.ky);
+      return target.ctx;
+    };
+
+    const overlay = local(work.overlay);
+    drawFigure(overlay, key);
+
+    const mask = local(work.mask);
+    for (const spot of spots) softEllipse(mask, spot.x, spot.y, spot.rx, spot.ry, [0, 0, 0, 1], 1, spot.core || 0.5);
+
+    const occluder = local(work.occluder);
+    occlude(occluder);
+
+    overlay.setTransform(1, 0, 0, 1, 0, 0);
+    overlay.globalCompositeOperation = "destination-in";
+    overlay.drawImage(work.mask.canvas, 0, 0);
+    overlay.drawImage(work.occluder.canvas, 0, 0);
+    overlay.globalCompositeOperation = "source-over";
+
+    c.drawImage(work.overlay.canvas, 0, 0, width, height, left, top, right - left, bottom - top);
+  }
+
+  // Слой 7: кисть Романа поверх спинки, пока диван перед героями.
+  function drawPalm(c, st) {
+    if (st.move >= 1) return;
+    const alpha = frontAlpha(geo, st.move);
+    if (alpha <= 0) return;
+    const r = sofaRect(geo, st.move);
+    const spots = geo.palms.filter(spot =>
+      spot.x + spot.rx > r.x && spot.x - spot.rx < r.x + r.w &&
+      spot.y + spot.ry > r.y && spot.y - spot.ry < r.y + r.h);
+    if (!spots.length) return;
+    drawOverlay(c, "roman", spots, occluder => {
+      occluder.globalAlpha = alpha;
+      occluder.drawImage(images.sofaA, r.x, r.y, r.w, r.h);
+      occluder.globalAlpha = 1;
+    });
+  }
+
+  // Слой 9: щепоть Амина поверх карточки.
+  function drawFingers(c, st) {
+    if (st.card.alpha <= 0) return;
+    const g = geo;
+    const radius = FINGERS.radius * g.s;
+    const [x, y] = cardPlacement(g, st.card.t).pinch;
+    const spots = [{ x, y, rx: radius, ry: radius, core: FINGERS.core }];
+    drawOverlay(c, "amin", spots, occluder => drawCardImage(occluder, st, false));
+  }
+
+  function prepareFigures(st, now) {
+    renderPerson("amin", st.amin, st.nod, now);
+    renderPerson("roman", st.roman, 0, now);
+  }
+
+  // §6, снизу вверх: фон и свечение (CSS) → тени → экран с комнатой и внутренним
+  // диваном → герои → внешний диван → ладонь Романа → карточка → пальцы Амина.
+  function draw(target, st, now) {
+    const c = target.ctx;
+    clearCanvas(target);
+    setScene(c, geo);
+    prepareFigures(st, now);
+    drawGroundShadows(c, st);
+    drawScreen(c, st);
+    setScene(c, geo);
+    drawFigure(c, "amin");
+    drawFigure(c, "roman");
+    drawFrontSofa(c, st);
+    drawPalm(c, st);
+    drawCard(c, st);
+    drawFingers(c, st);
+  }
+
+  function render(force = false, now = performance.now()) {
+    if (!ready || !geo) return;
+    const st = currentState();
+    const key = stateKey(st);
+    if (force || key !== lastKey || fading()) {
+      lastKey = key;
+      draw({ canvas, ctx }, st, now);
+    }
+    if (recording && journal.length < 4000) {
+      journal.push({ t: now, p, q, key: st.q === null ? "rest" : key });
+    }
+  }
+
+  // ---------- Для проверки (§11): геометрия и слои по отдельности ----------
+
+  function rectOf(r) {
+    return { x: r.x, y: r.y, w: r.w, h: r.h };
+  }
+
+  function describe(value) {
+    const g = geo;
+    const st = typeof value === "number" ? stateAt(clamp(value)) : currentState();
+    const offset = st.down * 0.10 * g.H;
+    const sofa = sofaRect(g, st.move);
+    const place = cardPlacement(g, st.card.t);
+    const cos = Math.cos(place.angle);
+    const sin = Math.sin(place.angle);
+    const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => {
+      const x = u * g.card.w / 2;
+      const y = v * g.card.h / 2;
+      return [place.cx + x * cos - y * sin, place.cy + x * sin + y * cos];
+    });
+    const stageBox = stage.getBoundingClientRect();
+    const labels = {};
+    const faces = {};
+    const heads = {};
+    for (const key of KEYS) {
+      const box = people[key].name.getBoundingClientRect();
+      labels[key] = { x: box.left - stageBox.left, y: box.top - stageBox.top, w: box.width, h: box.height };
+      const map = g.people[key].map;
+      const [fx, fy, frx, fry] = FACES[key];
+      const [cx, cy] = map(fx, fy);
+      faces[key] = { cx, cy, rx: frx * g.s, ry: fry * g.s };
+      const [hx, hy] = map(manifest.frame.axis - HEAD.half, HEAD.top);
+      heads[key] = { x: hx, y: hy, w: 2 * HEAD.half * g.s, h: (HEAD.bottom - HEAD.top) * g.s };
+    }
+    return {
+      q: st.q,
+      W: g.W,
+      H: g.H,
+      mode: g.mode,
+      scale: g.s,
+      mFit: g.mFit,
+      screen: { x: g.screen.x, y: g.screen.y + offset, w: g.screen.w, h: g.screen.h, visible: st.fade },
+      inner: { x: g.inner.x, y: g.inner.y + offset, w: g.inner.w, h: g.inner.h },
+      sofa: {
+        rect: { x: sofa.x, y: sofa.y + (st.move >= g.mFit ? offset : 0), w: sofa.w, h: sofa.h },
+        inScreen: st.move >= g.mFit,
+        front: st.move >= 1 ? 0 : frontAlpha(g, st.move),
+        swap: st.swap
+      },
+      sofaOut: rectOf(g.sofaOut),
+      sofaIn: rectOf(g.sofaIn),
+      card: { alpha: st.card.alpha, center: [place.cx, place.cy], angle: place.angle, corners },
+      grips: { calm: g.grip.calm, apply: g.grip.apply },
+      palms: g.palms.map(spot => ({ ...spot })),
+      people: Object.fromEntries(KEYS.map(key => [key, {
+        rect: rectOf(g.people[key].rect),
+        body: rectOf(g.people[key].body),
+        feet: [g.people[key].cx, g.feetY]
+      }])),
+      faces,
+      heads,
+      labels
+    };
+  }
+
+  function debugLayers(value) {
+    const st = typeof value === "number" ? stateAt(clamp(value)) : currentState();
+    const make = () => {
+      const target = scratch();
+      sizeCanvas(target, canvas.width, canvas.height);
+      clearCanvas(target);
+      setScene(target.ctx, geo);
+      return target;
+    };
+    prepareFigures(st);
+    const layers = {
+      shadows: make(),
+      screen: make(),
+      amin: make(),
+      roman: make(),
+      sofa: make(),
+      palm: make(),
+      card: make(),
+      fingers: make(),
+      all: make()
+    };
+    drawGroundShadows(layers.shadows.ctx, st);
+    drawScreen(layers.screen.ctx, st);
+    drawFigure(layers.amin.ctx, "amin");
+    drawFigure(layers.roman.ctx, "roman");
+    drawFrontSofa(layers.sofa.ctx, st);
+    drawPalm(layers.palm.ctx, st);
+    drawCard(layers.card.ctx, st);
+    drawFingers(layers.fingers.ctx, st);
+    draw(layers.all, st);
+    // Основной холст возвращается к текущему состоянию.
+    lastKey = "";
+    render(true);
+    return {
+      kx: geo.kx,
+      ky: geo.ky,
+      W: geo.W,
+      H: geo.H,
+      canvases: Object.fromEntries(Object.entries(layers).map(([name, target]) => [name, target.canvas]))
+    };
+  }
+
+  // ---------- Размеры, прокрутка, кадр ----------
+
+  function setStatic(next) {
+    if (staticMode === next) return;
+    staticMode = next;
+    root.classList.toggle("is-static", next);
+  }
+
+  function measureScroll() {
+    if (mode === "phone") {
+      if (motion.matches) {
+        setStatic(false);
+        scroll = null;
+        return;
+      }
+      const svh = probe.getBoundingClientRect().height || window.innerHeight;
+      const safeBottom = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+      const groupHeight = group.offsetHeight;
+      const top = staticMode ? NaN : parseFloat(getComputedStyle(group).top);
+      const pinTop = Number.isFinite(top) ? top : Math.max(56, (svh - 504) / 2);
+      // §4.3: группа не помещается между y=56 и нижним краем — без закрепления, кадр §10.
+      setStatic(pinTop + groupHeight > svh - safeBottom + 0.5);
+      if (staticMode) {
+        scroll = null;
+        return;
+      }
+      const trackTop = track.getBoundingClientRect().top + window.scrollY;
+      const distance = track.offsetHeight - group.offsetHeight;
+      if (distance < 1) {
+        setStatic(true);
+        scroll = null;
+        return;
+      }
+      scroll = { start: trackTop - pinTop, distance, top: pinTop, group: groupHeight };
+    } else {
+      setStatic(false);
+      if (motion.matches) {
+        scroll = null;
+        return;
+      }
+      const rootTop = root.getBoundingClientRect().top + window.scrollY;
+      scroll = { start: rootTop, distance: Math.max(1, root.offsetHeight - pin.offsetHeight) };
+    }
+  }
+
+  function measure() {
+    measurePending = 0;
+    if (!ready) return;
+    mode = phoneQuery.matches ? "phone" : tabletQuery.matches ? "tablet" : "wide";
+    root.dataset.layout = mode;
+    const box = stage.getBoundingClientRect();
+    const W = Math.max(1, box.width);
+    const H = Math.max(1, box.height);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.max(1, Math.round(W * dpr));
+    const height = Math.max(1, Math.round(H * dpr));
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+    // Фаза 17 Task 1: холст ровно по сетке точек экрана — иначе браузер растягивает его на доли точки
+    // при выводе и сцена мылится (на 1440×900 место 810,8×594,7 с левого края 565,2).
+    const pageTop = box.top + (window.scrollY || 0);
+    Object.assign(canvas.style, {
+      left: `${Math.round(box.left * dpr) / dpr - box.left}px`,
+      top: `${Math.round(pageTop * dpr) / dpr - pageTop}px`,
+      width: `${width / dpr}px`,
+      height: `${height / dpr}px`
+    });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    readLook();
+    geo = computeGeometry(W, H, mode, width / W, height / H);
+
+    for (const key of KEYS) {
+      const person = people[key];
+      const r = geo.people[key].rect;
+      person.cropFrame = geo.people[key].crop;
+      sizeCanvas(person.art, r.w * geo.kx, r.h * geo.ky);
+      person.cache = "";
+      const body = geo.people[key].body;
+      Object.assign(person.body.style, {
+        left: `${body.x}px`,
+        top: `${body.y}px`,
+        width: `${body.w}px`,
+        height: `${body.h}px`
+      });
+    }
+
+    prewarmPoses();
+    measureScroll();
+    updateTarget();
+    if (mode === "phone" || forced !== null || isResting()) q = filtered = p;
+    lastKey = "";
+    render(true);
+    wake();
+  }
+
+  function scheduleMeasure() {
+    if (measurePending) return;
+    measurePending = requestAnimationFrame(measure);
+  }
+
+  function updateTarget() {
+    if (forced !== null) {
+      p = forced;
+      return;
+    }
+    if (!scroll || isResting()) {
+      p = 0;
+      return;
+    }
+    p = clamp((window.scrollY - scroll.start) / scroll.distance);
+  }
+
+  function frame(now) {
+    raf = 0;
+    if (!ready || !visible || document.hidden) {
+      lastFrame = null;
+      return;
+    }
+
+    const dt = lastFrame === null ? 0 : Math.max(0, now - lastFrame);
+    lastFrame = now;
+    updateTarget();
+
+    if (forced !== null || isResting() || mode === "phone") {
+      // Телефон: q — ровно нормированный вход §4.3, концы точные, хвоста нет.
+      q = filtered = p;
+    } else if (dt > 0) {
+      // Существующее сглаживание: каскад двух фильтров τ=110 мс, точное решение
+      // для постоянной цели на интервале кадра; вся сцена не быстрее 0,6 с.
+      const ratio = dt / 110;
+      const decay = Math.exp(-ratio);
+      const previous = filtered;
+      const before = q;
+      filtered = p + (previous - p) * decay;
+      q = clamp(p + ((q - p) + (previous - p) * ratio) * decay);
+      const maxStep = dt / 600;
+      q = before + Math.max(-maxStep, Math.min(maxStep, q - before));
+    }
+
+    const following = Math.abs(p - q) > 0.0005 || Math.abs(p - filtered) > 0.0005;
+    if (!following) q = filtered = p;
+    render(false, now);
+
+    if (following || fading()) raf = requestAnimationFrame(frame);
+    else lastFrame = null;
+  }
+
+  function wake() {
+    if (!ready || !visible || document.hidden || raf) return;
+    raf = requestAnimationFrame(frame);
+  }
+
+  function sleep() {
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    lastFrame = null;
+  }
+
+  function motionChanged() {
+    root.classList.toggle("is-reduced", motion.matches);
+    sleep();
+    q = filtered = p = 0;
+    measure();
+  }
+
+  async function init() {
+    try {
+      [manifest, texts] = await Promise.all([
+        fetchJSON(`${ROOM_DIR}manifest.json`),
+        fetchJSON("founders/texts.json")
+      ]);
+      validateData();
+      await loadImages();
+
+      buildScene();
+      buildDialog();
+
+      root.classList.toggle("is-reduced", motion.matches);
+      root.classList.add("is-ready");
+      ready = true;
+      visible = true;
+      measure();
+      q = filtered = p;
+      lastKey = "";
+      render(true);
+
+      resizeObserver = new ResizeObserver(scheduleMeasure);
+      resizeObserver.observe(stage);
+      resizeObserver.observe(group);
+      resizeObserver.observe(root);
+
+      intersectionObserver = new IntersectionObserver(entries => {
+        visible = entries[entries.length - 1].isIntersecting;
+        if (visible) wake();
+        else sleep();
+      });
+      intersectionObserver.observe(root);
+
+      window.addEventListener("resize", scheduleMeasure, { passive: true });
+      window.addEventListener("scroll", () => {
+        updateTarget();
+        wake();
+      }, { passive: true });
+      motion.addEventListener("change", motionChanged);
+      phoneQuery.addEventListener("change", scheduleMeasure);
+      tabletQuery.addEventListener("change", scheduleMeasure);
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) sleep();
+        else wake();
+      });
+      if (document.fonts) document.fonts.ready.then(scheduleMeasure);
+    } catch (error) {
+      sleep();
+      ready = false;
+      root.classList.remove("is-ready", "is-reduced", "is-static");
+      if (resizeObserver) resizeObserver.disconnect();
+      if (intersectionObserver) intersectionObserver.disconnect();
+      teardownScene();
+      console.warn("Сцена основателей не включена:", error);
+    }
+  }
+
+  init();
+})();

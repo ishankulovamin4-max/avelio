@@ -1,0 +1,478 @@
+{
+  "people": {
+    "amin": {
+      "w": 1122,
+      "h": 1200,
+      "poses": {
+        "calm": "img/amin-calm.webp",
+        "surprised": "img/amin-surprised.webp",
+        "reach": "img/amin-reach.webp",
+        "blink": "img/amin-blink.webp"
+      },
+      "head": [
+        0.5245098,
+        0.125,
+        0.1573084
+      ]
+    },
+    "roman": {
+      "w": 1212,
+      "h": 1385,
+      "poses": {
+        "calm": "img/roman-calm.webp",
+        "surprised": "img/roman-surprised.webp",
+        "reach": "img/roman-reach.webp",
+        "blink": "img/roman-blink.webp"
+      },
+      "head": [
+        0.5016502,
+        0.2418773,
+        0.1460396
+      ]
+    }
+  },
+  "sofa": {
+    "file": "img/sofa.webp",
+    "w": 1600,
+    "h": 667
+  },
+  "parts": [
+    {
+      "id": "part-01",
+      "file": "img/part-01.webp",
+      "w": 271,
+      "h": 257,
+      "x": 142,
+      "y": 54,
+      "score": 0.0317048,
+      "sheet": [
+        120.821,
+        217.009
+      ],
+      "z": 7,
+      "role": "pillow-left"
+    },
+    {
+      "id": "part-02",
+      "file": "img/part-02.webp",
+      "w": 410,
+      "h": 326,
+      "x": 188,
+      "y": 2,
+      "score": 0.0310327,
+      "sheet": [
+        331.965,
+        150.147
+      ],
+      "z": 3,
+      "role": "back-left"
+    },
+    {
+      "id": "part-03",
+      "file": "img/part-03.webp",
+      "w": 397,
+      "h": 310,
+      "x": 603,
+      "y": 2,
+      "score": 0.0281004,
+      "sheet": [
+        713.196,
+        147.801
+      ],
+      "z": 3,
+      "role": "back-middle"
+    },
+    {
+      "id": "part-04",
+      "file": "img/part-04.webp",
+      "w": 412,
+      "h": 330,
+      "x": 1000,
+      "y": 2,
+      "score": 0.0320641,
+      "sheet": [
+        1106.158,
+        148.974
+      ],
+      "z": 3,
+      "role": "back-right"
+    },
+    {
+      "id": "part-05",
+      "file": "img/part-05.webp",
+      "w": 270,
+      "h": 255,
+      "x": 1182,
+      "y": 54,
+      "score": 0.0307148,
+      "sheet": [
+        1478.006,
+        217.009
+      ],
+      "z": 7,
+      "role": "pillow-right"
+    },
+    {
+      "id": "part-06",
+      "file": "img/part-06.webp",
+      "w": 213,
+      "h": 378,
+      "x": 0,
+      "y": 140,
+      "score": 0.0252073,
+      "sheet": [
+        42.229,
+        428.152
+      ],
+      "z": 6,
+      "role": "arm-left"
+    },
+    {
+      "id": "part-07",
+      "file": "img/part-07.webp",
+      "w": 454,
+      "h": 199,
+      "x": 145,
+      "y": 262,
+      "score": 0.0211544,
+      "sheet": [
+        280.352,
+        459.824
+      ],
+      "z": 4,
+      "role": "seat-left"
+    },
+    {
+      "id": "part-08",
+      "file": "img/part-08.webp",
+      "w": 430,
+      "h": 187,
+      "x": 585,
+      "y": 268,
+      "score": 0.0109228,
+      "sheet": [
+        699.12,
+        459.824
+      ],
+      "z": 4,
+      "role": "seat-middle"
+    },
+    {
+      "id": "part-09",
+      "file": "img/part-09.webp",
+      "w": 453,
+      "h": 198,
+      "x": 1002,
+      "y": 263,
+      "score": 0.0215744,
+      "sheet": [
+        1116.716,
+        459.824
+      ],
+      "z": 4,
+      "role": "seat-right"
+    },
+    {
+      "id": "part-10",
+      "file": "img/part-10.webp",
+      "w": 215,
+      "h": 378,
+      "x": 1385,
+      "y": 140,
+      "score": 0.0232305,
+      "sheet": [
+        1543.695,
+        428.152
+      ],
+      "z": 6,
+      "role": "arm-right"
+    },
+    {
+      "id": "part-11",
+      "file": "img/part-11.webp",
+      "w": 1399,
+      "h": 181,
+      "x": 100,
+      "y": 360,
+      "score": 0.0376092,
+      "sheet": [
+        220.528,
+        681.525
+      ],
+      "z": 2,
+      "role": "base"
+    },
+    {
+      "id": "part-12",
+      "file": "img/part-12.webp",
+      "w": 86,
+      "h": 137,
+      "x": 110,
+      "y": 530,
+      "score": 0.0223361,
+      "sheet": [
+        213.49,
+        916.129
+      ],
+      "z": 1,
+      "role": "leg-front-left"
+    },
+    {
+      "id": "part-13",
+      "file": "img/part-13.webp",
+      "w": 54,
+      "h": 84,
+      "x": 230,
+      "y": 525,
+      "score": 0.0420002,
+      "sheet": [
+        341.349,
+        873.9
+      ],
+      "z": 0,
+      "role": "leg-back-left"
+    },
+    {
+      "id": "part-14",
+      "file": "img/part-14.webp",
+      "w": 53,
+      "h": 82,
+      "x": 1312,
+      "y": 525,
+      "score": 0.030867,
+      "sheet": [
+        1399.413,
+        875.073
+      ],
+      "z": 0,
+      "role": "leg-back-right"
+    },
+    {
+      "id": "part-15",
+      "file": "img/part-15.webp",
+      "w": 85,
+      "h": 139,
+      "x": 1405,
+      "y": 528,
+      "score": 0.0162974,
+      "sheet": [
+        1496.774,
+        916.129
+      ],
+      "z": 1,
+      "role": "leg-front-right"
+    }
+  ],
+  "molecules": [
+    {
+      "id": "mol-01",
+      "file": "img/mol-01.webp",
+      "w": 192,
+      "h": 161,
+      "kind": "foam"
+    },
+    {
+      "id": "mol-02",
+      "file": "img/mol-02.webp",
+      "w": 192,
+      "h": 139,
+      "kind": "foam"
+    },
+    {
+      "id": "mol-03",
+      "file": "img/mol-03.webp",
+      "w": 183,
+      "h": 167,
+      "kind": "foam"
+    },
+    {
+      "id": "mol-04",
+      "file": "img/mol-04.webp",
+      "w": 192,
+      "h": 168,
+      "kind": "foam"
+    },
+    {
+      "id": "mol-05",
+      "file": "img/mol-05.webp",
+      "w": 184,
+      "h": 169,
+      "kind": "foam"
+    },
+    {
+      "id": "mol-06",
+      "file": "img/mol-06.webp",
+      "w": 192,
+      "h": 164,
+      "kind": "boucle"
+    },
+    {
+      "id": "mol-07",
+      "file": "img/mol-07.webp",
+      "w": 192,
+      "h": 145,
+      "kind": "boucle"
+    },
+    {
+      "id": "mol-08",
+      "file": "img/mol-08.webp",
+      "w": 192,
+      "h": 148,
+      "kind": "boucle"
+    },
+    {
+      "id": "mol-09",
+      "file": "img/mol-09.webp",
+      "w": 176,
+      "h": 160,
+      "kind": "boucle"
+    },
+    {
+      "id": "mol-10",
+      "file": "img/mol-10.webp",
+      "w": 192,
+      "h": 118,
+      "kind": "boucle"
+    },
+    {
+      "id": "mol-11",
+      "file": "img/mol-11.webp",
+      "w": 101,
+      "h": 164,
+      "kind": "spring-coil"
+    },
+    {
+      "id": "mol-12",
+      "file": "img/mol-12.webp",
+      "w": 133,
+      "h": 180,
+      "kind": "spring-coil"
+    },
+    {
+      "id": "mol-13",
+      "file": "img/mol-13.webp",
+      "w": 137,
+      "h": 158,
+      "kind": "spring-coil"
+    },
+    {
+      "id": "mol-14",
+      "file": "img/mol-14.webp",
+      "w": 192,
+      "h": 69,
+      "kind": "spring-zigzag"
+    },
+    {
+      "id": "mol-15",
+      "file": "img/mol-15.webp",
+      "w": 192,
+      "h": 63,
+      "kind": "spring-zigzag"
+    },
+    {
+      "id": "mol-16",
+      "file": "img/mol-16.webp",
+      "w": 179,
+      "h": 140,
+      "kind": "thread"
+    },
+    {
+      "id": "mol-17",
+      "file": "img/mol-17.webp",
+      "w": 192,
+      "h": 86,
+      "kind": "thread"
+    },
+    {
+      "id": "mol-18",
+      "file": "img/mol-18.webp",
+      "w": 192,
+      "h": 63,
+      "kind": "dowel"
+    },
+    {
+      "id": "mol-19",
+      "file": "img/mol-19.webp",
+      "w": 174,
+      "h": 150,
+      "kind": "thread"
+    },
+    {
+      "id": "mol-20",
+      "file": "img/mol-20.webp",
+      "w": 192,
+      "h": 61,
+      "kind": "dowel"
+    },
+    {
+      "id": "mol-21",
+      "file": "img/mol-21.webp",
+      "w": 176,
+      "h": 64,
+      "kind": "dowel"
+    },
+    {
+      "id": "mol-22",
+      "file": "img/mol-22.webp",
+      "w": 183,
+      "h": 135,
+      "kind": "chip"
+    },
+    {
+      "id": "mol-23",
+      "file": "img/mol-23.webp",
+      "w": 192,
+      "h": 124,
+      "kind": "chip"
+    },
+    {
+      "id": "mol-24",
+      "file": "img/mol-24.webp",
+      "w": 185,
+      "h": 91,
+      "kind": "screw"
+    },
+    {
+      "id": "mol-25",
+      "file": "img/mol-25.webp",
+      "w": 174,
+      "h": 85,
+      "kind": "screw"
+    },
+    {
+      "id": "mol-26",
+      "file": "img/mol-26.webp",
+      "w": 192,
+      "h": 86,
+      "kind": "screw"
+    },
+    {
+      "id": "mol-27",
+      "file": "img/mol-27.webp",
+      "w": 169,
+      "h": 168,
+      "kind": "button"
+    },
+    {
+      "id": "mol-28",
+      "file": "img/mol-28.webp",
+      "w": 171,
+      "h": 153,
+      "kind": "button"
+    },
+    {
+      "id": "mol-29",
+      "file": "img/mol-29.webp",
+      "w": 157,
+      "h": 121,
+      "kind": "staple"
+    },
+    {
+      "id": "mol-30",
+      "file": "img/mol-30.webp",
+      "w": 182,
+      "h": 128,
+      "kind": "staple"
+    }
+  ]
+}

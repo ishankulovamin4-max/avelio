@@ -1,0 +1,124 @@
+{
+ "spec": "content/avelio-concept/team/room-photo/spec.md",
+ "frame": {
+  "w": 1024,
+  "h": 1536,
+  "hairTop": 108,
+  "soles": 1428,
+  "axis": 512,
+  "headCenter": [
+   512,
+   228
+  ],
+  "headH": 240
+ },
+ "people": {
+  "amin": {
+   "crop": [
+    299,
+    103,
+    664,
+    1330
+   ],
+   "img": [
+    465,
+    931
+   ],
+   "poses": {
+    "calm": "amin-calm.webp",
+    "blink": "amin-blink.webp",
+    "apply": "amin-apply.webp",
+    "pleased": "amin-pleased.webp"
+   },
+   "grip": {
+    "calm": [
+     865,
+     660
+    ],
+    "blink": [
+     865,
+     660
+    ],
+    "apply": [
+     947,
+     514
+    ]
+   }
+  },
+  "roman": {
+   "crop": [
+    93,
+    103,
+    644,
+    1329
+   ],
+   "img": [
+    451,
+    930
+   ],
+   "poses": {
+    "calm": "roman-calm.webp",
+    "blink": "roman-blink.webp",
+    "push": "roman-push.webp",
+    "switch": "roman-switch.webp",
+    "pleased": "roman-pleased.webp"
+   },
+   "hand": {
+    "calm": [
+     230,
+     1015
+    ],
+    "blink": [
+     230,
+     1015
+    ],
+    "push": [
+     195,
+     880
+    ],
+    "switch": [
+     250,
+     720
+    ]
+   }
+  }
+ },
+ "sofa": {
+  "w": 1400,
+  "h": 560,
+  "img": [
+   960,
+   384
+  ],
+  "a": {
+   "file": "sofa-a.webp",
+   "visible": [
+    32,
+    2,
+    1368,
+    558
+   ]
+  },
+  "b": {
+   "file": "sofa-b.webp",
+   "visible": [
+    2,
+    74,
+    1398,
+    558
+   ]
+  }
+ },
+ "room": {
+  "file": "empty-room.webp",
+  "sketch": "room-sketch.webp",
+  "w": 800,
+  "h": 800,
+  "sketchFloorFrom": 0.6903
+ },
+ "card": {
+  "file": "room-card.webp",
+  "w": 320,
+  "h": 245
+ }
+}
