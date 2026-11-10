@@ -1634,7 +1634,8 @@
   .o-voice-toggle[aria-pressed="true"] .o-speaker,
   .o-voice-toggle[aria-pressed="true"] .o-voice-label { display: none; }
   .o-voice-toggle[aria-pressed="true"] .o-equalizer { display: flex; }
-  .o-voice-off { display: none; }
+  .o-voice-off,
+  .o-voice-loading { display: none; }
   .o-voice-toggle[aria-pressed="true"] .o-voice-off { display: inline; }
   .o-voice-toggle[aria-pressed="true"] .o-equalizer i { animation: o-voice-level 1200ms ease-in-out infinite alternate; }
   .o-voice-toggle[aria-pressed="true"] .o-equalizer i:nth-child(2) { animation-delay: -400ms; }
@@ -1642,6 +1643,19 @@
   @keyframes o-voice-level {
     from { transform: scaleY(.5); opacity: .65; }
     to { transform: scaleY(1); opacity: 1; }
+  }
+  .f-order[data-voice="loading"] .o-voice-off { display: none; }
+  .f-order[data-voice="loading"] .o-voice-loading { display: inline; }
+  .f-order[data-voice="loading"] .o-equalizer i {
+    height: 4px;
+    transform: none;
+    animation: o-voice-loading 2400ms ease-in-out infinite;
+  }
+  .f-order[data-voice="loading"] .o-equalizer i:nth-child(2) { animation-delay: 400ms; }
+  .f-order[data-voice="loading"] .o-equalizer i:nth-child(3) { animation-delay: 800ms; }
+  @keyframes o-voice-loading {
+    0%, 100% { opacity: .35; }
+    50% { opacity: .8; }
   }
   @media (hover: hover) {
     .o-voice-toggle:hover::before { background: var(--plate); border-color: var(--brass); }
@@ -1751,7 +1765,7 @@
   .o-window-light { fill: url(#o-window-tone); stroke: none; }
   .o-door-light { fill: var(--glint); stroke: none; }
   .o-crate-gap { fill: color-mix(in srgb, var(--plate-muted) 75%, var(--plate-ink)); stroke: none; }
-  .o-distant { fill: var(--plate-rule); fill-opacity: .38; stroke: none; }
+  .o-distant { fill: var(--plate-rule); fill-opacity: .45; stroke: none; }
   .o-gear { fill: color-mix(in srgb, var(--chair-fill) 90%, var(--plate-muted)); stroke: var(--plate-ink); stroke-width: 1.25; }
   .o-grain { fill: none; stroke: var(--plate-muted); stroke-opacity: .55; stroke-width: .65; }
   .o-fasteners { fill: none; stroke: var(--plate-ink); stroke-opacity: .65; stroke-width: 2; }
@@ -1765,7 +1779,7 @@
   .o-hill-far { fill: var(--plate-rule); fill-opacity: .45; stroke: none; }
   .o-hill-near { fill: var(--chair-fill); fill-opacity: .65; stroke: none; }
   .o-tree { fill: none; stroke: var(--plate-muted); stroke-opacity: .38; stroke-width: 1.2; }
-  .o-posts { fill: none; stroke: var(--plate-muted); stroke-opacity: .6; stroke-width: 2; }
+  .o-posts { fill: none; stroke: var(--plate-muted); stroke-opacity: .6; stroke-width: 1.2; }
   .o-road-fill { fill: color-mix(in srgb, var(--chair-fill) 80%, var(--plate-muted)); stroke: none; }
   .o-road-edge { fill: none; stroke: var(--plate-muted); stroke-opacity: .75; stroke-width: 1; }
   .o-road-marks { fill: none; stroke: var(--plate); stroke-width: 2; stroke-dasharray: 18 22; }
@@ -1881,6 +1895,7 @@
     .f-order .o-path::after { transition: none; animation: none; }
     .f-order .o-typing i,
     .f-order .o-voice-toggle .o-equalizer i { animation: none; }
+    .f-order[data-voice="loading"] .o-equalizer { display: none; }
   }
   /* Звук записи блока «Как это работает» (#f-process): кнопка в верхней полосе окна. */
 /* Звук записи — компактная латунная табличка в верхней полосе. */
@@ -5501,6 +5516,22 @@
   const last = items.length - 1;
   const scenes = new Map();
   const versions = new WeakMap();
+  const voiceCache = new Map();
+
+  // PCM WAV: mono, 8000 Гц, 8 бит, 400 отсчётов тишины (0,05 с).
+  // Единственное исключение из blob-src — встроенная тишина для разрешения звука жестом.
+  const silenceURL = "data:audio/wav;base64," + btoa(
+    "RIFF\xb4\x01\x00\x00WAVEfmt \x10\x00\x00\x00"
+    + "\x01\x00\x01\x00\x40\x1f\x00\x00\x40\x1f\x00\x00"
+    + "\x01\x00\x08\x00data\x90\x01\x00\x00"
+    + "\x80".repeat(400)
+  );
+  const loadingLabel = document.createElement("span");
+  loadingLabel.className = "o-voice-loading";
+  loadingLabel.setAttribute("aria-hidden", "true");
+  loadingLabel.textContent = "Загрузка";
+  voiceButton.append(loadingLabel);
+  audio.dataset.phrase = "";
 
   let step = 0;
   let stage = 0;
@@ -5517,9 +5548,13 @@
   let voiceStage = -1;
   let voiceWait = null;
   let voiceEnded = false;
+  let voiceReady = false;
+  let voiceGesture = false;
+  let phraseVersion = 0;
   let playPending = false;
   let playVersion = 0;
-  let prefetched = false;
+  let unlocking = false;
+  let unlockDone = null;
 
   const stillMode = () => media.matches || !capable;
   const running = () => started && visible && document.visibilityState !== "hidden" && !stillMode();
@@ -5536,11 +5571,50 @@
     }
   };
 
-  function voiceState(on) {
+  function voiceState(on, loading = false) {
     voiceOn = on;
-    block.dataset.voice = on ? "on" : "off";
+    block.dataset.voice = on ? (loading ? "loading" : "on") : "off";
     voiceButton.setAttribute("aria-pressed", String(on));
-    voiceButton.setAttribute("aria-label", on ? "Выключить звук" : "Послушать историю заказа");
+    voiceButton.setAttribute("aria-label", on
+      ? (loading ? "Загружаю звук…" : "Выключить звук")
+      : "Послушать историю заказа");
+  }
+
+  async function fetchVoice(to, entry) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await fetch(voiceURL(to), { priority: "high" });
+        if (!response.ok) throw new Error(`voice ${to + 1}: ${response.status}`);
+        const blob = await response.blob();
+        entry.url = URL.createObjectURL(blob);
+        return entry.url;
+      } catch (error) {
+        if (attempt === 2) throw error;
+        await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 1000 : 3000));
+      }
+    }
+  }
+
+  function loadVoices() {
+    if (voiceCache.size) return;
+    let previous = Promise.resolve();
+    for (let to = 0; to < stops.length; to++) {
+      const entry = { promise: null, url: "" };
+      voiceCache.set(to, entry);
+      entry.promise = previous.then(() => fetchVoice(to, entry));
+      // Даже окончательный сбой одной фразы не отменяет очередь остальных.
+      // Отклонённый promise остаётся в кэше; выключает голос только текущий слушатель.
+      previous = entry.promise.catch(() => {});
+    }
+  }
+
+  function finishUnlock() {
+    if (!unlocking) return;
+    unlocking = false;
+    audio.dataset.phrase = voiceOn && voiceBusy ? String(voiceStage + 1) : "";
+    const done = unlockDone;
+    unlockDone = null;
+    if (done) done();
   }
 
   function pauseVoice() {
@@ -5548,6 +5622,8 @@
     playVersion++;
     playPending = false;
     audio.pause();
+    // Тишину не возобновляем при возвращении на экран.
+    finishUnlock();
   }
 
   function stopVoice() {
@@ -5555,17 +5631,28 @@
     voiceWait = null;
     voiceBusy = false;
     voiceEnded = false;
+    voiceReady = false;
     voiceStage = -1;
+    phraseVersion++;
     voiceState(false);
     pauseVoice();
+    audio.dataset.phrase = "";
     if (stillMode()) still();
     else if (action) plan(action, 0);
   }
 
-  function playVoice() {
-    if (!voiceOn || !voiceBusy || playPending || !audio.paused) return;
+  function phraseSource() {
+    return voiceOn && voiceBusy && voiceReady && !unlocking
+      && audio.src === voiceCache.get(voiceStage)?.url
+      && audio.currentSrc === audio.src;
+  }
+
+  function playVoice(gesture = false) {
+    if (!voiceOn || !voiceBusy || !voiceReady || unlocking
+      || (!gesture && !voiceRunning()) || playPending || !audio.paused) return;
     const version = ++playVersion;
     playPending = true;
+    voiceState(true, true);
     try {
       const result = audio.play();
       if (result && typeof result.then === "function") {
@@ -5582,29 +5669,60 @@
     }
   }
 
+  function unlockVoice() {
+    unlocking = true;
+    audio.dataset.phrase = "";
+    audio.src = silenceURL;
+    const version = ++playVersion;
+    const done = new Promise((resolve) => { unlockDone = resolve; });
+    try {
+      const result = audio.play();
+      if (result && typeof result.then === "function") {
+        result.catch(() => {
+          // Запрет или прерывание тишины не выключает голос.
+          if (version === playVersion) finishUnlock();
+        });
+      }
+    } catch {
+      finishUnlock();
+    }
+    return done;
+  }
+
   function phrase(to) {
     if (!voiceOn) return;
     pauseVoice();
+    const version = ++phraseVersion;
     voiceStage = to;
     voiceBusy = true;
     voiceEnded = false;
-    audio.src = voiceURL(to);
-    // В первом запуске эта строка достигается синхронно из обработчика клика.
-    // Все последующие фразы используют тот же, уже разрешённый жестом элемент.
-    playVoice();
-    sync();
-  }
+    voiceReady = false;
+    audio.dataset.phrase = String(to + 1);
+    voiceState(true, true);
+    loadVoices();
+    const entry = voiceCache.get(to);
+    const apply = (url, gesture = false) => {
+      if (!voiceOn || version !== phraseVersion) return;
+      audio.dataset.phrase = String(to + 1);
+      audio.src = url;
+      voiceReady = true;
+      playVoice(gesture);
+      sync();
+    };
 
-  function prefetchVoice() {
-    if (prefetched) return;
-    prefetched = true;
-    for (let to = 1; to < stops.length; to++) {
-      fetch(voiceURL(to), { cache: "force-cache" }).then((response) => {
-        if (!response.ok) throw new Error("voice");
-        return response.arrayBuffer();
-      }).catch(() => {
-        if (voiceOn) stopVoice();
+    if (entry.url) {
+      // Готовая первая фраза запускается синхронно в обработчике клика.
+      apply(entry.url, voiceGesture);
+    } else {
+      // play() тишины тоже вызывается синхронно в клике, на том же audio.
+      // Быстрый fetch не должен заменить её раньше, чем она отыграет.
+      const unlocked = voiceGesture ? unlockVoice() : Promise.resolve();
+      Promise.all([entry.promise, unlocked]).then(([url]) => {
+        apply(url);
+      }, () => {
+        if (voiceOn && version === phraseVersion) stopVoice();
       });
+      sync();
     }
   }
 
@@ -5619,6 +5737,8 @@
     if (!voiceOn || !voiceBusy) return;
     voiceBusy = false;
     voiceEnded = false;
+    voiceReady = false;
+    audio.dataset.phrase = "";
     const to = voiceStage;
     if (stillMode()) {
       if (to === stops.length - 1) {
@@ -5806,7 +5926,7 @@
     }
     if (voiceOn) {
       if (!voiceRunning()) {
-        if (!audio.paused || playPending) pauseVoice();
+        if (!audio.paused || playPending || unlocking) pauseVoice();
       } else if (voiceEnded) {
         voiceEnded = false;
         finishVoice();
@@ -5994,23 +6114,48 @@
       stopVoice();
       return;
     }
-    voiceState(true);
-    if (stillMode()) {
-      history(ends[0], 0);
-      phrase(0);
-    } else {
-      begin(true);
+    loadVoices();
+    voiceState(true, true);
+    voiceGesture = true;
+    try {
+      if (stillMode()) {
+        history(ends[0], 0);
+        phrase(0);
+      } else {
+        begin(true);
+      }
+    } finally {
+      voiceGesture = false;
     }
-    // Ни fetch, ни src до первого жеста пользователя.
-    prefetchVoice();
   });
+  audio.addEventListener("playing", () => {
+    if (!phraseSource() || audio.paused) return;
+    if (!voiceRunning()) pauseVoice();
+    else voiceState(true);
+  });
+  const loadingVoice = () => {
+    if (phraseSource() && !audio.ended) voiceState(true, true);
+  };
+  audio.addEventListener("waiting", loadingVoice);
+  audio.addEventListener("stalled", loadingVoice);
   audio.addEventListener("ended", () => {
-    if (!voiceOn || !voiceBusy || !audio.ended) return;
+    if (!audio.ended) return;
+    if (unlocking) {
+      finishUnlock();
+      return;
+    }
+    if (!phraseSource()) return;
     if (voiceRunning()) finishVoice();
     else voiceEnded = true;
   });
   audio.addEventListener("error", () => {
-    if (voiceOn && audio.error) stopVoice();
+    if (!audio.error) return;
+    if (unlocking) {
+      finishUnlock();
+      return;
+    }
+    if (voiceOn && voiceBusy && voiceReady
+      && audio.src === voiceCache.get(voiceStage)?.url) stopVoice();
   });
 
   stops.forEach((stop, k) => stop.addEventListener("click", () => jump(k)));
@@ -6031,6 +6176,8 @@
       if (!entries.some((entry) => entry.isIntersecting)) return;
       near.disconnect();
       loadPhotos();
+      // Сеть разрешена заранее; воспроизведение — только после нажатия.
+      loadVoices();
     }, { rootMargin: "800px 0px" });
     near.observe(phone);
     new IntersectionObserver(([entry]) => {
@@ -6040,6 +6187,7 @@
     }, { threshold: [0, .35] }).observe(phone);
   } else {
     loadPhotos();
+    loadVoices();
     // Без IntersectionObserver остаётся статичный режим, но голос тоже учитывает экран.
     const visibility = () => {
       const rect = phone.getBoundingClientRect();
@@ -6052,6 +6200,11 @@
     addEventListener("resize", visibility);
     visibility();
   }
+
+  // Медленная сеть (github.io из Китая ~10 КБ/с): голос качается по одной фразе
+  // сразу после открытия страницы, а не у самого блока, — к нажатию 01 уже готова.
+  if (typeof requestIdleCallback === "function") requestIdleCallback(loadVoices, { timeout: 2000 });
+  else setTimeout(loadVoices, 1000);
 
   document.addEventListener("visibilitychange", sync);
   media.addEventListener("change", () => {
