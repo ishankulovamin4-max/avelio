@@ -1,0 +1,64 @@
+.video-frame > .hero-video-play {
+  box-sizing: border-box;
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+
+  /* В широком телефоне founders.css резервирует снизу отдельный ряд.
+     Центр кнопки считаем относительно видео, без этого ряда. */
+  top: calc(58% - var(--fh-sound-row, 0px) * .58);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  min-height: 72px;
+  margin: 0;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--brass, rgb(190, 146, 74));
+  border-radius: 12px;
+  background: var(--plate, rgb(250, 247, 239));
+  color: var(--plate-ink, rgb(64, 57, 46));
+  box-shadow:
+    0 0 0 2px var(--shade, rgb(38, 30, 18)),
+    0 0 0 4px var(--plate, rgb(250, 247, 239)),
+    0 8px 24px rgba(38, 30, 18, .42),
+    inset 0 1px 0 var(--glint, rgb(255, 236, 196));
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.video-frame > .hero-video-play[hidden] {
+  display: none !important;
+}
+
+.video-frame > .hero-video-play svg {
+  display: block;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  pointer-events: none;
+}
+
+.video-frame > .hero-video-play:hover {
+  border-color: var(--plate-muted, rgb(111, 99, 80));
+}
+
+.video-frame > .hero-video-play:focus {
+  outline: 3px solid var(--plate-ink, rgb(64, 57, 46));
+  outline-offset: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-frame > .hero-video-play {
+    animation: none;
+    transition: none;
+  }
+}

@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="only light"><style>:root{color-scheme:only light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Avelio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,7 +15,7 @@
     оставляя верхние 45% свободными.
   */
   :root {
-    color-scheme: light;
+    color-scheme: only light;
     --white: #FFFFFF;
     --paper: #FAFAFA;
     --ink: #161616;
@@ -2522,6 +2522,7 @@
 
 </style>
 <link rel="stylesheet" href="founders/founders.css">
+<link rel="stylesheet" href="video/hero-video.css">
 
 <div id="avelio-start" lang="ru">
   <header class="site-header shell">
@@ -2565,8 +2566,9 @@
       <div class="hero-stage shell">
         <div class="video-column">
           <div class="video-frame">
-            <!-- Замените video/hero.mp4; если в новом ролике есть голос, уберите data-has-sound. -->
-            <video id="hero-video" muted playsinline autoplay loop preload="metadata" poster="video/hero.jpg" aria-label="Ролик Avelio: шоурум в Фошане">
+            <!-- Ролик: video/hero.mp4, на телефоне лёгкий video/hero-phone.mp4; звук, «▶» и запуск — video/hero-video.js. -->
+            <video id="hero-video" muted playsinline webkit-playsinline x5-playsinline autoplay loop preload="metadata" poster="video/hero.jpg" aria-label="Ролик Avelio: шоурум в Фошане">
+              <source src="video/hero-phone.mp4" type="video/mp4" media="(max-width: 699px)">
               <source src="video/hero.mp4" type="video/mp4">
               Ваш браузер не поддерживает видео.
             </video>
@@ -3105,6 +3107,7 @@
         </div>
         <div class="f-video-frame">
           <video id="f-video" controls playsinline preload="none" poster="video/hero.jpg">
+            <source src="video/hero-phone.mp4" type="video/mp4" media="(max-width: 699px)">
             <source src="video/hero.mp4" type="video/mp4">
           </video>
         </div>
@@ -3309,36 +3312,7 @@
   video.addEventListener("loadedmetadata", videoLayout);
   if (video.readyState >= 1) videoLayout();
 
-  // Табличка включает звук; со звуком в углу остаётся маленькая «Выключить звук».
-  let soundHeard = false;
-  function setSound(on) {
-    video.muted = !on;
-    $("sound-toggle").hidden = on;
-    $("sound-off").hidden = !on;
-  }
-  $("sound-toggle").addEventListener("click", () => {
-    if (video.hasAttribute("data-has-sound")) {
-      notice("В этом примере звука нет. В готовом ролике здесь будет голос.");
-      return;
-    }
-    // Первый раз со звуком — с начала, чтобы рассказ не начинался с середины.
-    if (!soundHeard) {
-      soundHeard = true;
-      video.currentTime = 0;
-    }
-    setSound(true);
-    $("sound-off").focus({ preventScroll: true });
-    if (video.paused) {
-      video.play().catch(() => {
-        setSound(false);
-        notice("Браузер не запустил ролик. Попробуйте нажать кнопку ещё раз.");
-      });
-    }
-  });
-  $("sound-off").addEventListener("click", () => {
-    setSound(false);
-    $("sound-toggle").focus({ preventScroll: true });
-  });
+  // Звук, запуск ролика и «▶» — video/hero-video.js.
 
   function updateResponsiveElements() {
     $("header-cta").hidden = !desktop.matches;
@@ -5872,5 +5846,6 @@
 
 </script>
 <script src="founders/founders.js" defer></script>
+<script src="video/hero-video.js" defer></script>
 <script src="founders/hero-overlay.js" defer></script>
 </body></html>

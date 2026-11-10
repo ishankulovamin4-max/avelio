@@ -75,6 +75,25 @@
     }
   }
 
+  video.addEventListener("avelio:sound", function (event) {
+    const detail = event.detail;
+
+    if (!detail) {
+      return;
+    }
+
+    if (!isEnabled()) {
+      setHidden(false);
+      return;
+    }
+
+    if (!detail.on && (detail.source === "off" || detail.source === "fail")) {
+      setHidden(false);
+    } else if (detail.on && (detail.source === "video" || detail.source === "play")) {
+      setHidden(true);
+    }
+  });
+
   // Кнопки звука — соседние элементы, их клики сюда не попадают.
   video.addEventListener("click", function () {
     if (!isEnabled()) {
