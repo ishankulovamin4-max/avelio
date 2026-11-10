@@ -615,6 +615,7 @@
     border-radius: 0;
     background: #fffdf8;
     box-shadow: none;
+    container-type: inline-size;
   }
 
   .founders:is(.is-ready, .is-shell) #hero #hero-video {
@@ -636,10 +637,22 @@
     aspect-ratio: auto;
     object-fit: cover;
     object-position: center;
+    object-position: 50% calc(
+      min(0px, max(
+        100svh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
+        - var(--fh-header-safe) - var(--fh-bottom-safe) - 100cqw * 16 / 9,
+        min(
+          (100svh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
+          - var(--fh-header-safe) - var(--fh-bottom-safe) - 100cqw * 16 / 9) / 2,
+          100svh - var(--fh-header) - var(--fh-cta) - var(--fh-sound-row)
+          - var(--fh-header-safe) - var(--fh-bottom-safe) - 76px - 0.87 * (100cqw * 16 / 9)
+        )
+      ))
+    );
     box-shadow: none;
   }
 
-  /* На обычном телефоне плашка занимает только свободный низ кадра. */
+  /* Плашка звука всегда поверх ролика, в нижних 14 % кадра */
   .founders:is(.is-ready, .is-shell) #hero #sound-toggle.sound-plate,
   .founders:is(.is-ready, .is-shell) #hero #sound-off {
     box-sizing: border-box;
@@ -916,22 +929,6 @@
   .founders:is(.is-ready, .is-shell) {
     --fh-header: 52px;
     --fh-cta: 0px;
-  }
-}
-
-@media (max-width: 699px) and (min-aspect-ratio: 239/500) {
-  .founders:is(.is-ready, .is-shell) {
-    --fh-sound-row: 76px;
-  }
-
-  /* Резерв под видео: 8px + кнопка 44px + 24px.
-     Обе кнопки занимают одно место, независимо от состояния звука. */
-  .founders:is(.is-ready, .is-shell) #hero #sound-toggle.sound-plate,
-  .founders:is(.is-ready, .is-shell) #hero #sound-off {
-    bottom: 24px;
-    background: #252525;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 }
 
