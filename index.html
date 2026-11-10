@@ -4575,7 +4575,8 @@
     const bend = Math.min(.1 * length, 36);
     const cx = Math.min(screen.clientWidth - 8, Math.max(8, middle + nx * bend));
     const cy = Math.min(screen.clientHeight - 8, Math.max(8, (y0 + y) / 2 + ny * bend));
-    const ms = Math.round(Math.min(1100, Math.max(480, 340 + 240 * Math.log2(1 + length / 50))));
+    // Перелёт 800–2000 мс; расчёт по пику 1,875 × средней, ориентир — 0,42 px/мс.
+    const ms = Math.min(2000, Math.max(800, 560 + 300 * Math.log2(1 + length / 60), Math.ceil(1.875 * length / .42)));
     const state = { x: x0, y: y0, start: null, id: 0 };
     flight = state;
     const step = (time) => {
@@ -4593,8 +4594,9 @@
     state.id = requestAnimationFrame(step);
     return ms;
   }
+  // Мягкое нажатие: сжатие до 0,86 и возврат за 460 мс.
   function press() {
-    if (moving()) cursor.animate({ scale: [1, .78, 1] }, { duration: 380, easing: "ease-out" });
+    if (moving()) cursor.animate({ scale: [1, .86, 1] }, { duration: 460, easing: "cubic-bezier(.45, 0, .55, 1)" });
     restart(cursor, "tap");
   }
 
@@ -4870,15 +4872,18 @@
     }
     if (scene.tap) {
       const ms = fly(aim(scene));
-      wait(ms + 120, () => {
+      // После перелёта ждём 300 мс; без перелёта — столько же.
+      wait(ms + 300, () => {
         press();
         go();
+        // От нажатия до следующей сцены — scene.ms − 800, но не меньше 1600 мс.
+        wait(Math.max(1600, scene.ms - 800), () => render((index + 1) % scenes.length));
       });
     } else {
       if (index === 0) fly(aim(scene));
       go();
+      wait(scene.ms, () => render((index + 1) % scenes.length));
     }
-    wait(scene.ms, () => render((index + 1) % scenes.length));
   }
 
   function choose(name) {
