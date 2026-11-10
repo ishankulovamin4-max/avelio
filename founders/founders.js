@@ -1,6 +1,12 @@
 (() => {
   "use strict";
 
+  // Выбор вида — только по ссылке с ?variants (показ владельцу); без неё сайт показывает текущую подачу now.
+  // После выбора: выбранный вариант становится вариантом по умолчанию, переключатель убирается.
+  const VARIANT_QUERY = new URLSearchParams(location.search).get("variants");
+  const VARIANT_PICKER = VARIANT_QUERY !== null;
+  const DEFAULT_VARIANT = VARIANT_PICKER ? "a" : "now";
+
   // Сцена «Комната с фотографии» — content/avelio-concept/team/room-photo/spec.md.
   // Весь анимируемый мир рисуется на одном canvas: точное наложение поз
   // (lighter = предумноженное смешение), маски пальцев и ладони, экран с рамкой,
@@ -43,9 +49,9 @@
   }
 
   // §7: E — позы, прозрачность, реакции; M — карточка и диван; D — уход экрана вниз.
-  const E = bezier(0.42, 0, 0.58, 1);
-  const M = bezier(0.33, 0, 0.20, 1);
-  const D = bezier(0.40, 0, 0.60, 1);
+  const E = value => variant.curves.e(value);
+  const M = value => variant.curves.m(value);
+  const D = value => variant.curves.d(value);
   const span = (value, a, b, curve) => curve(clamp((value - a) / (b - a)));
 
   // §4. Доли ширины W и высоты H области анимации.
@@ -128,6 +134,130 @@
     cardShadow: "--fr-card-shadow",
     cardShadowBlur: "--fr-card-shadow-blur"
   };
+
+  const VARIANT_STORAGE_KEY = "avelio-founders-variant";
+  const smoothPose = t => t * t * (3 - 2 * t);
+  const softPose = t => t * t * t * (t * (6 * t - 15) + 10);
+  const VARIANTS = {
+    now: {
+      title: "Текущая подача",
+      tau: 110,
+      travelMs: 600,
+      poseFadeMs: 160,
+      poseCurve: smoothPose,
+      feather: 0.45,
+      light: 0,
+      vignette: 0,
+      curves: {
+        e: bezier(0.42, 0, 0.58, 1),
+        m: bezier(0.33, 0, 0.20, 1),
+        d: bezier(0.40, 0, 0.60, 1),
+        fade: bezier(0.42, 0, 0.58, 1)
+      },
+      look: {}
+    },
+    a: {
+      title: "Картина в галерее",
+      tau: 150,
+      travelMs: 800,
+      poseFadeMs: 220,
+      poseCurve: softPose,
+      feather: 0.65,
+      light: 0,
+      vignette: 0,
+      curves: {
+        e: bezier(0.38, 0, 0.62, 1),
+        m: bezier(0.30, 0, 0.20, 1),
+        d: bezier(0.36, 0, 0.50, 1),
+        fade: bezier(0.32, 0, 0.40, 1)
+      },
+      look: {
+        presentation: "gallery",
+        surround: 0.065,
+        frame: "#fffefa",
+        frameEdge: "rgba(104, 97, 86, 0.22)",
+        frameInner: "rgba(104, 97, 86, 0.30)",
+        screenShadow: "rgba(58, 51, 42, 0.30)",
+        screenShadowBlur: 0.13,
+        screenShadowY: 0.055,
+        contactShadow: "rgba(54, 49, 42, 0.16)",
+        roomShadow: "rgba(54, 49, 42, 0.22)",
+        cardShadow: "rgba(40, 30, 15, 0.12)",
+        cardShadowBlur: 0.012
+      }
+    },
+    b: {
+      title: "Парящий экран",
+      tau: 125,
+      travelMs: 680,
+      poseFadeMs: 190,
+      poseCurve: bezier(0.35, 0, 0.65, 1),
+      feather: 0.50,
+      light: 0,
+      vignette: 0,
+      curves: {
+        e: bezier(0.45, 0, 0.55, 1),
+        m: bezier(0.36, 0, 0.30, 1),
+        d: bezier(0.42, 0, 0.58, 1),
+        fade: bezier(0.42, 0, 0.58, 1)
+      },
+      look: {
+        presentation: "floating",
+        frame: "transparent",
+        frameEdge: "transparent",
+        frameInner: "transparent",
+        screenShadow: "rgba(65, 61, 54, 0.30)",
+        screenShadowBlur: 0,
+        screenShadowY: 0,
+        contactShadow: "rgba(54, 51, 46, 0.19)",
+        roomShadow: "rgba(54, 51, 46, 0.24)",
+        cardShadow: "rgba(40, 30, 15, 0.12)",
+        cardShadowBlur: 0.010
+      }
+    },
+    c: {
+      title: "Светлая ниша",
+      tau: 190,
+      travelMs: 1050,
+      poseFadeMs: 260,
+      poseCurve: softPose,
+      feather: 0.85,
+      light: 0,
+      vignette: 0,
+      curves: {
+        e: bezier(0.48, 0, 0.52, 1),
+        m: bezier(0.28, 0, 0.12, 1),
+        d: bezier(0.32, 0, 0.42, 1),
+        fade: bezier(0.28, 0, 0.30, 1)
+      },
+      look: {
+        presentation: "niche",
+        surround: 0.085,
+        frame: "#eee5d8",
+        frameEdge: "rgba(117, 102, 82, 0.16)",
+        frameInner: "rgba(117, 102, 82, 0.24)",
+        screenShadow: "rgba(101, 85, 62, 0.20)",
+        screenShadowBlur: 0.06,
+        screenShadowY: 0.025,
+        contactShadow: "rgba(98, 80, 57, 0.15)",
+        roomShadow: "rgba(98, 80, 57, 0.22)",
+        cardShadow: "rgba(40, 30, 15, 0.12)",
+        cardShadowBlur: 0.012
+      }
+    }
+  };
+  let variantName = DEFAULT_VARIANT;
+  try {
+    const saved = VARIANT_PICKER ? localStorage.getItem(VARIANT_STORAGE_KEY) : null;
+    if (typeof saved === "string" && Object.prototype.hasOwnProperty.call(VARIANTS, saved)) variantName = saved;
+  } catch {
+    // Недоступное хранилище не мешает сцене и выбору варианта в текущей вкладке.
+  }
+  // ?variants=b — ссылка сразу на вариант; важнее сохранённого выбора.
+  if (VARIANT_QUERY && Object.prototype.hasOwnProperty.call(VARIANTS, VARIANT_QUERY)) variantName = VARIANT_QUERY;
+  let variant = VARIANTS[variantName];
+  let variantPicker;
+  let variantStyle;
 
   let ready = false;
   let visible = false;
@@ -221,6 +351,10 @@
         return journal;
       }
       return journal;
+    },
+    variant(name) {
+      if (name === undefined) return variantName;
+      return selectVariant(name);
     }
   };
 
@@ -236,6 +370,132 @@
   function decorative(node) {
     node.setAttribute("aria-hidden", "true");
     return node;
+  }
+
+  function selectVariant(name) {
+    if (typeof name !== "string" || !Object.prototype.hasOwnProperty.call(VARIANTS, name)) return variantName;
+    variantName = name;
+    variant = VARIANTS[name];
+    POSE_FADE_MS = variant.poseFadeMs;
+    try {
+      localStorage.setItem(VARIANT_STORAGE_KEY, name);
+    } catch {
+      // Выбор уже применён в памяти; сохранение не обязательно для работы.
+    }
+    updateVariantPicker();
+    if (ready) {
+      readLook();
+      for (const key of KEYS) {
+        people[key].cache = "";
+        people[key].shown = null;
+        people[key].fade = null;
+      }
+      lastKey = "";
+      render(true);
+      wake();
+    }
+    return variantName;
+  }
+
+  function updateVariantPicker() {
+    if (!variantPicker) return;
+    variantPicker.querySelector(".founders-variant-title").textContent = variant.title;
+    for (const button of variantPicker.querySelectorAll(".founders-variant-button")) {
+      button.setAttribute("aria-pressed", String(button.dataset.variant === variantName));
+    }
+  }
+
+  function buildVariantPicker() {
+    if (!VARIANT_PICKER || navigator.webdriver === true || variantPicker) return;
+    variantStyle = element("style");
+    variantStyle.id = "founders-variant-style";
+    variantStyle.textContent = `
+      .founders-variant-picker {
+        box-sizing: border-box;
+        position: fixed;
+        right: max(10px, env(safe-area-inset-right, 0px));
+        bottom: max(10px, env(safe-area-inset-bottom, 0px));
+        z-index: 1000;
+        width: 168px;
+        max-width: calc(100vw - 20px);
+        margin: 0;
+        padding: 8px;
+        border: 1px solid rgba(0, 0, 0, .14);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .95);
+        color: #222;
+        box-shadow: 0 3px 16px rgba(0, 0, 0, .06);
+        font-family: inherit;
+        font-size: 12px;
+        line-height: 1.3;
+        letter-spacing: normal;
+      }
+      .founders-variant-title {
+        margin: 0 0 6px;
+        padding: 0;
+        color: inherit;
+        font: inherit;
+        white-space: nowrap;
+      }
+      .founders-variant-buttons {
+        display: grid;
+        grid-template-columns: 1.8fr repeat(3, 1fr);
+        gap: 3px;
+      }
+      .founders-variant-button {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        min-width: 0;
+        min-height: 32px;
+        margin: 0;
+        padding: 4px 2px;
+        border: 1px solid rgba(0, 0, 0, .14);
+        border-radius: 4px;
+        background: #fff;
+        color: #222;
+        box-shadow: none;
+        font: inherit;
+        letter-spacing: normal;
+        text-align: center;
+        text-transform: none;
+        cursor: pointer;
+        appearance: none;
+        touch-action: manipulation;
+      }
+      .founders-variant-button[aria-pressed="true"] {
+        border-color: #222;
+        background: #222;
+        color: #fff;
+      }
+      .founders-variant-button:focus-visible {
+        outline: 2px solid #222;
+        outline-offset: 2px;
+      }
+      /* Телефон: над нижней кнопкой «Пришлите фото комнаты» (.sticky-cta, 68px). */
+      @media (max-width: 599px) {
+        .founders-variant-picker { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+      }
+    `;
+    document.head.append(variantStyle);
+
+    variantPicker = element("div", "founders-variant-picker");
+    variantPicker.setAttribute("role", "group");
+    variantPicker.setAttribute("aria-label", "Вариант сцены основателей");
+    const title = element("div", "founders-variant-title", variant.title);
+    title.setAttribute("aria-live", "polite");
+    const buttons = element("div", "founders-variant-buttons");
+    for (const [name, label] of [["now", "Сейчас"], ["a", "A"], ["b", "B"], ["c", "C"]]) {
+      const button = element("button", "founders-variant-button", label);
+      button.type = "button";
+      button.dataset.variant = name;
+      button.setAttribute("aria-label", `${label}: ${VARIANTS[name].title}`);
+      button.addEventListener("click", () => selectVariant(name));
+      buttons.append(button);
+    }
+    variantPicker.append(title, buttons);
+    document.body.append(variantPicker);
+    updateVariantPicker();
   }
 
   function scratch() {
@@ -371,7 +631,7 @@
       people[key] = { key, body, name, art, cache: "" };
     }
 
-    for (const name of ["screen", "reveal", "blend", "overlay", "mask", "occluder", "head", "headMask"]) {
+    for (const name of ["screen", "reveal", "blend", "overlay", "mask", "occluder", "head", "headMask", "variantFrame", "variantLight"]) {
       work[name] = scratch();
     }
 
@@ -398,6 +658,10 @@
     }
     if (probe) probe.remove();
     if (dialog) dialog.remove();
+    if (variantPicker) variantPicker.remove();
+    if (variantStyle) variantStyle.remove();
+    variantPicker = null;
+    variantStyle = null;
   }
 
   function buildDialog() {
@@ -509,7 +773,7 @@
       move: span(value, 0.38, 0.64, M),
       swap: span(value, 0.72, 0.80, E),
       down: span(value, 0.88, 0.98, D),
-      fade: 1 - span(value, 0.90, 0.98, E)
+      fade: 1 - span(value, 0.90, 0.98, variant.curves.fade)
     };
   }
 
@@ -680,6 +944,7 @@
   }
 
   function readLook() {
+    root.dataset.foundersVariant = variantName;
     const style = getComputedStyle(stage);
     const next = { ...LOOK_DEFAULTS };
     for (const [key, name] of Object.entries(LOOK_VARS)) {
@@ -692,8 +957,11 @@
         next[key] = raw;
       }
     }
+    Object.assign(next, variant.look);
     for (const key of ["contactShadow", "roomShadow"]) next[`${key}Color`] = parseColor(next[key]);
     look = next;
+    work.variantFrame.geometry = null;
+    work.variantLight.geometry = null;
   }
 
   function roundRect(c, x, y, w, h, r) {
@@ -749,13 +1017,149 @@
     c.clearRect(0, 0, target.canvas.width, target.canvas.height);
   }
 
+  // Оформление вокруг неизменного экрана: один растр на размер/вариант.
+  // В кадре прокрутки используются только готовый холст и прежние уход/растворение.
+  function variantFrameArt() {
+    const target = work.variantFrame;
+    if (target.geometry === geo) return target.canvas;
+    sizeCanvas(target, canvas.width, canvas.height);
+    clearCanvas(target);
+    const c = target.ctx;
+    const screen = geo.screen;
+    setScene(c, geo);
+
+    if (look.presentation === "floating") {
+      // Между нижней кромкой изображения и тенью остаётся видимый воздух.
+      // Никакой заливки или обводки вокруг inner: экран действительно без рамки.
+      softEllipse(
+        c, screen.x + screen.w * 0.57, geo.H * 0.765,
+        screen.w * 0.57, geo.H * 0.035,
+        parseColor(look.screenShadow), 1, 0.15
+      );
+    } else if (look.presentation === "niche") {
+      const pad = Math.min(screen.w, screen.h) * look.surround;
+      const left = screen.x - pad;
+      const right = screen.x + screen.w + pad;
+      const top = screen.y - pad * 1.8;
+      const base = Math.max(screen.y + screen.h + pad, geo.H * 0.735);
+      const depth = Math.min(pad * 0.65, geo.H * 0.025);
+
+      // Светлый архитектурный объём позади экрана, не новая геометрия контента.
+      c.save();
+      c.shadowColor = look.screenShadow;
+      c.shadowBlur = look.screenShadowBlur * screen.h * geo.dpr;
+      c.shadowOffsetY = look.screenShadowY * screen.h * geo.dpr;
+      c.fillStyle = "#e9dfd0";
+      roundRect(c, left, top, right - left, base - top, pad * 0.25);
+      c.fill();
+      c.restore();
+
+      const recess = c.createLinearGradient(left, top, right, base);
+      recess.addColorStop(0, "#d9cdbb");
+      recess.addColorStop(0.16, "#f5eee2");
+      recess.addColorStop(0.56, "#fffaf0");
+      recess.addColorStop(1, "#e7dac6");
+      c.fillStyle = recess;
+      c.fillRect(left + pad * 0.4, top + pad * 0.4, right - left - pad * 0.8, base - top - pad * 0.4);
+
+      // Верхний откос и боковые грани читаются даже на маленьком экране.
+      c.fillStyle = "#fffaf2";
+      c.beginPath();
+      c.moveTo(left, top);
+      c.lineTo(right, top);
+      c.lineTo(right - pad * 0.4, top + pad * 0.4);
+      c.lineTo(left + pad * 0.4, top + pad * 0.4);
+      c.closePath();
+      c.fill();
+
+      c.fillStyle = "#d8cbb8";
+      c.fillRect(left, top + pad * 0.4, pad * 0.4, base - top - pad * 0.4);
+      c.fillStyle = "#fdf7ed";
+      c.fillRect(right - pad * 0.4, top + pad * 0.4, pad * 0.4, base - top - pad * 0.4);
+
+      // Широкая полка-подиум с отдельной передней гранью.
+      c.fillStyle = "#fffaf2";
+      c.beginPath();
+      c.moveTo(left, base - depth);
+      c.lineTo(right, base - depth);
+      c.lineTo(right + pad * 0.55, base);
+      c.lineTo(left - pad * 0.55, base);
+      c.closePath();
+      c.fill();
+
+      const front = c.createLinearGradient(0, base, 0, base + depth);
+      front.addColorStop(0, "#d9cbb6");
+      front.addColorStop(1, "#eee4d5");
+      c.fillStyle = front;
+      c.fillRect(left - pad * 0.55, base, right - left + pad * 1.1, depth);
+
+      c.fillStyle = look.frame;
+      roundRect(c, screen.x, screen.y, screen.w, screen.h, screen.r);
+      c.fill();
+    } else {
+      // Широкий белый багет добавляется снаружи: окно комнаты не уменьшается.
+      const pad = Math.min(screen.w, screen.h) * look.surround;
+      const x = screen.x - pad;
+      const y = screen.y - pad;
+      const w = screen.w + pad * 2;
+      const h = screen.h + pad * 2;
+      c.save();
+      c.shadowColor = look.screenShadow;
+      c.shadowBlur = look.screenShadowBlur * screen.h * geo.dpr;
+      c.shadowOffsetY = look.screenShadowY * screen.h * geo.dpr;
+      roundRect(c, x, y, w, h, screen.r * 0.65);
+      c.fillStyle = look.frame;
+      c.fill();
+      c.restore();
+
+      c.lineWidth = Math.max(1, pad * 0.12);
+      c.strokeStyle = "#d9d3c9";
+      roundRect(c, x, y, w, h, screen.r * 0.65);
+      c.stroke();
+      c.lineWidth = Math.max(1, pad * 0.18);
+      c.strokeStyle = "#f0ece5";
+      roundRect(c, x + pad * 0.4, y + pad * 0.4, w - pad * 0.8, h - pad * 0.8, screen.r * 0.5);
+      c.stroke();
+    }
+
+    target.geometry = geo;
+    return target.canvas;
+  }
+
+  // Статичный свет внутри комнаты: одинаков до, во время и после раскрытия, без вспышки.
+  function variantLightArt() {
+    const target = work.variantLight;
+    if (target.geometry === geo) return target.canvas;
+    const inner = geo.inner;
+    sizeCanvas(target, inner.w * geo.kx, inner.h * geo.ky);
+    clearCanvas(target);
+    const c = target.ctx;
+    c.save();
+    c.scale(target.canvas.width, target.canvas.height);
+    const light = c.createRadialGradient(0.04, 0.18, 0, 0.04, 0.18, 1.05);
+    light.addColorStop(0, `rgba(255, 255, 255, ${variant.light})`);
+    light.addColorStop(0.45, `rgba(255, 255, 255, ${variant.light * 0.4})`);
+    light.addColorStop(1, "rgba(255, 255, 255, 0)");
+    c.fillStyle = light;
+    c.fillRect(0, 0, 1, 1);
+    const shade = c.createRadialGradient(0.45, 0.40, 0.15, 0.45, 0.40, 0.85);
+    shade.addColorStop(0, "rgba(24, 24, 24, 0)");
+    shade.addColorStop(0.5, `rgba(24, 24, 24, ${variant.vignette * 0.2})`);
+    shade.addColorStop(1, `rgba(24, 24, 24, ${variant.vignette})`);
+    c.fillStyle = shade;
+    c.fillRect(0, 0, 1, 1);
+    c.restore();
+    target.geometry = geo;
+    return target.canvas;
+  }
+
   // Поза героя на его собственном холсте: две соседние картинки в общей рамке,
   // (1 − w)·A + w·B в предумноженном виде (§7.2). Там, где альфа поз совпадает,
   // фигура не просвечивает ни на одном весе.
   // Фаза 17 Task 2: на экране всегда одна поза — та, к которой ближе прокрутка. Переход через
   // середину — наплыв по времени POSE_FADE_MS, поэтому полупрозрачные «вторые руки» не зависают,
-  // когда прокрутка стоит посреди смены поз. При setProgress (проверка) и без анимаций — сразу.
-  const POSE_FADE_MS = 160;
+  // когда прокрутка стоит посреди смены позы. При setProgress (проверка) и без анимаций — сразу.
+  let POSE_FADE_MS = variant.poseFadeMs;
   function shownPose(person, pose, now) {
     // Разбор слоёв для проверки (debugLayers) рисует позу ровно по прокрутке и не трогает показ.
     if (now === undefined) return pose;
@@ -770,7 +1174,7 @@
     if (person.fade) {
       const t = clamp((now - person.fade.start) / POSE_FADE_MS);
       if (t >= 1) person.fade = null;
-      else return { from: person.fade.from, to: person.shown, w: t * t * (3 - 2 * t) };
+      else return { from: person.fade.from, to: person.shown, w: variant.poseCurve(t) };
     }
     return { from: person.shown, to: person.shown, w: 0 };
   }
@@ -1001,14 +1405,18 @@
     c.save();
     c.translate(0, offset);
 
-    c.save();
-    c.shadowColor = look.screenShadow;
-    c.shadowBlur = look.screenShadowBlur * screen.h * g.dpr;
-    c.shadowOffsetY = look.screenShadowY * screen.h * g.dpr;
-    roundRect(c, screen.x, screen.y, screen.w, screen.h, screen.r);
-    c.fillStyle = look.frame;
-    c.fill();
-    c.restore();
+    if (variantName === "now") {
+      c.save();
+      c.shadowColor = look.screenShadow;
+      c.shadowBlur = look.screenShadowBlur * screen.h * g.dpr;
+      c.shadowOffsetY = look.screenShadowY * screen.h * g.dpr;
+      roundRect(c, screen.x, screen.y, screen.w, screen.h, screen.r);
+      c.fillStyle = look.frame;
+      c.fill();
+      c.restore();
+    } else {
+      c.drawImage(variantFrameArt(), 0, 0, g.W, g.H);
+    }
 
     c.save();
     roundRect(c, inner.x, inner.y, inner.w, inner.h, inner.r);
@@ -1023,7 +1431,7 @@
       const rc = reveal.ctx;
       rc.setTransform(g.kx, 0, 0, g.ky, 0, 0);
       drawCover(rc, images.room, { x: 0, y: 0, w: inner.w, h: inner.h });
-      const feather = 0.45 * g.reveal.far;
+      const feather = variant.feather * g.reveal.far;
       const outer = st.reveal * (g.reveal.far + feather);
       const core = Math.max(0, outer - feather);
       rc.globalCompositeOperation = "destination-in";
@@ -1034,6 +1442,10 @@
       rc.fillRect(0, 0, inner.w, inner.h);
       rc.globalCompositeOperation = "source-over";
       c.drawImage(reveal.canvas, 0, 0, reveal.canvas.width, reveal.canvas.height, inner.x, inner.y, inner.w, inner.h);
+    }
+
+    if (variant.light > 0 || variant.vignette > 0) {
+      c.drawImage(variantLightArt(), inner.x, inner.y, inner.w, inner.h);
     }
 
     const r = sofaRect(g, st.move);
@@ -1449,15 +1861,15 @@
       // Телефон: q — ровно нормированный вход §4.3, концы точные, хвоста нет.
       q = filtered = p;
     } else if (dt > 0) {
-      // Существующее сглаживание: каскад двух фильтров τ=110 мс, точное решение
-      // для постоянной цели на интервале кадра; вся сцена не быстрее 0,6 с.
-      const ratio = dt / 110;
+      // Тот же каскад двух фильтров; τ и потолок скорости задаёт вариант.
+      // У now сохранены τ=110 мс и проход всей сцены не быстрее 0,6 с.
+      const ratio = dt / variant.tau;
       const decay = Math.exp(-ratio);
       const previous = filtered;
       const before = q;
       filtered = p + (previous - p) * decay;
       q = clamp(p + ((q - p) + (previous - p) * ratio) * decay);
-      const maxStep = dt / 600;
+      const maxStep = dt / variant.travelMs;
       q = before + Math.max(-maxStep, Math.min(maxStep, q - before));
     }
 
@@ -1507,6 +1919,7 @@
       q = filtered = p;
       lastKey = "";
       render(true);
+      buildVariantPicker();
 
       resizeObserver = new ResizeObserver(scheduleMeasure);
       resizeObserver.observe(stage);

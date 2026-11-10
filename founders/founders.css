@@ -206,6 +206,142 @@
   pointer-events: none;
 }
 
+/* Оформление A/B/C не участвует в раскладке и не зависит от q.
+   now не попадает ни под один из этих селекторов.
+   Фон и напольные тени — статичные CSS-градиенты без filter/backdrop-filter. */
+#founders.is-ready:is(
+  [data-founders-variant="a"],
+  [data-founders-variant="b"],
+  [data-founders-variant="c"]
+) .founder-stage {
+  --fv-amin: 18%;
+  --fv-roman: 82%;
+}
+
+#founders.is-ready[data-layout="tablet"]:is(
+  [data-founders-variant="a"],
+  [data-founders-variant="b"],
+  [data-founders-variant="c"]
+) .founder-stage {
+  --fv-amin: 20%;
+  --fv-roman: 80%;
+}
+
+#founders.is-ready:is(
+  [data-founders-variant="a"],
+  [data-founders-variant="b"],
+  [data-founders-variant="c"]
+) .founder-stage::before {
+  inset: 0;
+  border-radius: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 84%);
+  mask-image: linear-gradient(to bottom, #000 76%, transparent 84%);
+}
+
+/* Неподвижная мягкая световая вуаль проходит и по фигурам, и по полу.
+   Она заканчивается выше имён, не перехватывает нажатия и не касается CTA. */
+#founders.is-ready:is(
+  [data-founders-variant="a"],
+  [data-founders-variant="b"],
+  [data-founders-variant="c"]
+) .founder-stage::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 16%;
+  pointer-events: none;
+}
+
+/* A: белая галерейная стена, широкий верхний свет, короткие мягкие тени. */
+#founders.is-ready[data-founders-variant="a"] .founder-stage::before {
+  background:
+    radial-gradient(
+      ellipse 9% 2.8% at var(--fv-amin) 80%,
+      rgb(68 62 53 / 20%), transparent 100%
+    ),
+    radial-gradient(
+      ellipse 9% 2.8% at var(--fv-roman) 80%,
+      rgb(68 62 53 / 20%), transparent 100%
+    ),
+    radial-gradient(
+      ellipse 58% 58% at 50% 0%,
+      #fff 20%, rgb(255 255 255 / 92%) 50%, transparent 100%
+    ),
+    linear-gradient(to bottom, #f1efea, #eeeae3 72%, #f7f4ed);
+}
+
+#founders.is-ready[data-founders-variant="a"] .founder-stage::after {
+  background:
+    radial-gradient(
+      ellipse 75% 85% at 50% 0%,
+      rgb(255 255 255 / 14%), rgb(255 255 255 / 5%) 55%, transparent 100%
+    );
+}
+
+/* B: заметная диагональ оконного света слева; тени вытянуты вправо.
+   Тень самого парящего экрана подготовлена отдельно в variantFrameArt. */
+#founders.is-ready[data-founders-variant="b"] .founder-stage::before {
+  background:
+    radial-gradient(
+      ellipse 15% 2.4% at calc(var(--fv-amin) + 7%) 80%,
+      rgb(63 60 54 / 25%), rgb(63 60 54 / 9%) 55%, transparent 100%
+    ),
+    radial-gradient(
+      ellipse 15% 2.4% at calc(var(--fv-roman) + 7%) 80%,
+      rgb(63 60 54 / 25%), rgb(63 60 54 / 9%) 55%, transparent 100%
+    ),
+    linear-gradient(
+      122deg,
+      rgb(255 255 255 / 96%) 0%,
+      rgb(255 255 255 / 96%) 24%,
+      rgb(255 255 255 / 20%) 35%,
+      transparent 44%,
+      rgb(255 255 255 / 52%) 49%,
+      rgb(255 255 255 / 52%) 60%,
+      transparent 72%
+    ),
+    linear-gradient(110deg, #f6f5f1, #dfddd6);
+}
+
+#founders.is-ready[data-founders-variant="b"] .founder-stage::after {
+  background:
+    linear-gradient(
+      122deg,
+      rgb(255 255 255 / 15%) 0%,
+      rgb(255 255 255 / 10%) 26%,
+      transparent 48%,
+      rgb(255 255 255 / 4%) 57%,
+      transparent 76%
+    );
+}
+
+/* C: тёплая стена и большое рассеянное пятно от центральной ниши.
+   Тени расходятся от центра; ниша и полка рисуются за экраном на готовом растре. */
+#founders.is-ready[data-founders-variant="c"] .founder-stage::before {
+  background:
+    radial-gradient(
+      ellipse 12% 3.2% at calc(var(--fv-amin) - 4%) 80%,
+      rgb(109 87 58 / 18%), transparent 100%
+    ),
+    radial-gradient(
+      ellipse 12% 3.2% at calc(var(--fv-roman) + 4%) 80%,
+      rgb(109 87 58 / 18%), transparent 100%
+    ),
+    radial-gradient(
+      ellipse 50% 60% at 50% 43%,
+      #fffaf0 10%, rgb(255 248 234 / 88%) 45%, transparent 100%
+    ),
+    linear-gradient(to bottom, #e9dfd1, #f2e8d9 68%, #e4d7c4);
+}
+
+#founders.is-ready[data-founders-variant="c"] .founder-stage::after {
+  background:
+    radial-gradient(
+      ellipse 52% 66% at 50% 57%,
+      rgb(255 244 222 / 13%), rgb(255 244 222 / 7%) 50%, transparent 100%
+    );
+}
+
 .founders.is-ready .founder-canvas {
   position: absolute;
   z-index: 1;
