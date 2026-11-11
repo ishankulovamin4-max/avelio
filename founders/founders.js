@@ -78,22 +78,17 @@
   const FEET_Y = 0.80;
 
   // §7.1. Сегменты поз по возрастанию q: [начало, конец, из, в]. Между сегментами
-  // держится последняя поза. Всё — функции q, без таймеров и направления прокрутки.
+  // держится последняя поза. Моргание отдельно, по времени; жесты остаются функциями q.
   const TRACKS = {
     amin: [
-      [0.04, 0.06, "calm", "blink"],
-      [0.06, 0.08, "blink", "calm"],
-      [0.10, 0.26, "calm", "apply"],
+      [0.20, 0.23, "calm", "apply"],
       [0.28, 0.36, "apply", "calm"],
       [0.80, 0.86, "calm", "pleased"],
       [0.86, 0.92, "pleased", "calm"]
     ],
     roman: [
-      [0.07, 0.09, "calm", "blink"],
-      [0.09, 0.11, "blink", "calm"],
-      [0.36, 0.44, "calm", "push"],
-      [0.58, 0.64, "push", "calm"],
-      [0.64, 0.72, "calm", "switch"],
+      [0.30, 0.34, "calm", "push"],
+      [0.65, 0.69, "push", "switch"],
       [0.83, 0.89, "switch", "pleased"],
       [0.92, 0.98, "pleased", "calm"]
     ]
@@ -119,6 +114,64 @@
   const FACES = { amin: [523, 272, 82, 78], roman: [528, 285, 72, 78] };
   // Высота головы с волосами и подбородком (§3): 108…348.
   const HEAD = { top: 108, bottom: 348, half: 118 };
+
+  // Горизонтальный разрез корпуса — в координатах manifest.frame.
+  // У Романа опущенная рука продлевает верхний спрайт слева от корпуса.
+  const LIFE = {
+    amin: { waist: 820, breathPeriod: 4600 },
+    roman: { waist: 840, breathPeriod: 5700, armRight: 362, armBottom: 1120 },
+    poses: {
+      amin: {
+        calm: { lean: -2.1, lift: 0 },
+        apply: { lean: 2.5, lift: 0 },
+        pleased: { lean: -2.1, lift: 0.45 }
+      },
+      roman: {
+        calm: { lean: 2.1, lift: 0 },
+        push: { lean: -2.5, lift: 0 },
+        switch: { lean: 2.1, lift: 0.65 },
+        pleased: { lean: -2.1, lift: 0.45 }
+      }
+    },
+    prepareMs: 100,
+    peakMs: 250,
+    poseMs: 950,
+    snap: 0.05
+  };
+  const randomBetween = (a, b) => a + Math.random() * (b - a);
+  const identityLifeTransform = () => ({ tx: 0, ty: 0, rot: 0, sx: 1, sy: 1 });
+  const lifePeople = Object.fromEntries(KEYS.map(key => [key, {
+    phase: randomBetween(0, Math.PI * 2),
+    pose: null,
+    blink: false,
+    blinks: 0,
+    nextBlink: randomBetween(2500, 6000),
+    closeUntil: 0,
+    doubleAt: null,
+    shift: 0,
+    accent: false,
+    accents: 0,
+    event: null,
+    nextAccent: randomBetween(7000, 11000),
+    lean: 0,
+    nod: 0,
+    transform: identityLifeTransform()
+  }]));
+  let lifeClock = 0;
+  let lifeLastTime = null;
+  let lifeLastPaint = -Infinity;
+  let lifeSleeping = false;
+  let lifeDebug = false;
+  let blinkOwner = null;
+  let blinkReservedUntil = 0;
+  let lastIdleAccent = -Infinity;
+  let lifeRecording = false;
+  let lifeJournal = [];
+  let lifeTimes = [];
+  let layerCache = null;
+  let drawingLife = false;
+  let drawnCardShift = { dx: 0, dy: 0 };
+  const drawnColumns = { amin: false, roman: false };
 
   const LOOK_DEFAULTS = {
     frame: "#efe8dd",
@@ -262,6 +315,7 @@
   let sceneFailed = false;
   let shellResizeObserver;
   let visible = false;
+  let canvasVisible = false;
   let forced = null;
   let p = 0;
   let q = 0;
@@ -288,6 +342,7 @@
   let look = { ...LOOK_DEFAULTS };
   let resizeObserver;
   let intersectionObserver;
+  let canvasObserver;
   let measurePending = 0;
   let opener = null;
   let ownsLock = false;
@@ -335,6 +390,22 @@
         nod: st.nod
       };
     },
+    life() {
+      return describeLife();
+    },
+    lifeLog(enabled) {
+      if (enabled === true) {
+        lifeJournal = [];
+        lifeRecording = true;
+        return true;
+      }
+      if (enabled === false) lifeRecording = false;
+      return lifeJournal.map(entry => ({
+        ...entry,
+        amin: { ...entry.amin },
+        roman: { ...entry.roman }
+      }));
+    },
     geometry(value) {
       return ready && geo ? describe(value) : null;
     },
@@ -378,6 +449,7 @@
     variantName = name;
     variant = VARIANTS[name];
     POSE_FADE_MS = variant.poseFadeMs;
+    layerCache = null;
     if (ready) {
       readLook();
       for (const key of KEYS) {
@@ -584,7 +656,7 @@
       people[key] = { key, body, name, art, cache: "" };
     }
 
-    for (const name of ["screen", "reveal", "blend", "overlay", "mask", "occluder", "head", "headMask", "variantFrame", "variantLight"]) {
+    for (const name of ["screen", "reveal", "blend", "overlay", "mask", "occluder", "head", "headMask", "variantFrame", "variantLight", "lifeLower", "lifeSofa", "lifeCard", "lifeTop"]) {
       work[name] = scratch();
     }
   }
@@ -708,6 +780,7 @@
       amin,
       roman,
       nod: weightOf(amin, "pleased"),
+      romanNod: weightOf(roman, "pleased"),
       card: { t: span(value, 0.10, 0.26, M), alpha: 1 - span(value, 0.26, 0.32, E) },
       reveal: span(value, 0.24, 0.36, E),
       move: span(value, 0.38, 0.64, M),
@@ -725,6 +798,7 @@
       amin: { ...calm },
       roman: { ...calm },
       nod: 0,
+      romanNod: 0,
       card: { t: 0, alpha: 0 },
       reveal: 1,
       move: 1,
@@ -745,9 +819,243 @@
   function stateKey(st) {
     const pose = value => `${value.from}${value.to}${value.w.toFixed(5)}`;
     return [
-      pose(st.amin), pose(st.roman), st.nod, st.card.t, st.card.alpha,
+      pose(st.amin), pose(st.roman), st.nod, st.romanNod, st.card.t, st.card.alpha,
       st.reveal, st.move, st.swap, st.down, st.fade
     ].map(value => typeof value === "number" ? value.toFixed(5) : value).join("|");
+  }
+
+  // ---------- Жизнь по времени, отдельно от проверяемого состояния q ----------
+
+  function lifeReason() {
+    if (!ready || !geo) return "not-ready";
+    if (forced !== null) return "forced";
+    if (motion.matches) return "reduced-motion";
+    if (staticMode) return "static";
+    if (lifeDebug) return "layers";
+    if (document.hidden) return "hidden";
+    if (!visible || !canvasVisible) return "offscreen";
+    if (lifeSleeping) return "sleep";
+    return null;
+  }
+
+  function describeLife() {
+    const reason = lifeReason();
+    const now = performance.now();
+    const recent = lifeTimes.filter(t => t >= now - 2000);
+    const st = currentState();
+    return {
+      active: reason === null,
+      reason,
+      fps: recent.length > 1 ? (recent.length - 1) * 1000 / Math.max(1, now - recent[0]) : 0,
+      people: Object.fromEntries(KEYS.map(key => {
+        const item = lifePeople[key];
+        const pose = st[key].w >= 0.5 ? st[key].to : st[key].from;
+        return [key, {
+          pose: reason === null ? (item.blink ? "blink" : people[key].shown || item.pose) : pose,
+          blink: reason === null && item.blink,
+          blinks: item.blinks,
+          shift: reason === null ? item.shift : 0,
+          accent: reason === null && item.accent,
+          accents: item.accents,
+          lean: reason === null ? item.lean : 0,
+          nod: key === "amin" ? st.nod : st.romanNod
+        }];
+      }))
+    };
+  }
+
+  function resetLife() {
+    lifeLastTime = null;
+    blinkOwner = null;
+    blinkReservedUntil = 0;
+    lastIdleAccent = -Infinity;
+    for (const key of KEYS) {
+      const item = lifePeople[key];
+      item.blink = false;
+      item.doubleAt = null;
+      item.nextBlink = lifeClock + randomBetween(2500, 6000);
+      item.nextAccent = lifeClock + randomBetween(7000, 11000);
+      item.event = null;
+      item.accent = false;
+      item.lean = 0;
+      item.pose = null;
+      item.shift = 0;
+      item.transform = identityLifeTransform();
+    }
+  }
+
+  function updateBlink(key, now, allowed) {
+    const item = lifePeople[key];
+    if (!allowed) {
+      if (item.blink || item.doubleAt !== null) {
+        item.nextBlink = now + randomBetween(2500, 6000);
+      }
+      item.blink = false;
+      item.doubleAt = null;
+      return;
+    }
+    if (item.blink && now >= item.closeUntil) item.blink = false;
+    if (item.blink) return;
+
+    const second = item.doubleAt !== null;
+    const due = second ? item.doubleAt : item.nextBlink;
+    if (now < due) return;
+    // Резервируем всю двойную серию: другой герой не вклинивается между закрытиями.
+    if (blinkOwner !== key && now < blinkReservedUntil) return;
+
+    item.blink = true;
+    item.blinks++;
+    item.closeUntil = now + randomBetween(90, 105);
+    blinkOwner = key;
+    if (!second && Math.random() < 0.22) {
+      item.doubleAt = item.closeUntil + randomBetween(150, 215);
+      blinkReservedUntil = item.doubleAt + 340;
+    } else {
+      item.doubleAt = null;
+      item.nextBlink = now + randomBetween(2500, 6000);
+      blinkReservedUntil = now + 340;
+    }
+  }
+
+  function romanArmColumn() {
+    const person = people.roman;
+    return !(person.shown === "pleased" ||
+      (person.fade && (person.fade.from === "pleased" || person.shown === "pleased")));
+  }
+
+  // Все координаты здесь — на сетке готового растра фигуры.
+  function lifeFigureGeometry(key) {
+    const person = people[key];
+    const crop = person.cropFrame;
+    const art = person.art.canvas;
+    const config = LIFE[key];
+    const fx = value => (value - crop[0]) * art.width / crop[2];
+    const fy = value => (value - crop[1]) * art.height / crop[3];
+    const waist = clamp(Math.round(fy(config.waist)), 1, art.height - 1);
+    const push = key === "roman" && lifePeople[key].pose === "push";
+    const pivot = push ? manifest.people.roman.hand.push : [manifest.frame.axis, config.waist];
+    const column = key === "roman" && romanArmColumn();
+    const armX = !column || config.armRight === undefined ? 0 : clamp(Math.round(fx(config.armRight)), 0, art.width);
+    const armY = !column || config.armBottom === undefined ? waist : clamp(Math.round(fy(config.armBottom)), waist, art.height);
+    return {
+      w: art.width,
+      h: art.height,
+      waist,
+      armX,
+      armY,
+      px: fx(pivot[0]),
+      py: fy(pivot[1]),
+      faceX: fx(FACES[key][0]),
+      faceY: fy(FACES[key][1])
+    };
+  }
+
+  function startLifeAccent(item, kind, lean, lift, duration) {
+    item.event = {
+      kind,
+      start: lifeClock,
+      duration,
+      lean,
+      lift,
+      fromRot: item.transform.rot,
+      fromSy: item.transform.sy
+    };
+    item.accents++;
+    if (kind === "idle") {
+      lastIdleAccent = lifeClock;
+      item.nextAccent = lifeClock + randomBetween(7000, 13000);
+    }
+  }
+
+  function accentEnvelope(event, age) {
+    if (age >= event.duration) return 0;
+    if (event.kind === "idle") {
+      return Math.sin(Math.PI * clamp(age / event.duration)) ** 2;
+    }
+    if (age < LIFE.prepareMs) {
+      return -0.22 * softPose(clamp(age / LIFE.prepareMs));
+    }
+    if (age < LIFE.peakMs) {
+      return lerp(-0.22, 1, softPose((age - LIFE.prepareMs) / (LIFE.peakMs - LIFE.prepareMs)));
+    }
+    return 1 - softPose((age - LIFE.peakMs) / (event.duration - LIFE.peakMs));
+  }
+
+  function updateLife(st, now) {
+    const elapsed = lifeLastTime === null ? 0 : Math.min(64, Math.max(0, now - lifeLastTime));
+    lifeLastTime = now;
+    lifeClock += elapsed;
+
+    for (const key of KEYS) {
+      const item = lifePeople[key];
+      const config = LIFE[key];
+      const pose = st[key].w >= 0.5 ? st[key].to : st[key].from;
+      if (item.pose !== pose) {
+        if (item.pose !== null) {
+          const action = LIFE.poses[key][pose] || { lean: 0, lift: 0 };
+          startLifeAccent(item, "pose", action.lean, action.lift, LIFE.poseMs);
+        }
+        item.pose = pose;
+      }
+
+      if (item.event && lifeClock - item.event.start >= item.event.duration) item.event = null;
+      const calm = pose === "calm" || pose === "pleased";
+      const settled = people[key].shown === pose && !people[key].fade &&
+        Math.abs(p - q) <= 0.0005 && Math.abs(p - filtered) <= 0.0005;
+      if (!item.event && calm && settled && lifeClock >= item.nextAccent &&
+          lifeClock - lastIdleAccent >= 1600) {
+        startLifeAccent(
+          item, "idle",
+          randomBetween(1, 1.5) * (Math.random() < 0.5 ? -1 : 1),
+          0, randomBetween(1200, 1600)
+        );
+      }
+
+      const allowed = pose === "calm" && people[key].shown === "calm" && !people[key].fade;
+      updateBlink(key, lifeClock, allowed);
+      const amplitude = Math.max(1, Math.round(geo.dpr));
+      item.shift = Math.round(amplitude * (
+        1 + Math.sin(lifeClock * Math.PI * 2 / config.breathPeriod + item.phase)
+      ) / 2);
+      item.nod = key === "amin" ? st.nod : st.romanNod;
+
+      const g = lifeFigureGeometry(key);
+      const height = Math.max(1, (g.py - g.faceY) / geo.ky);
+      let rot = 0;
+      let sy = 1;
+      if (item.event) {
+        const age = lifeClock - item.event.start;
+        const envelope = accentEnvelope(item.event, age);
+        const carry = item.event.kind === "pose"
+          ? 1 - softPose(clamp(age / LIFE.peakMs))
+          : 0;
+        rot = item.event.lean * envelope / height + item.event.fromRot * carry;
+        sy = 1 + item.event.lift * envelope / height + (item.event.fromSy - 1) * carry;
+      }
+
+      const cos = Math.cos(rot);
+      const sin = Math.sin(rot);
+      const x = (g.faceX - g.px) / geo.kx;
+      const y = (g.faceY - g.py) / geo.ky;
+      const dx = cos * x - sin * sy * y - x;
+      const dy = sin * x + cos * sy * y - y;
+      // Консервативная граница для всей головы, а не только её центра.
+      const radius = Math.hypot(
+        (Math.abs(g.faceX - g.px) + HEAD.half * geo.s * geo.kx) / geo.kx,
+        (Math.abs(g.faceY - g.py) + (HEAD.bottom - HEAD.top) * geo.s * geo.ky) / geo.ky
+      );
+      const bound = radius * (Math.abs(rot) * Math.max(1, sy) + Math.abs(sy - 1)) *
+        Math.max(geo.kx, geo.ky);
+      item.accent = bound >= LIFE.snap;
+      item.lean = item.accent ? dx : 0;
+      item.transform = {
+        tx: 0,
+        ty: (item.accent ? dy : 0) - item.shift / geo.ky,
+        rot: item.accent ? rot : 0,
+        sx: 1,
+        sy: item.accent ? sy : 1
+      };
+    }
   }
 
   // ---------- Геометрия (§3–§5) ----------
@@ -1104,11 +1412,31 @@
     // Разбор слоёв для проверки (debugLayers) рисует позу ровно по прокрутке и не трогает показ.
     if (now === undefined) return pose;
     const target = pose.w >= 0.5 ? pose.to : pose.from;
-    if (!person.shown || forced !== null || motion.matches) {
+    if (!person.shown || forced !== null || motion.matches || staticMode || lifeDebug) {
       person.shown = target;
       person.fade = null;
     } else if (target !== person.shown) {
-      person.fade = { from: person.shown, start: now };
+      const previous = person.shown;
+      let from = previous;
+      let start = now;
+      if (person.fade) {
+        const t = clamp((now - person.fade.start) / POSE_FADE_MS);
+        const weight = variant.poseCurve(t);
+        if (target === person.fade.from) {
+          // Разворот сохраняет текущую смесь, включая нелинейную кривую наплыва.
+          let low = 0;
+          let high = 1;
+          for (let index = 0; index < 24; index++) {
+            const middle = (low + high) / 2;
+            if (variant.poseCurve(middle) < 1 - weight) low = middle;
+            else high = middle;
+          }
+          start = now - (low + high) / 2 * POSE_FADE_MS;
+        } else {
+          from = weight >= 0.5 ? previous : person.fade.from;
+        }
+      }
+      person.fade = from === target ? null : { from, start };
       person.shown = target;
     }
     if (person.fade) {
@@ -1125,7 +1453,10 @@
 
   function renderPerson(key, scrollPose, nod, now) {
     const person = people[key];
-    const pose = shownPose(person, scrollPose, now);
+    let pose = shownPose(person, scrollPose, now);
+    if (drawingLife && lifePeople[key].blink && pose.from === "calm" && pose.to === "calm" && !person.fade) {
+      pose = { from: "blink", to: "blink", w: 0 };
+    }
     const cacheKey = `${pose.from}|${pose.to}|${pose.w.toFixed(5)}|${nod.toFixed(5)}`;
     if (person.cache === cacheKey) return;
     person.cache = cacheKey;
@@ -1152,7 +1483,7 @@
       c.globalAlpha = 1;
     }
 
-    if (key === "amin" && nod > 0.0001) applyNod(person, nod);
+    if (nod > 0.0001) applyNod(person, nod);
   }
 
   // Фаза 17 Task 1: каждая поза уменьшается до размера на экране один раз (при смене размера окна),
@@ -1193,7 +1524,12 @@
     if (prewarmHandle) cancel(prewarmHandle);
     const queue = [];
     for (const key of KEYS) {
-      for (const name of Object.keys(manifest.people[key].poses)) queue.push([people[key], name]);
+      const person = people[key];
+      // Веки готовы до запуска таймера; первая серия не считает резкость в кадре.
+      poseArt(person, "blink", person.art.canvas.width, person.art.canvas.height);
+      for (const name of Object.keys(manifest.people[key].poses)) {
+        if (name !== "blink") queue.push([person, name]);
+      }
     }
     const step = deadline => {
       prewarmHandle = 0;
@@ -1247,17 +1583,19 @@
     const k = w / crop[2];
     const toX = fx => (fx - crop[0]) * k;
     const toY = fy => (fy - crop[1]) * k;
-    const pivotX = toX(NOD.pivot[0]);
-    const pivotY = toY(NOD.pivot[1]);
+    const dx = FACES[person.key][0] - FACES.amin[0];
+    const dy = FACES[person.key][1] - FACES.amin[1];
+    const pivotX = toX(NOD.pivot[0] + dx);
+    const pivotY = toY(NOD.pivot[1] + dy);
 
     const mask = work.headMask;
     sizeCanvas(mask, w, h);
     clearCanvas(mask);
-    const gradient = mask.ctx.createLinearGradient(0, toY(NOD.feather[0]), 0, toY(NOD.feather[1]));
+    const gradient = mask.ctx.createLinearGradient(0, toY(NOD.feather[0] + dy), 0, toY(NOD.feather[1] + dy));
     gradient.addColorStop(0, "rgba(0, 0, 0, 1)");
     gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
     mask.ctx.fillStyle = gradient;
-    mask.ctx.fillRect(toX(manifest.frame.axis - NOD.half), 0, 2 * NOD.half * k, toY(NOD.feather[1]) + 1);
+    mask.ctx.fillRect(toX(manifest.frame.axis + dx - NOD.half), 0, 2 * NOD.half * k, toY(NOD.feather[1] + dy) + 1);
 
     const head = work.head;
     sizeCanvas(head, w, h);
@@ -1273,7 +1611,7 @@
     c.drawImage(mask.canvas, 0, 0);
     c.globalCompositeOperation = "lighter";
     c.translate(pivotX, pivotY);
-    c.rotate(radians(NOD.degrees * nod));
+    c.rotate(radians((person.key === "roman" ? 1.8 : NOD.degrees) * nod));
     c.translate(-pivotX, -pivotY);
     c.drawImage(head.canvas, 0, 0);
     c.setTransform(1, 0, 0, 1, 0, 0);
@@ -1281,12 +1619,107 @@
   }
 
   function drawFigure(c, key) {
-    // Фигура уже отрисована в размер экрана: ставим её на целую точку без растяжения (Task 1 фазы 17).
     const r = geo.people[key].rect;
     const m = c.getTransform();
+    const art = people[key].art.canvas;
     c.save();
     c.setTransform(1, 0, 0, 1, 0, 0);
-    c.drawImage(people[key].art.canvas, Math.round(m.a * r.x + m.e), Math.round(m.d * r.y + m.f));
+    if (!drawingLife) {
+      drawnColumns[key] = false;
+      // Базовый путь оставлен без изменений, в том числе для debugLayers.
+      c.drawImage(art, Math.round(m.a * r.x + m.e), Math.round(m.d * r.y + m.f));
+      c.restore();
+      return;
+    }
+
+    const item = lifePeople[key];
+    const g = lifeFigureGeometry(key);
+    drawnColumns[key] = g.armX > 0;
+    // Локальные холсты накладок имеют целое начало на сетке основного canvas.
+    const x = Math.round(geo.kx * r.x) + m.e;
+    const y = Math.round(geo.ky * r.y) + m.f;
+    const k = item.shift;
+
+    // У корпуса горизонтальный разрез; слева у Романа верх включает опущенную
+    // руку. Прямоугольники не перекрываются и в покое копируются строго 1:1.
+    const columns = g.armX > 0
+      ? [[0, g.armX, g.armY], [g.armX, g.w - g.armX, g.waist]]
+      : [[0, g.w, g.waist]];
+    c.imageSmoothingEnabled = false;
+    if (item.accent) {
+      const transform = item.transform;
+      const Ayx = geo.ky * Math.sin(transform.rot) * transform.sx / geo.kx;
+      const Ayy = Math.cos(transform.rot) * transform.sy;
+      let maxRise = -Infinity;
+      for (const [left, width, split] of columns) {
+        for (const u of [left, left + width]) {
+          const rise = (split + k - g.py) * (1 - Ayy) - Ayx * (u - g.px);
+          maxRise = Math.max(maxRise, rise);
+        }
+      }
+      // Запас — округлённый вверх максимальный подъём разреза по обоим краям
+      // всех колонок плюс три строки, с ограничением от трёх до 64 пикселей растра.
+      const M = Math.min(64, Math.max(3, Math.ceil(maxRise) + 3));
+      const hT = Math.max(...columns.map(([, , split]) => split + k + Math.min(M, g.h - split)));
+      const top = work.lifeTop;
+      fitCanvas(top, g.w, hT);
+      const tc = top.ctx;
+      tc.setTransform(1, 0, 0, 1, 0, 0);
+      tc.imageSmoothingEnabled = false;
+      // Холст общий и только растёт: чистим целиком, иначе сглаживание при повороте
+      // берёт строку под hT, где остался верх другого героя (серая черта у Амина).
+      tc.clearRect(0, 0, top.canvas.width, top.canvas.height);
+      for (const [left, width, split] of columns) {
+        if (width <= 0) continue;
+        tc.drawImage(art, left, 0, width, split, left, 0, width, split);
+        if (k > 0) {
+          tc.drawImage(art, left, split - 1, width, 1,
+            left, split, width, k);
+        }
+        const Mc = Math.min(M, g.h - split);
+        if (Mc > 0) {
+          tc.drawImage(art, left, split, width, Mc,
+            left, split + k, width, Mc);
+        }
+      }
+      // Только верх: ступни и нижняя часть не проходят через эту матрицу.
+      // В push опора — кисть, поэтому акцент не отводит руку от спинки.
+      c.translate(x + g.px + transform.tx, y + g.py - k);
+      c.scale(geo.kx, geo.ky);
+      c.rotate(transform.rot);
+      c.scale(transform.sx, transform.sy);
+      c.scale(1 / geo.kx, 1 / geo.ky);
+      c.translate(-g.px, -g.py);
+      c.imageSmoothingEnabled = true;
+      c.imageSmoothingQuality = "high";
+      c.drawImage(work.lifeTop.canvas, 0, 0, g.w, hT, 0, 0, g.w, hT);
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.imageSmoothingEnabled = false;
+      for (const [left, width, split] of columns) {
+        if (split < g.h && width > 0) {
+          c.drawImage(art, left, split, width, g.h - split,
+            x + left, y + split, width, g.h - split);
+        }
+      }
+    } else {
+      for (const [left, width, split] of columns) {
+        if (width <= 0) continue;
+        if (split < g.h) {
+          c.drawImage(art, left, split, width, g.h - split,
+            x + left, y + split, width, g.h - split);
+        }
+        if (k > 0) {
+          c.drawImage(art, left, split - 1, width, 1,
+            x + left, y + split - k, width, k);
+        }
+      }
+
+      for (const [left, width, split] of columns) {
+        if (width > 0) {
+          c.drawImage(art, left, 0, width, split, x + left, y - k, width, split);
+        }
+      }
+    }
     c.restore();
   }
 
@@ -1456,10 +1889,43 @@
     drawCardImage(c, st, true);
   }
 
+  function lifeOverlaySpot(key, spot) {
+    if (!drawingLife) return spot;
+    const item = lifePeople[key];
+    const g = lifeFigureGeometry(key);
+    const r = geo.people[key].rect;
+    const baseX = Math.round(r.x * geo.kx);
+    const baseY = Math.round(r.y * geo.ky);
+    const x = spot.x * geo.kx - baseX;
+    const y = spot.y * geo.ky - baseY;
+    const split = x < g.armX ? g.armY : g.waist;
+    if (y >= split) return spot;
+    const t = item.transform;
+    const vx = (x - g.px) / geo.kx;
+    const vy = (y - g.py) / geo.ky;
+    const cos = Math.cos(t.rot);
+    const sin = Math.sin(t.rot);
+    return {
+      ...spot,
+      x: (baseX + g.px + t.tx) / geo.kx + cos * t.sx * vx - sin * t.sy * vy,
+      y: (baseY + g.py - item.shift) / geo.ky + sin * t.sx * vx + cos * t.sy * vy
+    };
+  }
+
+  function lifeCardShift(st) {
+    if (!drawingLife || st.card.alpha <= 0) return { dx: 0, dy: 0 };
+    const [x, y] = cardPlacement(geo, st.card.t).pinch;
+    const moved = lifeOverlaySpot("amin", { x, y });
+    const dx = Math.round((moved.x - x) * geo.kx);
+    const dy = Math.round((moved.y - y) * geo.ky);
+    return { dx: dx || 0, dy: dy || 0 };
+  }
+
   // Участок героя поверх заслоняющего слоя: (холст героя) ∩ (мягкая маска кисти) ∩
   // (альфа заслонителя). Где заслонителя нет, ничего не рисуется — без двойной кисти.
   function drawOverlay(c, key, spots, occlude) {
     const g = geo;
+    if (drawingLife) spots = spots.map(spot => lifeOverlaySpot(key, spot));
     let left = Infinity;
     let top = Infinity;
     let right = -Infinity;
@@ -1476,12 +1942,33 @@
     bottom = Math.min(Math.ceil(g.H), Math.ceil(bottom));
     if (right <= left || bottom <= top) return;
 
-    const width = Math.round((right - left) * g.kx);
-    const height = Math.round((bottom - top) * g.ky);
+    // В живом пути накладка тоже копируется 1:1: иначе локальная маска
+    // повторно интерполирует уже сдвинутую кисть на дробном DPR.
+    let width;
+    let height;
+    if (drawingLife) {
+      const x0 = Math.floor(left * g.kx);
+      const y0 = Math.floor(top * g.ky);
+      const x1 = Math.ceil(right * g.kx);
+      const y1 = Math.ceil(bottom * g.ky);
+      width = x1 - x0;
+      height = y1 - y0;
+      left = x0 / g.kx;
+      top = y0 / g.ky;
+      right = x1 / g.kx;
+      bottom = y1 / g.ky;
+    } else {
+      width = Math.round((right - left) * g.kx);
+      height = Math.round((bottom - top) * g.ky);
+    }
     const local = target => {
       fitCanvas(target, width, height);
       clearCanvas(target);
-      target.ctx.setTransform(g.kx, 0, 0, g.ky, -left * g.kx, -top * g.ky);
+      target.ctx.setTransform(
+        g.kx, 0, 0, g.ky,
+        drawingLife ? -Math.round(left * g.kx) : -left * g.kx,
+        drawingLife ? -Math.round(top * g.ky) : -top * g.ky
+      );
       return target.ctx;
     };
 
@@ -1500,7 +1987,15 @@
     overlay.drawImage(work.occluder.canvas, 0, 0);
     overlay.globalCompositeOperation = "source-over";
 
-    c.drawImage(work.overlay.canvas, 0, 0, width, height, left, top, right - left, bottom - top);
+    if (drawingLife) {
+      c.save();
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.drawImage(work.overlay.canvas, 0, 0, width, height,
+        Math.round(left * g.kx), Math.round(top * g.ky), width, height);
+      c.restore();
+    } else {
+      c.drawImage(work.overlay.canvas, 0, 0, width, height, left, top, right - left, bottom - top);
+    }
   }
 
   // Слой 7: кисть Романа поверх спинки, пока диван перед героями.
@@ -1521,23 +2016,30 @@
   }
 
   // Слой 9: щепоть Амина поверх карточки.
-  function drawFingers(c, st) {
+  function drawFingers(c, st, shift = { dx: 0, dy: 0 }) {
     if (st.card.alpha <= 0) return;
     const g = geo;
     const radius = FINGERS.radius * g.s;
     const [x, y] = cardPlacement(g, st.card.t).pinch;
     const spots = [{ x, y, rx: radius, ry: radius, core: FINGERS.core }];
-    drawOverlay(c, "amin", spots, occluder => drawCardImage(occluder, st, false));
+    drawOverlay(c, "amin", spots, occluder => {
+      occluder.save();
+      const m = occluder.getTransform();
+      occluder.setTransform(m.a, m.b, m.c, m.d, m.e + shift.dx, m.f + shift.dy);
+      drawCardImage(occluder, st, false);
+      occluder.restore();
+    });
   }
 
   function prepareFigures(st, now) {
     renderPerson("amin", st.amin, st.nod, now);
-    renderPerson("roman", st.roman, 0, now);
+    renderPerson("roman", st.roman, st.romanNod, now);
   }
 
   // §6, снизу вверх: фон и свечение (CSS) → тени → экран с комнатой и внутренним
   // диваном → герои → внешний диван → ладонь Романа → карточка → пальцы Амина.
   function draw(target, st, now) {
+    drawnCardShift = { dx: 0, dy: 0 };
     const c = target.ctx;
     clearCanvas(target);
     setScene(c, geo);
@@ -1553,13 +2055,95 @@
     drawFingers(c, st);
   }
 
+  function cacheLifeLayers(st, key) {
+    if (layerCache && layerCache.key === key && layerCache.geometry === geo &&
+        layerCache.variant === variantName && layerCache.width === canvas.width &&
+        layerCache.height === canvas.height && layerCache.dpr === geo.dpr) return;
+
+    for (const name of ["lifeLower", "lifeSofa", "lifeCard"]) {
+      sizeCanvas(work[name], canvas.width, canvas.height);
+      clearCanvas(work[name]);
+      setScene(work[name].ctx, geo);
+    }
+    drawGroundShadows(work.lifeLower.ctx, st);
+    drawScreen(work.lifeLower.ctx, st);
+    drawFrontSofa(work.lifeSofa.ctx, st);
+    drawCard(work.lifeCard.ctx, st);
+    layerCache = {
+      key,
+      geometry: geo,
+      variant: variantName,
+      width: canvas.width,
+      height: canvas.height,
+      dpr: geo.dpr
+    };
+  }
+
+  function drawLife(st, key, now) {
+    cacheLifeLayers(st, key);
+    prepareFigures(st, now);
+    const shift = lifeCardShift(st);
+    drawnCardShift = shift;
+    clearCanvas({ canvas, ctx });
+    ctx.drawImage(work.lifeLower.canvas, 0, 0);
+    setScene(ctx, geo);
+    drawFigure(ctx, "amin");
+    drawFigure(ctx, "roman");
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(work.lifeSofa.canvas, 0, 0);
+    ctx.restore();
+    drawPalm(ctx, st);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(work.lifeCard.canvas, shift.dx, shift.dy);
+    ctx.restore();
+    drawFingers(ctx, st, shift);
+  }
+
   function render(force = false, now = performance.now()) {
     if (!ready || !geo) return;
     const st = currentState();
     const key = stateKey(st);
-    if (force || key !== lastKey || fading()) {
+    const active = lifeReason() === null;
+    const full = force || key !== lastKey || fading();
+    const accenting = active && KEYS.some(name => lifePeople[name].event);
+    const paint = full || (active && now - lifeLastPaint >= (accenting ? 16 : 32));
+    if (key !== lastKey) layerCache = null;
+    if (paint) {
+      const started = performance.now();
+      drawingLife = active;
+      if (active) {
+        updateLife(st, now);
+        drawLife(st, key, now);
+      } else {
+        resetLife();
+        draw({ canvas, ctx }, st, now);
+      }
       lastKey = key;
-      draw({ canvas, ctx }, st, now);
+      lifeLastPaint = now;
+      const cost = performance.now() - started;
+      if (active) {
+        lifeTimes.push(now);
+        lifeTimes = lifeTimes.filter(t => t >= now - 2000);
+      }
+      if (lifeRecording && lifeJournal.length < 3000) {
+        lifeJournal.push({
+          t: now,
+          kind: full ? "full" : "life",
+          cost,
+          card: { ...drawnCardShift },
+          ...Object.fromEntries(KEYS.map(name => [name, {
+            column: drawnColumns[name],
+            shift: active ? lifePeople[name].shift : 0,
+            accent: active && lifePeople[name].accent,
+            ...(active ? lifePeople[name].transform : identityLifeTransform()),
+            blink: active && lifePeople[name].blink,
+            pose: active && lifePeople[name].blink ? "blink" : people[name].shown
+          }]))
+        });
+      }
+      drawingLife = false;
     }
     if (recording && journal.length < 4000) {
       journal.push({ t: now, p, q, key: st.q === null ? "rest" : key });
@@ -1631,45 +2215,55 @@
   }
 
   function debugLayers(value) {
-    const st = typeof value === "number" ? stateAt(clamp(value)) : currentState();
-    const make = () => {
-      const target = scratch();
-      sizeCanvas(target, canvas.width, canvas.height);
-      clearCanvas(target);
-      setScene(target.ctx, geo);
-      return target;
-    };
-    prepareFigures(st);
-    const layers = {
-      shadows: make(),
-      screen: make(),
-      amin: make(),
-      roman: make(),
-      sofa: make(),
-      palm: make(),
-      card: make(),
-      fingers: make(),
-      all: make()
-    };
-    drawGroundShadows(layers.shadows.ctx, st);
-    drawScreen(layers.screen.ctx, st);
-    drawFigure(layers.amin.ctx, "amin");
-    drawFigure(layers.roman.ctx, "roman");
-    drawFrontSofa(layers.sofa.ctx, st);
-    drawPalm(layers.palm.ctx, st);
-    drawCard(layers.card.ctx, st);
-    drawFingers(layers.fingers.ctx, st);
-    draw(layers.all, st);
-    // Основной холст возвращается к текущему состоянию.
-    lastKey = "";
-    render(true);
-    return {
-      kx: geo.kx,
-      ky: geo.ky,
-      W: geo.W,
-      H: geo.H,
-      canvases: Object.fromEntries(Object.entries(layers).map(([name, target]) => [name, target.canvas]))
-    };
+    const previousDebug = lifeDebug;
+    const previousDrawing = drawingLife;
+    lifeDebug = true;
+    drawingLife = false;
+    try {
+      const st = typeof value === "number" ? stateAt(clamp(value)) : currentState();
+      const make = () => {
+        const target = scratch();
+        sizeCanvas(target, canvas.width, canvas.height);
+        clearCanvas(target);
+        setScene(target.ctx, geo);
+        return target;
+      };
+      prepareFigures(st);
+      const layers = {
+        shadows: make(),
+        screen: make(),
+        amin: make(),
+        roman: make(),
+        sofa: make(),
+        palm: make(),
+        card: make(),
+        fingers: make(),
+        all: make()
+      };
+      drawGroundShadows(layers.shadows.ctx, st);
+      drawScreen(layers.screen.ctx, st);
+      drawFigure(layers.amin.ctx, "amin");
+      drawFigure(layers.roman.ctx, "roman");
+      drawFrontSofa(layers.sofa.ctx, st);
+      drawPalm(layers.palm.ctx, st);
+      drawCard(layers.card.ctx, st);
+      drawFingers(layers.fingers.ctx, st);
+      draw(layers.all, st);
+      return {
+        kx: geo.kx,
+        ky: geo.ky,
+        W: geo.W,
+        H: geo.H,
+        canvases: Object.fromEntries(Object.entries(layers).map(([name, target]) => [name, target.canvas]))
+      };
+    } finally {
+      lifeDebug = previousDebug;
+      drawingLife = previousDrawing;
+      // Основной холст возвращается к текущему состоянию.
+      lastKey = "";
+      render(true);
+      wake();
+    }
   }
 
   // ---------- Размеры, прокрутка, кадр ----------
@@ -1750,6 +2344,7 @@
 
     readLook();
     geo = computeGeometry(W, H, mode, width / W, height / H);
+    layerCache = null;
 
     for (const key of KEYS) {
       const person = people[key];
@@ -1796,6 +2391,11 @@
     raf = 0;
     if (!ready || !visible || document.hidden) {
       lastFrame = null;
+      lifeLastTime = null;
+      return;
+    }
+    if (geo.dpr !== Math.min(window.devicePixelRatio || 1, 2)) {
+      measure();
       return;
     }
 
@@ -1823,11 +2423,12 @@
     if (!following) q = filtered = p;
     render(false, now);
 
-    if (following || fading()) raf = requestAnimationFrame(frame);
+    if (following || fading() || lifeReason() === null) raf = requestAnimationFrame(frame);
     else lastFrame = null;
   }
 
   function wake() {
+    lifeSleeping = false;
     if (!ready || !visible || document.hidden || raf) return;
     raf = requestAnimationFrame(frame);
   }
@@ -1836,6 +2437,8 @@
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
     lastFrame = null;
+    lifeLastTime = null;
+    lifeSleeping = true;
   }
 
   function motionChanged() {
@@ -1863,6 +2466,7 @@
       root.classList.add("is-ready");
       ready = true;
       visible = true;
+      canvasVisible = true;
       if (shellResizeObserver) shellResizeObserver.disconnect();
       shellResizeObserver = null;
       measure();
@@ -1881,6 +2485,11 @@
         else sleep();
       });
       intersectionObserver.observe(root);
+      canvasObserver = new IntersectionObserver(entries => {
+        canvasVisible = entries[entries.length - 1].isIntersecting;
+        if (canvasVisible) wake();
+      });
+      canvasObserver.observe(canvas);
 
       window.addEventListener("scroll", () => {
         updateTarget();
@@ -1903,6 +2512,7 @@
       scroll = null;
       if (resizeObserver) resizeObserver.disconnect();
       if (intersectionObserver) intersectionObserver.disconnect();
+      if (canvasObserver) canvasObserver.disconnect();
       teardownScene();
       console.warn("Сцена основателей не включена:", error);
     }
