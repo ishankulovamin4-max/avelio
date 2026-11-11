@@ -527,7 +527,8 @@
 }
 
 /* Телефон: ролик → текст → локально закрепляемая сцена основателей.
-   Высоту группы определяет содержимое: 356 + 12 + 52 + 40 + 32 + 12. */
+   Группа заполняет 100svh между безопасными отступами по 14px.
+   JS измеряет действия; имена занимают отдельную полосу под canvas. */
 @media (max-width: 699px) {
   .founders:is(.is-ready, .is-shell) {
     /* Высота шапки без safe-area; уточняется по замерам страницы. */
@@ -771,8 +772,12 @@
       100% - max(16px, env(safe-area-inset-left, 0px))
       - max(16px, env(safe-area-inset-right, 0px))
     );
+    --phone-stage-h: 356px;
+    --phone-name-h: 44px;
+    --phone-group-h: calc(var(--phone-stage-h) + var(--phone-name-h) + 12px + 124px);
+
     min-width: 0;
-    height: calc(504px + 150svh);
+    height: calc(var(--phone-group-h) + 150svh);
     margin: 12px max(16px, env(safe-area-inset-right, 0px))
       0 max(16px, env(safe-area-inset-left, 0px));
     padding: 0;
@@ -782,29 +787,61 @@
   .founders:is(.is-ready, .is-shell) #hero .founder-group {
     box-sizing: border-box;
     position: sticky;
-    top: max(56px, calc((100svh - 504px) / 2));
-    display: block;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    display: flex;
+    flex-direction: column;
     width: 100%;
     min-width: 0;
-    height: auto;
+    height: var(--phone-group-h);
     margin: 0;
-    padding: 0 0 12px;
+    padding: 0;
     overflow: visible;
     background: #fffdf8;
   }
 
   .founders:is(.is-ready, .is-shell) .founder-stage {
     box-sizing: border-box;
+    flex: none;
     width: 100%;
-    height: 356px;
-    margin: 0;
+    height: var(--phone-stage-h);
+    margin: 0 0 var(--phone-name-h);
     padding: 0;
   }
 
   .founders.is-ready .founder-name {
+    box-sizing: border-box;
+    top: 100%;
     width: 112px;
+    height: var(--phone-name-h);
     min-height: 44px;
     padding: 4px 0;
+  }
+
+  .founders.is-ready .founder-name--amin {
+    left: 23%;
+  }
+
+  .founders.is-ready .founder-name--roman {
+    left: 77%;
+  }
+
+  /* Напольные тени телефона рисует canvas по новой геометрии.
+     Старые CSS-пятна на 80% высоты здесь не нужны. */
+  #founders.is-ready[data-layout="phone"] .founder-stage::before {
+    inset: 0;
+    border-radius: 0;
+    -webkit-mask-image: linear-gradient(to bottom, #000 96%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 96%, transparent 100%);
+    background:
+      radial-gradient(
+        ellipse 58% 58% at 50% 0%,
+        #fff 20%, rgb(255 255 255 / 92%) 50%, transparent 100%
+      ),
+      linear-gradient(to bottom, #f1efea, #eeeae3 72%, #f7f4ed);
+  }
+
+  #founders.is-ready[data-layout="phone"] .founder-stage::after {
+    inset: 0;
   }
 
   .founders.is-ready .founder-name-title {
@@ -819,6 +856,7 @@
 
   .founders:is(.is-ready, .is-shell) #hero .hero-actions {
     display: block;
+    flex: none;
     margin: 12px 0 0;
     padding: 0;
   }

@@ -70,7 +70,13 @@
   const LAYOUTS = {
     wide: { amin: 0.18, roman: 0.82, screen: [0.29, 0.20, 0.42, 0.43], sofa: [0.25, 0.50, 0.50], card: 0.075 },
     tablet: { amin: 0.20, roman: 0.80, screen: [0.15, 0.28, 0.70, 0.44], sofa: [0.10, 0.59, 0.80], card: 0.11 },
-    phone: { amin: 0.18, roman: 0.82, screen: [0.27, 0.24, 0.46, 0.43], sofa: [0.25, 0.58982, 0.50], card: 0.09 }
+    phone: {
+      amin: 0.20, roman: 0.80, figureHeight: 0.84, feetY: 0.96, edge: 8,
+      screenWidth: 0.82, sofaWidth: 1000, card: 112,
+      sofaPalmFraction: 0.50, sofaTopFraction: 0.008,
+      sofaCalmFrameY: 980, sofaPushFrameY: 878, sofaPushGap: -3,
+      screenShadowBlur: 0.003, screenShadowY: 0.002
+    }
   };
 
   // §3: видимая высота фигуры 0,68H, ступни на 0,80H.
@@ -622,7 +628,7 @@
     probe = decorative(element("div", "founder-probe"));
     probe.style.cssText =
       "position:fixed;left:0;top:0;width:0;box-sizing:border-box;visibility:hidden;pointer-events:none;" +
-      "height:100vh;height:100svh;padding:0 0 env(safe-area-inset-bottom, 0px) 0;";
+      "height:100vh;height:100svh;padding:env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) 0;";
     document.body.append(probe);
   }
 
@@ -645,6 +651,7 @@
       shellResizeObserver.observe(stage);
       shellResizeObserver.observe(group);
       shellResizeObserver.observe(root);
+      shellResizeObserver.observe(actions);
     }
     measure();
   }
@@ -1095,8 +1102,25 @@
   function computeGeometry(W, H, layoutName, kx, ky) {
     const layout = LAYOUTS[layoutName];
     const frame = manifest.frame;
-    const s = FIGURE_HEIGHT * H / (frame.soles - frame.hairTop);
-    const feetY = FEET_Y * H;
+    const phone = layoutName === "phone";
+    let s = FIGURE_HEIGHT * H / (frame.soles - frame.hairTop);
+    if (phone) {
+      const heightScale = layout.figureHeight * H / (frame.soles - frame.hairTop);
+      let widthScale = Infinity;
+      for (const key of KEYS) {
+        const crop = manifest.people[key].crop;
+        const left = frame.axis - Math.min(BODY[0], crop[0]);
+        const right = Math.max(BODY[2], crop[0] + crop[2]) - frame.axis;
+        const cx = layout[key] * W;
+        widthScale = Math.min(
+          widthScale,
+          (cx - layout.edge) / left,
+          (W - layout.edge - cx) / right
+        );
+      }
+      s = Math.min(heightScale, widthScale);
+    }
+    const feetY = (phone ? layout.feetY : FEET_Y) * H;
     const g = { W, H, kx, ky, dpr: Math.min(window.devicePixelRatio || 1, 2), mode: layoutName, s, feetY, people: {} };
 
     for (const key of KEYS) {
@@ -1113,13 +1137,47 @@
       };
     }
 
-    const [sx, sy, sw, sh] = [layout.screen[0] * W, layout.screen[1] * H, layout.screen[2] * W, layout.screen[3] * H];
+    let sx;
+    let sy;
+    let sw;
+    let sh;
+    if (phone) {
+      sw = layout.screenWidth * W;
+      sx = (W - sw) / 2;
+      // У варианта A внешний багет начинается на 5% высоты сцены.
+      sy = 0.05 * H + 0.065 * sw;
+      const figureHeight = (frame.soles - frame.hairTop) * s;
+      const apply = g.people.amin.map(...manifest.people.amin.grip.apply);
+      const cardHeight = layout.card * s * manifest.card.h / manifest.card.w;
+      const bottom = Math.max(
+        feetY - 0.32 * figureHeight,
+        apply[1] + (0.5 - CARD_HOLD[1]) * cardHeight + 12
+      );
+      sh = bottom - sy;
+    } else {
+      [sx, sy, sw, sh] = [layout.screen[0] * W, layout.screen[1] * H, layout.screen[2] * W, layout.screen[3] * H];
+    }
     const small = Math.min(sw, sh);
     g.screen = { x: sx, y: sy, w: sw, h: sh, r: 0.04 * small };
     g.inner = { x: sx + 0.02 * sw, y: sy + 0.02 * sh, w: 0.96 * sw, h: 0.96 * sh, r: Math.max(0, 0.02 * small) };
 
-    const outerWidth = layout.sofa[2] * W;
-    g.sofaOut = { x: layout.sofa[0] * W, y: layout.sofa[1] * H, w: outerWidth, h: outerWidth / 2.5 };
+    if (phone) {
+      const outerWidth = layout.sofaWidth * s;
+      const outerHeight = outerWidth / 2.5;
+      const hand = manifest.people.roman.hand.push;
+      const [palmX] = g.people.roman.map(...hand);
+      const [, calmY] = g.people.roman.map(hand[0], layout.sofaCalmFrameY);
+      g.sofaLift = (layout.sofaCalmFrameY - layout.sofaPushFrameY) * s - layout.sofaPushGap;
+      g.sofaOut = {
+        x: palmX - layout.sofaPalmFraction * outerWidth,
+        y: calmY - layout.sofaTopFraction * outerHeight,
+        w: outerWidth,
+        h: outerHeight
+      };
+    } else {
+      const outerWidth = layout.sofa[2] * W;
+      g.sofaOut = { x: layout.sofa[0] * W, y: layout.sofa[1] * H, w: outerWidth, h: outerWidth / 2.5 };
+    }
     const innerWidth = 0.68 * g.inner.w;
     g.sofaIn = {
       x: g.inner.x + 0.16 * g.inner.w,
@@ -1129,7 +1187,7 @@
     };
     g.mFit = findFit(g);
 
-    const cardWidth = layout.card * W;
+    const cardWidth = layout.card * (phone ? s : W);
     g.card = { w: cardWidth, h: cardWidth * manifest.card.h / manifest.card.w };
     const grip = manifest.people.amin.grip;
     g.grip = { calm: g.people.amin.map(...grip.calm), apply: g.people.amin.map(...grip.apply) };
@@ -1153,8 +1211,13 @@
     return g;
   }
 
-  function sofaRect(g, m) {
-    const a = g.sofaOut;
+  function sofaRect(g, m, st) {
+    const a = g.mode === "phone"
+      ? {
+        ...g.sofaOut,
+        y: g.sofaOut.y - g.sofaLift * (st ? span(st.q === null ? 0 : st.q, 0.30, 0.34, E) : 1)
+      }
+      : g.sofaOut;
     const b = g.sofaIn;
     const w = lerp(a.w, b.w, m);
     const cx = lerp(a.x + a.w / 2, b.x + b.w / 2, m);
@@ -1238,6 +1301,10 @@
       }
     }
     Object.assign(next, variant.look);
+    if (mode === "phone") {
+      next.screenShadowBlur = LAYOUTS.phone.screenShadowBlur;
+      next.screenShadowY = LAYOUTS.phone.screenShadowY;
+    }
     for (const key of ["contactShadow", "roomShadow"]) next[`${key}Color`] = parseColor(next[key]);
     look = next;
     work.variantFrame.geometry = null;
@@ -1769,7 +1836,7 @@
     for (const key of KEYS) {
       softEllipse(c, g.people[key].cx, g.feetY - 0.004 * g.H, 175 * g.s, 0.014 * g.H, color, 1);
     }
-    const r = sofaRect(g, st.move);
+    const r = sofaRect(g, st.move, st);
     const alpha = 1 - st.move;
     if (alpha > 0) {
       const bottom = r.y + r.h * (556 / 560);
@@ -1860,7 +1927,7 @@
       c.drawImage(variantLightArt(), inner.x, inner.y, inner.w, inner.h);
     }
 
-    const r = sofaRect(g, st.move);
+    const r = sofaRect(g, st.move, st);
     if (st.move > 0) {
       softEllipse(c, r.x + r.w / 2, r.y + r.h * 0.985, 0.47 * r.w, 0.09 * r.h, look.roomShadowColor, st.move);
     }
@@ -1902,7 +1969,7 @@
     if (alpha <= 0) return;
     c.save();
     c.globalAlpha = alpha;
-    drawSofa(c, sofaRect(geo, st.move), 0);
+    drawSofa(c, sofaRect(geo, st.move, st), 0);
     c.restore();
   }
 
@@ -2039,7 +2106,7 @@
 
   // Слой 7: кисть Романа поверх спинки, пока диван перед героями.
   function drawPalm(c, st) {
-    if (st.move >= 1) return;
+    if (geo.mode === "phone" || st.move >= 1) return;
     const alpha = frontAlpha(geo, st.move);
     if (alpha <= 0) return;
     const r = sofaRect(geo, st.move);
@@ -2086,10 +2153,13 @@
     drawGroundShadows(c, st);
     drawScreen(c, st);
     setScene(c, geo);
+    if (geo.mode === "phone") drawFrontSofa(c, st);
     drawFigure(c, "amin");
     drawFigure(c, "roman");
-    drawFrontSofa(c, st);
-    drawPalm(c, st);
+    if (geo.mode !== "phone") {
+      drawFrontSofa(c, st);
+      drawPalm(c, st);
+    }
     drawCard(c, st);
     drawFingers(c, st);
   }
@@ -2125,14 +2195,17 @@
     drawnCardShift = shift;
     clearCanvas({ canvas, ctx });
     ctx.drawImage(work.lifeLower.canvas, 0, 0);
+    if (geo.mode === "phone") ctx.drawImage(work.lifeSofa.canvas, 0, 0);
     setScene(ctx, geo);
     drawFigure(ctx, "amin");
     drawFigure(ctx, "roman");
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.drawImage(work.lifeSofa.canvas, 0, 0);
-    ctx.restore();
-    drawPalm(ctx, st);
+    if (geo.mode !== "phone") {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(work.lifeSofa.canvas, 0, 0);
+      ctx.restore();
+      drawPalm(ctx, st);
+    }
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(work.lifeCard.canvas, shift.dx, shift.dy);
@@ -2201,7 +2274,7 @@
     const g = geo;
     const st = typeof value === "number" ? stateAt(clamp(value)) : currentState();
     const offset = st.down * 0.10 * g.H;
-    const sofa = sofaRect(g, st.move);
+    const sofa = sofaRect(g, st.move, st);
     const place = cardPlacement(g, st.card.t);
     const cos = Math.cos(place.angle);
     const sin = Math.sin(place.angle);
@@ -2315,6 +2388,36 @@
     root.classList.toggle("is-static", next);
   }
 
+  function measurePhoneLayout() {
+    if (!phoneQuery.matches || !track || !group || !stage || !probe) return;
+
+    const probeStyle = getComputedStyle(probe);
+    const svh = probe.getBoundingClientRect().height || window.innerHeight;
+    const safeTop = parseFloat(probeStyle.paddingTop) || 0;
+    const safeBottom = parseFloat(probeStyle.paddingBottom) || 0;
+    const width = track.getBoundingClientRect().width;
+    const actionsHeight = actions.getBoundingClientRect().height;
+    const available = svh - 28 - safeTop - safeBottom;
+
+    const stageHeight = Math.max(
+      356,
+      Math.min(available - 44 - 12 - actionsHeight, 1.75 * width)
+    );
+    // При достижении потолка воздух делится вокруг текста имён:
+    // половина над текстом и половина под ним. До CTA остаётся 12px.
+    const nameHeight = Math.max(44, available - stageHeight - 12 - actionsHeight);
+    const groupHeight = stageHeight + nameHeight + 12 + actionsHeight;
+
+    for (const [name, value] of [
+      ["--phone-stage-h", stageHeight],
+      ["--phone-name-h", nameHeight],
+      ["--phone-group-h", groupHeight]
+    ]) {
+      const next = `${value}px`;
+      if (track.style.getPropertyValue(name) !== next) track.style.setProperty(name, next);
+    }
+  }
+
   function measureScroll() {
     if (mode === "phone") {
       if (motion.matches) {
@@ -2323,18 +2426,24 @@
         return;
       }
       const svh = probe.getBoundingClientRect().height || window.innerHeight;
-      const safeBottom = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
-      const groupHeight = group.offsetHeight;
+      const probeStyle = getComputedStyle(probe);
+      const safeTop = parseFloat(probeStyle.paddingTop) || 0;
+      const safeBottom = parseFloat(probeStyle.paddingBottom) || 0;
+      const groupHeight = group.getBoundingClientRect().height;
       const top = staticMode ? NaN : parseFloat(getComputedStyle(group).top);
-      const pinTop = Number.isFinite(top) ? top : Math.max(56, (svh - 504) / 2);
-      // §4.3: группа не помещается между y=56 и нижним краем — без закрепления, кадр §10.
-      setStatic(pinTop + groupHeight > svh - safeBottom + 0.5);
+      const freeTop = svh - safeBottom - 14 - groupHeight;
+      const pinTop = Number.isFinite(top)
+        ? top
+        : Math.max(14 + safeTop, Math.min(16 + safeTop, freeTop));
+      // Статичный результат нужен только при реальном переполнении,
+      // например при увеличенном тексте и минимальной сцене 356px.
+      setStatic(pinTop + groupHeight > svh - safeBottom - 14 + 0.5);
       if (staticMode) {
         scroll = null;
         return;
       }
       const trackTop = track.getBoundingClientRect().top + window.scrollY;
-      const distance = track.offsetHeight - group.offsetHeight;
+      const distance = track.getBoundingClientRect().height - groupHeight;
       if (distance < 1) {
         setStatic(true);
         scroll = null;
@@ -2354,6 +2463,7 @@
 
   function measure() {
     measurePending = 0;
+    measurePhoneLayout();
     if (!ready) {
       if (phoneQuery.matches && stage && !sceneFailed) {
         mode = "phone";
@@ -2519,6 +2629,7 @@
       resizeObserver.observe(stage);
       resizeObserver.observe(group);
       resizeObserver.observe(root);
+      if (phoneQuery.matches) resizeObserver.observe(actions);
 
       intersectionObserver = new IntersectionObserver(entries => {
         visible = entries[entries.length - 1].isIntersecting;
@@ -2563,6 +2674,7 @@
   phoneQuery.addEventListener("change", () => {
     syncShellClass();
     prepareShell();
+    if (phoneQuery.matches && resizeObserver && actions) resizeObserver.observe(actions);
     scheduleMeasure();
   });
   motion.addEventListener("change", () => {
