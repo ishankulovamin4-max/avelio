@@ -21,6 +21,24 @@
   var pending = false;
   var attempt = 0;
   var legacyFailure = null;
+  var otherSounds = Object.create(null);
+  var held = false;
+  var soundOn = false;
+  var trackSources = [];
+  var trackWithSound = false;
+  var trackVersion = 0;
+  var children = video.children;
+  var i;
+
+  for (i = 0; i < children.length; i++) {
+    if (children[i].tagName.toLowerCase() === "source" && children[i].hasAttribute("data-sound-src")) {
+      trackSources.push({
+        element: children[i],
+        silent: children[i].getAttribute("src"),
+        sound: children[i].getAttribute("data-sound-src")
+      });
+    }
+  }
 
   playButton.type = "button";
   playButton.className = "hero-video-play";
@@ -31,7 +49,72 @@
     '<path d="M11 6 L27 16 L11 26 Z" fill="currentColor"/></svg>';
   frame.appendChild(playButton);
 
+  function soundEvent(name) {
+    var event;
+    var detail = { source: "hero" };
+
+    if (typeof window.CustomEvent === "function") {
+      event = new CustomEvent(name, { detail: detail });
+    } else {
+      event = document.createEvent("CustomEvent");
+      event.initCustomEvent(name, false, false, detail);
+    }
+
+    document.dispatchEvent(event);
+  }
+
+  function hasOtherSounds() {
+    return Object.keys(otherSounds).length > 0;
+  }
+
+  function useTrack(withSound) {
+    if (!trackSources.length || trackWithSound === withSound) {
+      return false;
+    }
+
+    var pos = withSound ? 0 : video.currentTime;
+    var version = ++trackVersion;
+
+    if (!isFinite(pos) || pos <= 0 || pos >= video.duration - 0.25) {
+      pos = 0;
+    }
+
+    trackWithSound = withSound;
+
+    // load() прервёт старый play(): его результат уже не нужен.
+    ++attempt;
+    pending = false;
+    legacyFailure = null;
+
+    trackSources.forEach(function (source) {
+      source.element.setAttribute("src", withSound ? source.sound : source.silent);
+    });
+
+    if (!withSound && pos > 0) {
+      var restorePosition = function () {
+        video.removeEventListener("loadedmetadata", restorePosition);
+
+        if (version !== trackVersion) {
+          return;
+        }
+
+        try {
+          video.currentTime = pos;
+        } catch (error) {
+          // Старый движок может запретить seek.
+        }
+      };
+
+      video.addEventListener("loadedmetadata", restorePosition);
+    }
+
+    video.load();
+    return true;
+  }
+
   function setSound(on) {
+    var wasOn = soundOn;
+    soundOn = on;
     video.muted = !on;
     video.defaultMuted = !on;
     video.loop = !on;
@@ -47,6 +130,17 @@
     }
     if (soundOff) {
       soundOff.hidden = !on;
+    }
+
+    if (!on && wasOn) {
+      if (useTrack(false)) {
+        if (!held && !hasOtherSounds()) {
+          requestPlay(false);
+        } else {
+          video.pause();
+        }
+      }
+      soundEvent("avelio:sound-stop");
     }
   }
 
@@ -112,6 +206,10 @@
   }
 
   function requestPlay(withSound) {
+    if (held || hasOtherSounds()) {
+      return;
+    }
+
     var id = ++attempt;
     var result;
 
@@ -129,6 +227,9 @@
       // pause()/load() могут прервать ещё ожидающий play().
       // Это не отказ политики автозапуска и не повод показывать кнопку.
       if (error && error.name === "AbortError") {
+        if (withSound) {
+          autoSoundOff("fail");
+        }
         return;
       }
 
@@ -175,7 +276,7 @@
   }
 
   function retryFromGesture(event) {
-    if (event.isTrusted === false || !rejected || !video.muted) {
+    if (held || hasOtherSounds() || event.isTrusted === false || !rejected || !video.muted) {
       return;
     }
 
@@ -190,10 +291,16 @@
   }
 
   function startWithSound(source) {
+    soundEvent("avelio:sound-start");
+    otherSounds = Object.create(null);
+    held = false;
+
     // Инвалидируем результаты предыдущих, ещё ожидающих попыток.
     ++attempt;
     pending = false;
     legacyFailure = null;
+
+    useTrack(true);
 
     // На каждый запрос звука — с начала, не только на первый.
     try {
@@ -210,7 +317,7 @@
   }
 
   function autoSoundOff(source) {
-    if (video.muted !== false) {
+    if (video.muted !== false && !soundOn) {
       return;
     }
 
@@ -224,7 +331,7 @@
     announce(false, source);
 
     // Звуковой play() ещё не ответил: его отказ уже не обработается — запускаем без звука заново.
-    if (source === "away" && wasPending) {
+    if (source === "away" && wasPending && !held && !hasOtherSounds()) {
       requestPlay(false);
     }
 
@@ -233,8 +340,54 @@
     }
   }
 
+  document.addEventListener("avelio:sound-start", function (event) {
+    var source = event.detail && event.detail.source;
+    if (typeof source !== "string" || source === "hero") {
+      return;
+    }
+
+    // После load() paused уже не показывает, играл ли ролик.
+    var wasPlaying = !video.paused || pending || Boolean(legacyFailure);
+
+    otherSounds[source] = true;
+    if (wasPlaying) {
+      held = true;
+    }
+    autoSoundOff("away");
+
+    // Наша пауза не должна выглядеть как отказ автозапуска.
+    ++attempt;
+    pending = false;
+    legacyFailure = null;
+
+    video.pause();
+  });
+
+  document.addEventListener("avelio:sound-stop", function (event) {
+    var source = event.detail && event.detail.source;
+    if (typeof source !== "string" || source === "hero") {
+      return;
+    }
+
+    delete otherSounds[source];
+    if (hasOtherSounds() || !held) {
+      return;
+    }
+
+    // При смене источника stop может прийти раньше нового start.
+    setTimeout(function () {
+      if (hasOtherSounds() || !held) {
+        return;
+      }
+
+      held = false;
+      requestPlay(false);
+    }, 50);
+  });
+
   video.addEventListener("ended", function () {
-    if (video.muted !== false) {
+    // Mi Браузер может сам приглушить ролик кнопкой громкости — конец всё равно возвращает немую копию.
+    if (video.muted !== false && !soundOn) {
       return;
     }
 
@@ -247,14 +400,33 @@
       // У ещё не загруженного ролика начальная позиция и так нулевая.
     }
 
-    requestPlay(false);
+    if (!held) {
+      requestPlay(false);
+    }
   });
 
   video.addEventListener("playing", markPlaying);
 
+  video.addEventListener("volumechange", function () {
+    if (!soundOn && video.muted === false) {
+      video.muted = true;
+      video.setAttribute("muted", "");
+    }
+  });
+
   video.addEventListener("error", function () {
     if (legacyFailure) {
       legacyFailure(video.error);
+    }
+    autoSoundOff("fail");
+  });
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) {
+      autoSoundOff("away");
+    } else if (video.paused && !soundOn && !held && !hasOtherSounds() && !pending) {
+      // В скрытой вкладке браузер мог не запустить немую копию — запускаем, вернувшись.
+      requestPlay(false);
     }
   });
 

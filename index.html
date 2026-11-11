@@ -2821,10 +2821,10 @@
       <div class="hero-stage shell">
         <div class="video-column">
           <div class="video-frame">
-            <!-- Ролик: video/hero.mp4, на телефоне лёгкий video/hero-phone.mp4; звук, «▶» и запуск — video/hero-video.js. -->
+            <!-- Ролик: фоном немые копии без звуковой дорожки (video/hero-silent.mp4, на телефоне video/hero-phone-silent.mp4) — кнопка громкости или браузер не могут включить голос, которого в файле нет. Со звуком — video/hero.mp4 / hero-phone.mp4 из data-sound-src. Заменили hero.mp4 — пересоздать копию: ffmpeg -i hero.mp4 -map 0:v:0 -c copy -an -movflags +faststart hero-silent.mp4. Звук, «▶» и запуск — video/hero-video.js. -->
             <video id="hero-video" muted playsinline webkit-playsinline x5-playsinline autoplay loop preload="metadata" poster="video/hero.jpg" aria-label="Ролик Avelio: шоурум в Фошане">
-              <source src="video/hero-phone.mp4" type="video/mp4" media="(max-width: 699px)">
-              <source src="video/hero.mp4" type="video/mp4">
+              <source src="video/hero-phone-silent.mp4" data-sound-src="video/hero-phone.mp4" type="video/mp4" media="(max-width: 699px)">
+              <source src="video/hero-silent.mp4" data-sound-src="video/hero.mp4" type="video/mp4">
               Ваш браузер не поддерживает видео.
             </video>
             <button id="sound-toggle" class="sound-plate" type="button">
@@ -4469,35 +4469,47 @@
     try { sessionStorage.setItem("avelio-plan-from", "1"); } catch (error) {}
   });
 
-  // «Смотреть ролик»: тот же ролик окном со звуком; ролик первого экрана на это время стоит.
+  // «Смотреть ролик»: ролик первого экрана на это время стоит — его держит video/hero-video.js по событию.
   const videoDialog = $("f-video-dialog");
   const dialogVideo = $("f-video");
-  const heroVideo = $("hero-video");
   let videoOpener = null;
-  let heroWasPlaying = false;
+  let filmSoundOn = false;
+  let filmAttempt = 0;
+
+  function stopFilmSound() {
+    if (!filmSoundOn) return;
+    filmSoundOn = false;
+    document.dispatchEvent(new CustomEvent("avelio:sound-stop", { detail: { source: "film" } }));
+  }
 
   function openVideo(opener) {
     videoOpener = opener;
-    // Ролик без звука за экраном браузер останавливает сам и сам продолжает, когда вернёмся наверх; лишняя пауза это сломает.
-    heroWasPlaying = !heroVideo.paused;
-    if (heroWasPlaying) heroVideo.pause();
     videoDialog.hidden = false;
     videoDialog.showModal();
     document.documentElement.classList.add("f-plan-locked");
     $("f-video-close").focus();
     dialogVideo.muted = false;
-    dialogVideo.play().catch(() => {});
+    const attempt = ++filmAttempt;
+    filmSoundOn = true;
+    document.dispatchEvent(new CustomEvent("avelio:sound-start", { detail: { source: "film" } }));
+    dialogVideo.play().catch(() => {
+      if (attempt === filmAttempt) stopFilmSound();
+    });
   }
 
   function closeVideo() {
     if (!videoDialog.open) return;
+    ++filmAttempt;
     dialogVideo.pause();
+    stopFilmSound();
     videoDialog.close();
     videoDialog.hidden = true;
     document.documentElement.classList.remove("f-plan-locked");
-    if (heroWasPlaying) heroVideo.play().catch(() => {});
     if (videoOpener && videoOpener.isConnected) videoOpener.focus({ preventScroll: true });
   }
+
+  dialogVideo.addEventListener("ended", stopFilmSound);
+  dialogVideo.addEventListener("error", stopFilmSound);
 
   $("f-who-play").addEventListener("click", (event) => {
     event.preventDefault();
@@ -4662,6 +4674,7 @@
 
   // Будущие звуки отменяем сразу, уже звучащие гасим за четверть секунды.
   function silence(state = "off") {
+    const wasOn = soundState === "on" || soundState === "loading";
     ++soundTurn;
     clearTimeout(finishTimer);
     finishTimer = 0;
@@ -4683,6 +4696,9 @@
     voiceEnd = 0;
     spoken.clear();
     soundStatus(state);
+    if (wasOn) {
+      document.dispatchEvent(new CustomEvent("avelio:sound-stop", { detail: { source: "process" } }));
+    }
   }
 
   function soundFailure(error) {
@@ -4805,6 +4821,8 @@
       silence();
       return;
     }
+    soundStatus("loading");
+    document.dispatchEvent(new CustomEvent("avelio:sound-start", { detail: { source: "process" } }));
     try {
       // Создание, resume и пустой отсчёт остаются внутри настоящего жеста.
       if (!ctx) {
@@ -5361,7 +5379,11 @@
     calm();
     choose(button.dataset.track);
     render(first(), reduceMotion.matches);
-    if (retell && !reduceMotion.matches) void startStory();
+    if (retell && !reduceMotion.matches) {
+      soundStatus("loading");
+      document.dispatchEvent(new CustomEvent("avelio:sound-start", { detail: { source: "process" } }));
+      void startStory();
+    }
   }));
   block.querySelectorAll(".p-steps button").forEach((button) => button.addEventListener("click", () => {
     silence();
@@ -5407,8 +5429,9 @@
   screen.addEventListener("click", (event) => {
     if (!soundButton.contains(event.target)) silence();
   }, true);
-  const headerSound = document.getElementById("sound-toggle");
-  if (headerSound) headerSound.addEventListener("click", () => silence());
+  document.addEventListener("avelio:sound-start", (event) => {
+    if (event.detail && typeof event.detail.source === "string" && event.detail.source !== "process") silence();
+  });
 
   // Фото ждём целиком, чтобы запись не началась с недогруженного кадра. Скрытые слои браузер сам
   // не грузит, поэтому загрузку включаем здесь; контуры и фото диванов для карточки — тоже.
@@ -5626,7 +5649,12 @@
     finishUnlock();
   }
 
+  // Голос включён, но молчит за экраном или в скрытой вкладке: ролик первого экрана он не держит.
+  let voiceAway = false;
+
   function stopVoice() {
+    const wasOn = voiceOn && !voiceAway;
+    voiceAway = false;
     const action = voiceWait;
     voiceWait = null;
     voiceBusy = false;
@@ -5636,6 +5664,9 @@
     phraseVersion++;
     voiceState(false);
     pauseVoice();
+    if (wasOn) {
+      document.dispatchEvent(new CustomEvent("avelio:sound-stop", { detail: { source: "order" } }));
+    }
     audio.dataset.phrase = "";
     if (stillMode()) still();
     else if (action) plan(action, 0);
@@ -5924,6 +5955,10 @@
       timer = 0;
       left = Math.max(0, due - performance.now());
     }
+    if (voiceOn && voiceRunning() === voiceAway) {
+      voiceAway = !voiceAway;
+      document.dispatchEvent(new CustomEvent(voiceAway ? "avelio:sound-stop" : "avelio:sound-start", { detail: { source: "order" } }));
+    }
     if (voiceOn) {
       if (!voiceRunning()) {
         if (!audio.paused || playPending || unlocking) pauseVoice();
@@ -6114,6 +6149,7 @@
       stopVoice();
       return;
     }
+    document.dispatchEvent(new CustomEvent("avelio:sound-start", { detail: { source: "order" } }));
     loadVoices();
     voiceState(true, true);
     voiceGesture = true;
@@ -6127,6 +6163,9 @@
     } finally {
       voiceGesture = false;
     }
+  });
+  document.addEventListener("avelio:sound-start", (event) => {
+    if (voiceOn && event.detail && typeof event.detail.source === "string" && event.detail.source !== "order") stopVoice();
   });
   audio.addEventListener("playing", () => {
     if (!phraseSource() || audio.paused) return;
