@@ -82,9 +82,7 @@
   const TRACKS = {
     amin: [
       [0.20, 0.23, "calm", "apply"],
-      [0.28, 0.36, "apply", "calm"],
-      [0.80, 0.86, "calm", "pleased"],
-      [0.86, 0.92, "pleased", "calm"]
+      [0.28, 0.36, "apply", "pleased"]
     ],
     roman: [
       [0.30, 0.34, "calm", "push"],
@@ -108,7 +106,7 @@
     { pose: "calm", dx: 8, dy: -42, rx: 64, ry: 92 },
     { pose: "push", dx: 12, dy: -26, rx: 80, ry: 62 }
   ];
-  // Кивок Амина (§3, §7.1): наклон головы до 2,5° вокруг шеи, только на весе позы pleased.
+  // Кивок Амина (§3, §7.1): наклон головы до 2,5° вокруг шеи, окно q = 0,80…0,92.
   const NOD = { degrees: 2.5, pivot: [512, 362], feather: [352, 384], half: 140 };
   // Овалы лиц (cx, cy, rx, ry) — те же, что в tools/room-photo-pose.py; для проверки.
   const FACES = { amin: [523, 272, 82, 78], roman: [528, 285, 72, 78] };
@@ -578,6 +576,35 @@
     jobs.push(loadImage(manifest.room.sketch).then(image => { images.sketch = image; }));
     jobs.push(loadImage(manifest.card.file).then(image => { images.card = image; }));
     await Promise.all(jobs);
+    prepareAminPleasedBlink();
+  }
+
+  // Моргание Амина в pleased: глаза из blink поверх pleased через мягкий эллипс по глазам
+  // (головы трёх поз совпадают пиксель в пиксель; рот ниже y≈295 рамки не берётся).
+  function prepareAminPleasedBlink() {
+    const data = manifest.people.amin;
+    const [w, h] = data.img;
+    const [left, top, width, height] = data.crop;
+    const kx = w / width;
+    const ky = h / height;
+    const mask = scratch();
+    const eyes = scratch();
+    const art = scratch();
+
+    sizeCanvas(mask, w, h);
+    sizeCanvas(eyes, w, h);
+    sizeCanvas(art, w, h);
+
+    softEllipse(mask.ctx, (532 - left) * kx, (240 - top) * ky, 80 * kx, 32 * ky, [0, 0, 0, 1], 1, 0.6);
+
+    eyes.ctx.drawImage(images["amin-blink"], 0, 0, w, h);
+    eyes.ctx.globalCompositeOperation = "destination-in";
+    eyes.ctx.drawImage(mask.canvas, 0, 0);
+    eyes.ctx.globalCompositeOperation = "source-over";
+
+    art.ctx.drawImage(images["amin-pleased"], 0, 0, w, h);
+    art.ctx.drawImage(eyes.canvas, 0, 0);
+    images["amin-pleasedBlink"] = art.canvas;
   }
 
   function buildSceneFrame() {
@@ -779,7 +806,7 @@
       q: value,
       amin,
       roman,
-      nod: weightOf(amin, "pleased"),
+      nod: span(value, 0.80, 0.86, E) - span(value, 0.86, 0.92, E),
       romanNod: weightOf(roman, "pleased"),
       card: { t: span(value, 0.10, 0.26, M), alpha: 1 - span(value, 0.26, 0.32, E) },
       reveal: span(value, 0.24, 0.36, E),
@@ -795,7 +822,7 @@
     const calm = { from: "calm", to: "calm", w: 0 };
     return {
       q: null,
-      amin: { ...calm },
+      amin: { from: "pleased", to: "pleased", w: 0 },
       roman: { ...calm },
       nod: 0,
       romanNod: 0,
@@ -851,7 +878,11 @@
         const item = lifePeople[key];
         const pose = st[key].w >= 0.5 ? st[key].to : st[key].from;
         return [key, {
-          pose: reason === null ? (item.blink ? "blink" : people[key].shown || item.pose) : pose,
+          pose: reason === null
+            ? (key === "amin"
+              ? people[key].renderedPose || item.pose
+              : (item.blink ? "blink" : people[key].shown || item.pose))
+            : pose,
           blink: reason === null && item.blink,
           blinks: item.blinks,
           shift: reason === null ? item.shift : 0,
@@ -1011,7 +1042,8 @@
         );
       }
 
-      const allowed = pose === "calm" && people[key].shown === "calm" && !people[key].fade;
+      const allowed = (pose === "calm" && people[key].shown === "calm" && !people[key].fade) ||
+        (key === "amin" && pose === "pleased" && people[key].shown === "pleased" && !people[key].fade);
       updateBlink(key, lifeClock, allowed);
       const amplitude = Math.max(1, Math.round(geo.dpr));
       item.shift = Math.round(amplitude * (
@@ -1456,7 +1488,11 @@
     let pose = shownPose(person, scrollPose, now);
     if (drawingLife && lifePeople[key].blink && pose.from === "calm" && pose.to === "calm" && !person.fade) {
       pose = { from: "blink", to: "blink", w: 0 };
+    } else if (key === "amin" && drawingLife && lifePeople[key].blink &&
+        pose.from === "pleased" && pose.to === "pleased" && !person.fade) {
+      pose = { from: "pleasedBlink", to: "pleasedBlink", w: 0 };
     }
+    if (key === "amin") person.renderedPose = pose.w >= 0.5 ? pose.to : pose.from;
     const cacheKey = `${pose.from}|${pose.to}|${pose.w.toFixed(5)}|${nod.toFixed(5)}`;
     if (person.cache === cacheKey) return;
     person.cache = cacheKey;
@@ -1527,6 +1563,9 @@
       const person = people[key];
       // Веки готовы до запуска таймера; первая серия не считает резкость в кадре.
       poseArt(person, "blink", person.art.canvas.width, person.art.canvas.height);
+      if (key === "amin") {
+        poseArt(person, "pleasedBlink", person.art.canvas.width, person.art.canvas.height);
+      }
       for (const name of Object.keys(manifest.people[key].poses)) {
         if (name !== "blink") queue.push([person, name]);
       }
@@ -2139,7 +2178,9 @@
             accent: active && lifePeople[name].accent,
             ...(active ? lifePeople[name].transform : identityLifeTransform()),
             blink: active && lifePeople[name].blink,
-            pose: active && lifePeople[name].blink ? "blink" : people[name].shown
+            pose: name === "amin"
+              ? people[name].renderedPose
+              : (active && lifePeople[name].blink ? "blink" : people[name].shown)
           }]))
         });
       }
