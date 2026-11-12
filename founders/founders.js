@@ -113,6 +113,12 @@
   // С press карточка неподвижна на экране: в release, withdraw и pleased она гаснет на месте press.
   // Фаза 28 (12.11): «я его криво держу» — карточка во всех кадрах ровно (0°), hold — рука calm, lift1 убран.
   const HELD = ["hold", "lift2", "press"];
+  // Фаза 29 (12.11): «а почему здесь пустота» — в «стопке» паспарту под окном комнаты больше нет, рамка
+  // обнимает окно. Отпущенная карточка не висит в воздухе: с from до to она улетает вверх в окно и садится
+  // на пол комнаты (доля y высоты окна, масштаб scale); комната раскрывается из места посадки с reveal.
+  const CARD_FLIGHT = { from: 0.27, to: 0.33, reveal: 0.29, y: 0.70, scale: 0.8 };
+  // Белый багет варианта A снаружи экрана — доля меньшей стороны экрана (variants.a.look.surround).
+  const STACK_SURROUND = 0.065;
   // Лицо pleased проявляется овалом лица поверх лица withdraw; руки меняются сразу со сменой кадра.
   const FACE_TO_PLEASED = [0.35, 0.39];
   // Моргание — заплаткой глаз из blink поверх кадра, где карточки нет или она неподвижно в руке.
@@ -856,8 +862,12 @@
       nod: span(value, 0.80, 0.86, E) - span(value, 0.86, 0.92, E),
       romanNod: weightOf(roman, "pleased"),
       // Карточка — та, что в показанном кадре; после press — на месте press.
-      card: { frame: HELD.includes(frame) ? frame : "press", alpha: 1 - span(value, 0.30, 0.36, E) },
-      reveal: span(value, 0.24, 0.40, E),
+      card: {
+        frame: HELD.includes(frame) ? frame : "press",
+        alpha: 1 - span(value, 0.30, 0.36, E),
+        fly: span(value, CARD_FLIGHT.from, CARD_FLIGHT.to, M)
+      },
+      reveal: span(value, geo && geo.stack ? CARD_FLIGHT.reveal : 0.24, 0.40, E),
       move: span(value, 0.38, 0.64, M),
       swap: span(value, 0.72, 0.80, E),
       down: span(value, 0.88, 0.98, D),
@@ -875,7 +885,7 @@
       face: 1,
       nod: 0,
       romanNod: 0,
-      card: { frame: "press", alpha: 0 },
+      card: { frame: "press", alpha: 0, fly: 1 },
       reveal: 1,
       move: 1,
       swap: 1,
@@ -895,7 +905,7 @@
   function stateKey(st) {
     const pose = value => `${value.from}${value.to}${value.w.toFixed(5)}`;
     return [
-      pose(st.amin), pose(st.roman), st.face, st.nod, st.romanNod, st.card.frame, st.card.alpha,
+      pose(st.amin), pose(st.roman), st.face, st.nod, st.romanNod, st.card.frame, st.card.alpha, st.card.fly,
       st.reveal, st.move, st.swap, st.down, st.fade
     ].map(value => typeof value === "number" ? value.toFixed(5) : value).join("|");
   }
@@ -1162,18 +1172,24 @@
     return scale;
   }
 
-  // Экран «стопкой»: по центру, ширина layout.screenWidth; внешний багет варианта A начинается на 5 % высоты сцены.
-  function stackScreen(layout, W, H) {
+  // Экран «стопкой»: по центру, ширина layout.screenWidth. Фаза 29: экран обнимает окно комнаты
+  // (поля 0,02·sw со всех сторон), внешний багет (STACK_SURROUND меньшей стороны) — от 5 % высоты сцены
+  // до roomGap·H над волосами. headTop — верх волос.
+  function stackScreen(layout, W, H, headTop) {
     const sw = layout.screenWidth * W;
-    return { sx: (W - sw) / 2, sy: 0.05 * H + 0.065 * sw, sw };
+    const room = headTop - layout.roomGap * H - 0.05 * H;
+    let sh = room / (1 + 2 * STACK_SURROUND);
+    if (sh > sw) sh = room - 2 * STACK_SURROUND * sw;
+    return { sx: (W - sw) / 2, sy: 0.05 * H + STACK_SURROUND * Math.min(sw, sh), sw, sh };
   }
 
   // Наибольший масштаб «стопки», при котором окно комнаты над головами не площе layout.roomAspect : 1
-  // (фаза 28: на 375×667 без этого окно было полосой 29px).
+  // (фаза 28: на 375×667 без этого окно было полосой 29px). Окно 0,96·sw × (sh − 0,04·sw).
   function stackScale(layout, W, H, feetY) {
     const frame = manifest.frame;
-    const top = stackScreen(layout, W, H);
-    const headTop = top.sy + 0.02 * top.sw + 0.96 * top.sw / layout.roomAspect + layout.roomGap * H;
+    const sw = layout.screenWidth * W;
+    const sh = sw * (0.96 / layout.roomAspect + 0.04);
+    const headTop = 0.05 * H + layout.roomGap * H + sh + 2 * STACK_SURROUND * Math.min(sw, sh);
     return (feetY - headTop) / (frame.soles - frame.hairTop);
   }
 
@@ -1220,10 +1236,8 @@
     let sw;
     let sh;
     if (stack) {
-      ({ sx, sy, sw } = stackScreen(layout, W, H));
-      // Фаза 28: низ экрана — под приложенной карточкой (кадр press), она лежит на паспарту.
-      const press = cardPlacement(g, "press");
-      sh = press.cy + 0.5 * manifest.card.frame[1] * s + 0.04 * sw - sy;
+      // Фаза 29: экран кончается над головами — паспарту до приложенной карточки (фаза 28) стоял пустым.
+      ({ sx, sy, sw, sh } = stackScreen(layout, W, H, feetY + (frame.hairTop - frame.soles) * s));
     } else if (layout.roomAspect) {
       // Фаза 28: окно по центру между корпусами (зазор besideGap·W), не шире layout.screen[2].
       const free = (layout.roman - layout.amin) * W - 2 * half * s - 2 * layout.besideGap * W;
@@ -1238,10 +1252,8 @@
     g.inner = { x: sx + 0.02 * sw, y: sy + 0.02 * sh, w: 0.96 * sw, h: 0.96 * sh, r: Math.max(0, 0.02 * small) };
     if (stack) {
       // Фаза 28 (12.11): «не весь интерьер виден на телефоне, мы этот интерьер закрываем» — окно комнаты
-      // кончается над головами (roomGap высоты сцены), ниже — паспарту рамки, перед ним стоят фигуры.
-      const headTop = feetY + (frame.hairTop - frame.soles) * s;
-      const top = sy + 0.02 * sw;
-      g.inner = { x: sx + 0.02 * sw, y: top, w: 0.96 * sw, h: headTop - layout.roomGap * H - top, r: Math.max(0, 0.02 * small) };
+      // над головами. Фаза 29: поля экрана вокруг окна одинаковые, 0,02·sw.
+      g.inner = { x: sx + 0.02 * sw, y: sy + 0.02 * sw, w: 0.96 * sw, h: sh - 0.04 * sw, r: Math.max(0, 0.02 * small) };
     }
 
     if (backSofa) {
@@ -1285,8 +1297,9 @@
       return { x, y, rx: item.rx * s, ry: item.ry * s };
     });
 
-    // Центр раскрытия цвета — место приложенной карточки (кадр press), внутри окна экрана.
-    const applied = cardPlacement(g, "press");
+    // Центр раскрытия цвета — место приложенной карточки (кадр press), внутри окна экрана;
+    // в «стопке» (фаза 29) — место, где садится улетевшая в окно карточка.
+    const applied = g.stack ? cardLanding(g) : cardPlacement(g, "press");
     g.reveal = {
       x: clamp(applied.cx - g.inner.x, 0, g.inner.w),
       y: clamp(applied.cy - g.inner.y, 0, g.inner.h)
@@ -1343,6 +1356,30 @@
     const map = g.people.amin.map;
     const [cx, cy] = map(...card.center);
     return { cx, cy, angle: radians(card.angle), pinch: map(...card.grip) };
+  }
+
+  // Фаза 29: место посадки карточки в окне комнаты «стопки» — под местом press по x, на CARD_FLIGHT.y высоты окна.
+  function cardLanding(g) {
+    const press = cardPlacement(g, "press");
+    const half = 0.5 * CARD_FLIGHT.scale * g.card.w;
+    return {
+      cx: clamp(press.cx, g.inner.x + half, g.inner.x + g.inner.w - half),
+      cy: g.inner.y + CARD_FLIGHT.y * g.inner.h
+    };
+  }
+
+  // Карточка в состоянии: в руке и после press — на месте кадра; в «стопке» отпущенная летит в окно (st.card.fly).
+  function cardPose(g, st) {
+    const place = cardPlacement(g, st.card.frame);
+    const fly = g.stack && st.card.frame === "press" ? st.card.fly || 0 : 0;
+    if (fly <= 0) return { ...place, scale: 1 };
+    const land = cardLanding(g);
+    return {
+      ...place,
+      cx: lerp(place.cx, land.cx, fly),
+      cy: lerp(place.cy, land.cy, fly),
+      scale: lerp(1, CARD_FLIGHT.scale, fly)
+    };
   }
 
   // ---------- Рисование ----------
@@ -2145,11 +2182,12 @@
 
   function drawCardImage(c, st, withShadow) {
     const g = geo;
-    const place = cardPlacement(g, st.card.frame);
+    const place = cardPose(g, st);
     c.save();
     c.globalAlpha = st.card.alpha;
     c.translate(place.cx, place.cy);
     c.rotate(place.angle);
+    c.scale(place.scale, place.scale);
     if (withShadow) {
       const blur = look.cardShadowBlur * g.H * g.dpr;
       c.shadowColor = look.cardShadow;
@@ -2189,7 +2227,7 @@
   }
 
   // Карточка в руке идёт тем же целым сдвигом, что верх тела (наклонов, пока она в руке, нет).
-  // Отпущенная карточка лежит на экране и не двигается.
+  // Отпущенная карточка от руки не зависит (в «стопке» она улетает в окно — cardPose).
   function lifeCardShift(st) {
     if (!drawingLife || st.card.alpha <= 0 || !HELD.includes(st.amin.from)) return { dx: 0, dy: 0 };
     const [x, y] = cardPlacement(geo, st.card.frame).pinch;
@@ -2451,12 +2489,12 @@
     const st = typeof value === "number" ? stateAt(clamp(value)) : currentState();
     const offset = st.down * 0.10 * g.H;
     const sofa = sofaRect(g, st.move, st);
-    const place = cardPlacement(g, st.card.frame);
+    const place = cardPose(g, st);
     const cos = Math.cos(place.angle);
     const sin = Math.sin(place.angle);
     const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => {
-      const x = u * g.card.w / 2;
-      const y = v * g.card.h / 2;
+      const x = u * place.scale * g.card.w / 2;
+      const y = v * place.scale * g.card.h / 2;
       return [place.cx + x * cos - y * sin, place.cy + x * sin + y * cos];
     });
     const stageBox = stage.getBoundingClientRect();
@@ -2494,6 +2532,7 @@
       sofaIn: rectOf(g.sofaIn),
       card: {
         alpha: st.card.alpha, frame: st.card.frame, held: HELD.includes(st.amin.from),
+        fly: g.stack && st.card.frame === "press" ? st.card.fly || 0 : 0, scale: place.scale,
         center: [place.cx, place.cy], angle: place.angle, pinch: place.pinch, corners
       },
       amin: { frame: st.amin.from, face: st.face },
