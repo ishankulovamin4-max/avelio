@@ -17,32 +17,74 @@
    "crop": [
     299,
     103,
-    664,
+    681,
     1330
    ],
    "img": [
-    465,
+    477,
     931
    ],
    "poses": {
-    "calm": "amin-calm.webp",
     "blink": "amin-blink.webp",
-    "apply": "amin-apply.webp",
+    "hold": "amin-hold.webp",
+    "lift1": "amin-lift1.webp",
+    "lift2": "amin-lift2.webp",
+    "press": "amin-press.webp",
+    "release": "amin-release.webp",
+    "withdraw": "amin-withdraw.webp",
     "pleased": "amin-pleased.webp"
    },
-   "grip": {
-    "calm": [
-     865,
-     660
-    ],
-    "blink": [
-     865,
-     660
-    ],
-    "apply": [
-     947,
-     514
-    ]
+   "fronts": {
+    "hold": "amin-hold-front.webp",
+    "lift1": "amin-lift1-front.webp",
+    "lift2": "amin-lift2-front.webp",
+    "press": "amin-press-front.webp"
+   },
+   "cards": {
+    "hold": {
+     "center": [
+      816.17,
+      693.77
+     ],
+     "angle": -9.67,
+     "grip": [
+      872.53,
+      738.72
+     ]
+    },
+    "lift1": {
+     "center": [
+      826.82,
+      633.23
+     ],
+     "angle": -5.02,
+     "grip": [
+      879.35,
+      682.61
+     ]
+    },
+    "lift2": {
+     "center": [
+      862.87,
+      544.18
+     ],
+     "angle": -1.97,
+     "grip": [
+      912.69,
+      596.28
+     ]
+    },
+    "press": {
+     "center": [
+      895.0,
+      470.0
+     ],
+     "angle": 0.0,
+     "grip": [
+      943.0,
+      523.79
+     ]
+    }
    }
   },
   "roman": {
@@ -119,6 +161,14 @@
  "card": {
   "file": "room-card.webp",
   "w": 320,
-  "h": 245
+  "h": 245,
+  "frame": [
+   160,
+   122.24
+  ],
+  "hold": [
+   0.3,
+   0.44
+  ]
  }
 }

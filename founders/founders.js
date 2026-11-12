@@ -66,13 +66,14 @@
 
   // §4. Доли ширины W и высоты H области анимации.
   // screen — (x/W, y/H, ширина/W, высота/H); sofa — внешний диван (x/W, y/H, ширина/W),
-  // высота рамки дивана всегда ширина / 2,5; card — ширина карточки / W.
+  // высота рамки дивана всегда ширина / 2,5. Карточка (фаза 26) — manifest.card.frame ед. рамки поз
+  // на всех ширинах: дыра под неё в кадрах Амина вырезана ровно этим размером.
   const LAYOUTS = {
-    wide: { amin: 0.18, roman: 0.82, screen: [0.29, 0.20, 0.42, 0.43], sofa: [0.25, 0.50, 0.50], card: 0.075 },
-    tablet: { amin: 0.20, roman: 0.80, screen: [0.15, 0.28, 0.70, 0.44], sofa: [0.10, 0.59, 0.80], card: 0.11 },
+    wide: { amin: 0.18, roman: 0.82, screen: [0.29, 0.20, 0.42, 0.43], sofa: [0.25, 0.50, 0.50] },
+    tablet: { amin: 0.20, roman: 0.80, screen: [0.15, 0.28, 0.70, 0.44], sofa: [0.10, 0.59, 0.80] },
     phone: {
       amin: 0.20, roman: 0.80, figureHeight: 0.84, feetY: 0.96, edge: 8,
-      screenWidth: 0.82, sofaWidth: 1000, card: 112,
+      screenWidth: 0.82, sofaWidth: 1000,
       sofaPalmFraction: 0.50, sofaTopFraction: 0.008,
       sofaCalmFrameY: 980, sofaPushFrameY: 878, sofaPushGap: -3,
       screenShadowBlur: 0.003, screenShadowY: 0.002
@@ -86,10 +87,6 @@
   // §7.1. Сегменты поз по возрастанию q: [начало, конец, из, в]. Между сегментами
   // держится последняя поза. Моргание отдельно, по времени; жесты остаются функциями q.
   const TRACKS = {
-    amin: [
-      [0.20, 0.23, "calm", "apply"],
-      [0.28, 0.36, "apply", "pleased"]
-    ],
     roman: [
       [0.30, 0.34, "calm", "push"],
       [0.65, 0.69, "push", "switch"],
@@ -97,16 +94,26 @@
       [0.92, 0.98, "pleased", "calm"]
     ]
   };
+  // Фаза 26: Амин держит карточку по-настоящему — жёсткая смена кадров по q без наплыва рук
+  // (content/avelio-concept/team/room-photo/grip/grip-spec.json, timeline): [начало q, кадр].
+  const AMIN_FRAMES = [
+    [0, "hold"], [0.12, "lift1"], [0.17, "lift2"], [0.215, "press"],
+    [0.27, "release"], [0.30, "withdraw"], [0.35, "pleased"]
+  ];
+  // Кадры с карточкой в руке: своя карточка (manifest amin.cards) и передний слой пальцев (amin.fronts).
+  // С press карточка неподвижна на экране: в release, withdraw и pleased она гаснет на месте press.
+  const HELD = ["hold", "lift1", "lift2", "press"];
+  // Лицо pleased проявляется овалом лица поверх лица withdraw; руки меняются сразу со сменой кадра.
+  const FACE_TO_PLEASED = [0.35, 0.39];
+  // Моргание — заплаткой глаз из blink поверх кадра, где карточки нет или она неподвижно в руке.
+  const BLINK_ART = { amin: { hold: "holdBlink", pleased: "pleasedBlink" }, roman: { calm: "blink" } };
 
   // Всё ниже — в единицах рамки поз 1024×1536 (manifest.frame).
   // Корпус для нажатия: §3, спокойный корпус x 300…724 от волос до подошв.
   const BODY = [300, 108, 724, 1428];
-  // Щепоть Амина держит карточку за нижнюю кромку: точка захвата лежит на (0; 0,44)
-  // размера карточки от её центра (в белой кайме) и поворачивается вместе с наклоном.
-  const CARD_HOLD = [0, 0.44];
-  // Участок пальцев поверх карточки — мягкий круг вокруг текущей точки захвата:
-  // на полпути карточка закрывает обе гаснущие руки, двух щепотей поверх фото нет.
-  const FINGERS = { radius: 46, core: 0.62 };
+  // Низ экрана на телефоне (фаза 25) считался от щепоти apply (947; 514) и карточки шириной 112 ед.
+  // с захватом на 0,44 высоты от центра. Числа оставлены постоянными: экран не сдвигается.
+  const PHONE_SCREEN_CARD = { grip: [947, 514], width: 112, hold: 0.44 };
   // Кисть Романа поверх спинки: мягкий эллипс от точки руки к запястью.
   const PALMS = [
     { pose: "calm", dx: 8, dy: -42, rx: 64, ry: 92 },
@@ -126,8 +133,6 @@
     roman: { waist: 840, breathPeriod: 5700, armRight: 362, armBottom: 1120 },
     poses: {
       amin: {
-        calm: { lean: -2.1, lift: 0 },
-        apply: { lean: 2.5, lift: 0 },
         pleased: { lean: -2.1, lift: 0.45 }
       },
       roman: {
@@ -140,6 +145,8 @@
     prepareMs: 100,
     peakMs: 250,
     poseMs: 950,
+    // Первый акцент покоя — не раньше чем через столько после неспокойной позы.
+    idleAfterPoseMs: 4000,
     snap: 0.05
   };
   const randomBetween = (a, b) => a + Math.random() * (b - a);
@@ -386,6 +393,7 @@
         mFit: geo ? geo.mFit : null,
         poses: { amin: { ...st.amin }, roman: { ...st.roman } },
         card: { ...st.card },
+        face: st.face,
         reveal: st.reveal,
         move: st.move,
         swap: st.swap,
@@ -542,7 +550,16 @@
       value[2] > 0 && value[3] > 0;
     const text = value => typeof value === "string" && value.length > 0;
     const frame = manifest.frame;
-    const poses = { amin: ["calm", "blink", "apply", "pleased"], roman: ["calm", "blink", "push", "switch", "pleased"] };
+    const poses = {
+      amin: ["blink", "hold", "lift1", "lift2", "press", "release", "withdraw", "pleased"],
+      roman: ["calm", "blink", "push", "switch", "pleased"]
+    };
+    const amin = manifest.people && manifest.people.amin;
+    const held = amin && amin.fronts && amin.cards && HELD.every(frame => {
+      const card = amin.cards[frame];
+      return text(amin.fronts[frame]) && card && point(card.center) && point(card.grip) &&
+        Number.isFinite(card.angle);
+    });
 
     const ok = frame && positive(frame.w) && positive(frame.h) &&
       Number.isFinite(frame.hairTop) && Number.isFinite(frame.soles) && frame.soles > frame.hairTop &&
@@ -554,8 +571,7 @@
           copy && text(copy.name) && text(copy.role) && text(copy.aria) &&
           Array.isArray(copy.bio) && copy.bio.length > 0 && copy.bio.every(text);
       }) &&
-      point(manifest.people.amin.grip && manifest.people.amin.grip.calm) &&
-      point(manifest.people.amin.grip.apply) &&
+      held &&
       point(manifest.people.roman.hand && manifest.people.roman.hand.calm) &&
       point(manifest.people.roman.hand.push) &&
       manifest.sofa && text(manifest.sofa.a && manifest.sofa.a.file) && text(manifest.sofa.b && manifest.sofa.b.file) &&
@@ -563,6 +579,7 @@
       Math.abs(manifest.sofa.w / manifest.sofa.h - 2.5) < 0.01 &&
       manifest.room && text(manifest.room.file) && text(manifest.room.sketch) &&
       manifest.card && text(manifest.card.file) && positive(manifest.card.w) && positive(manifest.card.h) &&
+      point(manifest.card.frame) && manifest.card.frame.every(positive) && point(manifest.card.hold) &&
       texts.stage && text(texts.stage.eyebrow) &&
       texts.dialog && text(texts.dialog.cta) && text(texts.dialog.close);
 
@@ -581,13 +598,17 @@
     jobs.push(loadImage(manifest.room.file).then(image => { images.room = image; }));
     jobs.push(loadImage(manifest.room.sketch).then(image => { images.sketch = image; }));
     jobs.push(loadImage(manifest.card.file).then(image => { images.card = image; }));
+    for (const frame of HELD) {
+      const file = manifest.people.amin.fronts[frame];
+      jobs.push(loadImage(file).then(image => { images[`amin-${frame}-front`] = image; }));
+    }
     await Promise.all(jobs);
-    prepareAminPleasedBlink();
+    prepareAminBlinks();
   }
 
-  // Моргание Амина в pleased: глаза из blink поверх pleased через мягкий эллипс по глазам
-  // (головы трёх поз совпадают пиксель в пиксель; рот ниже y≈295 рамки не берётся).
-  function prepareAminPleasedBlink() {
+  // Моргание Амина в hold и pleased: глаза из blink поверх кадра через мягкий эллипс по глазам
+  // (головы всех кадров совпадают с blink пиксель в пиксель; рот ниже y≈295 рамки не берётся).
+  function prepareAminBlinks() {
     const data = manifest.people.amin;
     const [w, h] = data.img;
     const [left, top, width, height] = data.crop;
@@ -595,11 +616,9 @@
     const ky = h / height;
     const mask = scratch();
     const eyes = scratch();
-    const art = scratch();
 
     sizeCanvas(mask, w, h);
     sizeCanvas(eyes, w, h);
-    sizeCanvas(art, w, h);
 
     softEllipse(mask.ctx, (532 - left) * kx, (240 - top) * ky, 80 * kx, 32 * ky, [0, 0, 0, 1], 1, 0.6);
 
@@ -608,9 +627,13 @@
     eyes.ctx.drawImage(mask.canvas, 0, 0);
     eyes.ctx.globalCompositeOperation = "source-over";
 
-    art.ctx.drawImage(images["amin-pleased"], 0, 0, w, h);
-    art.ctx.drawImage(eyes.canvas, 0, 0);
-    images["amin-pleasedBlink"] = art.canvas;
+    for (const [frame, name] of Object.entries(BLINK_ART.amin)) {
+      const art = scratch();
+      sizeCanvas(art, w, h);
+      art.ctx.drawImage(images[`amin-${frame}`], 0, 0, w, h);
+      art.ctx.drawImage(eyes.canvas, 0, 0);
+      images[`amin-${name}`] = art.canvas;
+    }
   }
 
   function buildSceneFrame() {
@@ -806,17 +829,28 @@
     return 0;
   }
 
+  function aminFrameAt(value) {
+    let frame = AMIN_FRAMES[0][1];
+    for (const [start, name] of AMIN_FRAMES) {
+      if (value < start) break;
+      frame = name;
+    }
+    return frame;
+  }
+
   function stateAt(value) {
-    const amin = poseAt(TRACKS.amin, value);
+    const frame = aminFrameAt(value);
     const roman = poseAt(TRACKS.roman, value);
     return {
       q: value,
-      amin,
+      amin: { from: frame, to: frame, w: 0 },
       roman,
+      face: span(value, FACE_TO_PLEASED[0], FACE_TO_PLEASED[1], E),
       nod: span(value, 0.80, 0.86, E) - span(value, 0.86, 0.92, E),
       romanNod: weightOf(roman, "pleased"),
-      card: { t: span(value, 0.10, 0.26, M), alpha: 1 - span(value, 0.26, 0.32, E) },
-      reveal: span(value, 0.24, 0.36, E),
+      // Карточка — та, что в показанном кадре; после press — на месте press.
+      card: { frame: HELD.includes(frame) ? frame : "press", alpha: 1 - span(value, 0.30, 0.36, E) },
+      reveal: span(value, 0.24, 0.40, E),
       move: span(value, 0.38, 0.64, M),
       swap: span(value, 0.72, 0.80, E),
       down: span(value, 0.88, 0.98, D),
@@ -831,9 +865,10 @@
       q: null,
       amin: { from: "pleased", to: "pleased", w: 0 },
       roman: { ...calm },
+      face: 1,
       nod: 0,
       romanNod: 0,
-      card: { t: 0, alpha: 0 },
+      card: { frame: "press", alpha: 0 },
       reveal: 1,
       move: 1,
       swap: 1,
@@ -853,7 +888,7 @@
   function stateKey(st) {
     const pose = value => `${value.from}${value.to}${value.w.toFixed(5)}`;
     return [
-      pose(st.amin), pose(st.roman), st.nod, st.romanNod, st.card.t, st.card.alpha,
+      pose(st.amin), pose(st.roman), st.face, st.nod, st.romanNod, st.card.frame, st.card.alpha,
       st.reveal, st.move, st.swap, st.down, st.fade
     ].map(value => typeof value === "number" ? value.toFixed(5) : value).join("|");
   }
@@ -1028,16 +1063,22 @@
       const item = lifePeople[key];
       const config = LIFE[key];
       const pose = st[key].w >= 0.5 ? st[key].to : st[key].from;
+      // Фаза 26: пока карточка в руке Амина, верх тела не наклоняется — карточка и передний
+      // слой пальцев идут только целым сдвигом дыхания вместе с рукой.
+      const holding = key === "amin" && HELD.includes(pose);
       if (item.pose !== pose) {
-        if (item.pose !== null) {
-          const action = LIFE.poses[key][pose] || { lean: 0, lift: 0 };
+        const action = LIFE.poses[key][pose];
+        if (item.pose !== null && action && !holding) {
           startLifeAccent(item, "pose", action.lean, action.lift, LIFE.poseMs);
         }
         item.pose = pose;
       }
 
-      if (item.event && lifeClock - item.event.start >= item.event.duration) item.event = null;
-      const calm = pose === "calm" || pose === "pleased";
+      if (item.event && (holding || lifeClock - item.event.start >= item.event.duration)) item.event = null;
+      const calm = key === "amin" ? pose === "pleased" : pose === "calm" || pose === "pleased";
+      // Фаза 26: пока поза неспокойная (Амин с карточкой, Роман толкает), срок акцента покоя
+      // не наступает — иначе он протухает, и в pleased сразу за наклоном смены позы идёт второй.
+      if (!calm) item.nextAccent = Math.max(item.nextAccent, lifeClock + LIFE.idleAfterPoseMs);
       const settled = people[key].shown === pose && !people[key].fade &&
         Math.abs(p - q) <= 0.0005 && Math.abs(p - filtered) <= 0.0005;
       if (!item.event && calm && settled && lifeClock >= item.nextAccent &&
@@ -1049,8 +1090,9 @@
         );
       }
 
-      const allowed = (pose === "calm" && people[key].shown === "calm" && !people[key].fade) ||
-        (key === "amin" && pose === "pleased" && people[key].shown === "pleased" && !people[key].fade);
+      // Пока лицо pleased проявляется, глаза не закрываются: заплатка глаз легла бы на смесь лиц.
+      const allowed = Boolean(BLINK_ART[key][pose]) && people[key].shown === pose && !people[key].fade &&
+        !(key === "amin" && pose === "pleased" && st.face < 1);
       updateBlink(key, lifeClock, allowed);
       const amplitude = Math.max(1, Math.round(geo.dpr));
       item.shift = Math.round(amplitude * (
@@ -1147,11 +1189,11 @@
       // У варианта A внешний багет начинается на 5% высоты сцены.
       sy = 0.05 * H + 0.065 * sw;
       const figureHeight = (frame.soles - frame.hairTop) * s;
-      const apply = g.people.amin.map(...manifest.people.amin.grip.apply);
-      const cardHeight = layout.card * s * manifest.card.h / manifest.card.w;
+      const apply = g.people.amin.map(...PHONE_SCREEN_CARD.grip);
+      const cardHeight = PHONE_SCREEN_CARD.width * s * manifest.card.h / manifest.card.w;
       const bottom = Math.max(
         feetY - 0.32 * figureHeight,
-        apply[1] + (0.5 - CARD_HOLD[1]) * cardHeight + 12
+        apply[1] + (0.5 - PHONE_SCREEN_CARD.hold) * cardHeight + 12
       );
       sh = bottom - sy;
     } else {
@@ -1187,10 +1229,7 @@
     };
     g.mFit = findFit(g);
 
-    const cardWidth = layout.card * (phone ? s : W);
-    g.card = { w: cardWidth, h: cardWidth * manifest.card.h / manifest.card.w };
-    const grip = manifest.people.amin.grip;
-    g.grip = { calm: g.people.amin.map(...grip.calm), apply: g.people.amin.map(...grip.apply) };
+    g.card = { w: manifest.card.frame[0] * s, h: manifest.card.frame[1] * s };
 
     const hand = manifest.people.roman.hand;
     g.palms = PALMS.filter(item => hand[item.pose]).map(item => {
@@ -1199,8 +1238,8 @@
       return { x, y, rx: item.rx * s, ry: item.ry * s };
     });
 
-    // Центр раскрытия цвета — место приложенной карточки, внутри окна экрана.
-    const applied = cardPlacement(g, 1);
+    // Центр раскрытия цвета — место приложенной карточки (кадр press), внутри окна экрана.
+    const applied = cardPlacement(g, "press");
     g.reveal = {
       x: clamp(applied.cx - g.inner.x, 0, g.inner.w),
       y: clamp(applied.cy - g.inner.y, 0, g.inner.h)
@@ -1250,20 +1289,13 @@
     return 1 - E((m - g.mFit) / Math.max(1e-6, 1 - g.mFit));
   }
 
-  function cardPlacement(g, t) {
-    const pinchX = lerp(g.grip.calm[0], g.grip.apply[0], t);
-    const pinchY = lerp(g.grip.calm[1], g.grip.apply[1], t);
-    const angle = radians(lerp(-8, 0, t));
-    const hx = CARD_HOLD[0] * g.card.w;
-    const hy = CARD_HOLD[1] * g.card.h;
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    return {
-      cx: pinchX - (hx * cos - hy * sin),
-      cy: pinchY - (hx * sin + hy * cos),
-      angle,
-      pinch: [pinchX, pinchY]
-    };
+  // Карточка в руке кадра: центр, угол (как ctx.rotate) и точка захвата из замера split
+  // (grip/measured.json → manifest amin.cards), в рамке поз 1024×1536.
+  function cardPlacement(g, frame) {
+    const card = manifest.people.amin.cards[frame];
+    const map = g.people.amin.map;
+    const [cx, cy] = map(...card.center);
+    return { cx, cy, angle: radians(card.angle), pinch: map(...card.grip) };
   }
 
   // ---------- Рисование ----------
@@ -1511,7 +1543,8 @@
     // Разбор слоёв для проверки (debugLayers) рисует позу ровно по прокрутке и не трогает показ.
     if (now === undefined) return pose;
     const target = pose.w >= 0.5 ? pose.to : pose.from;
-    if (!person.shown || forced !== null || motion.matches || staticMode || lifeDebug) {
+    // Фаза 26: кадры Амина меняются жёстко, вместе с карточкой и передним слоем в одном проходе.
+    if (!person.shown || forced !== null || motion.matches || staticMode || lifeDebug || person.key === "amin") {
       person.shown = target;
       person.fade = null;
     } else if (target !== person.shown) {
@@ -1550,17 +1583,17 @@
     return KEYS.some(key => people[key].fade);
   }
 
-  function renderPerson(key, scrollPose, nod, now) {
+  function renderPerson(key, scrollPose, nod, now, face = 1) {
     const person = people[key];
     let pose = shownPose(person, scrollPose, now);
-    if (drawingLife && lifePeople[key].blink && pose.from === "calm" && pose.to === "calm" && !person.fade) {
-      pose = { from: "blink", to: "blink", w: 0 };
-    } else if (key === "amin" && drawingLife && lifePeople[key].blink &&
-        pose.from === "pleased" && pose.to === "pleased" && !person.fade) {
-      pose = { from: "pleasedBlink", to: "pleasedBlink", w: 0 };
+    const blinkArt = BLINK_ART[key][pose.from];
+    if (drawingLife && lifePeople[key].blink && blinkArt && pose.from === pose.to && !person.fade) {
+      pose = { from: blinkArt, to: blinkArt, w: 0 };
     }
     if (key === "amin") person.renderedPose = pose.w >= 0.5 ? pose.to : pose.from;
-    const cacheKey = `${pose.from}|${pose.to}|${pose.w.toFixed(5)}|${nod.toFixed(5)}`;
+    // Лицо withdraw поверх pleased гаснет по q (FACE_TO_PLEASED); вне окна смены — 1.
+    const faceWeight = key === "amin" && pose.from === "pleased" && pose.to === "pleased" ? face : 1;
+    const cacheKey = `${pose.from}|${pose.to}|${pose.w.toFixed(5)}|${nod.toFixed(5)}|${faceWeight.toFixed(5)}`;
     if (person.cache === cacheKey) return;
     person.cache = cacheKey;
 
@@ -1586,7 +1619,41 @@
       c.globalAlpha = 1;
     }
 
+    if (faceWeight < 0.99999) blendFace(person, "withdraw", 1 - faceWeight);
     if (nod > 0.0001) applyNod(person, nod);
+  }
+
+  // Лицо прежнего кадра поверх нового через мягкий овал лица. Овал взят на четверть шире FACES:
+  // всё, чем лица отличаются, внутри полной альфы, а спад лежит там, где кадры совпадают.
+  function blendFace(person, from, alpha) {
+    if (alpha <= 0.00001) return;
+    const art = person.art;
+    const crop = person.cropFrame;
+    const w = art.canvas.width;
+    const h = art.canvas.height;
+    const kx = w / crop[2];
+    const ky = h / crop[3];
+    const [fx, fy, rx, ry] = FACES[person.key];
+
+    const mask = work.headMask;
+    sizeCanvas(mask, w, h);
+    clearCanvas(mask);
+    softEllipse(mask.ctx, (fx - crop[0]) * kx, (fy - crop[1]) * ky, 1.25 * rx * kx, 1.25 * ry * ky,
+      [0, 0, 0, 1], 1, 0.8);
+
+    const head = work.head;
+    sizeCanvas(head, w, h);
+    clearCanvas(head);
+    head.ctx.drawImage(poseArt(person, from, w, h), 0, 0);
+    head.ctx.globalCompositeOperation = "destination-in";
+    head.ctx.drawImage(mask.canvas, 0, 0);
+    head.ctx.globalCompositeOperation = "source-over";
+
+    const c = art.ctx;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalAlpha = clamp(alpha);
+    c.drawImage(head.canvas, 0, 0);
+    c.globalAlpha = 1;
   }
 
   // Фаза 17 Task 1: каждая поза уменьшается до размера на экране один раз (при смене размера окна),
@@ -1619,6 +1686,57 @@
     return node;
   }
 
+  // Передний слой пальцев кадра на сетке холста фигуры. Резкость считается по сборке
+  // «кадр + передний слой», затем остаётся только альфа переднего слоя — без светлой каймы
+  // по линии его обрезки. В кадр идёт только участок со слоем (box — в точках холста фигуры).
+  function frontArt(person, frame, w, h) {
+    const sizeKey = `${w}x${h}`;
+    if (person.frontsSize !== sizeKey) {
+      person.fronts = {};
+      person.frontsSize = sizeKey;
+    }
+    let ready = person.fronts[frame];
+    if (ready) return ready;
+    const front = images[`${person.key}-${frame}-front`];
+    const src = document.createElement("canvas");
+    src.width = w;
+    src.height = h;
+    const c = src.getContext("2d", { willReadFrequently: true });
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = "high";
+    c.drawImage(images[`${person.key}-${frame}`], 0, 0, w, h);
+    c.drawImage(front, 0, 0, w, h);
+    if (SHARPEN > 0 && w > 2 && h > 2) sharpen(c, w, h, SHARPEN);
+    c.globalCompositeOperation = "destination-in";
+    c.drawImage(front, 0, 0, w, h);
+    c.globalCompositeOperation = "source-over";
+
+    const px = c.getImageData(0, 0, w, h).data;
+    let left = w;
+    let top = h;
+    let right = -1;
+    let bottom = -1;
+    for (let y = 0; y < h; y += 1) {
+      for (let x = 0; x < w; x += 1) {
+        if (px[(y * w + x) * 4 + 3] === 0) continue;
+        if (x < left) left = x;
+        if (x > right) right = x;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      }
+    }
+    const box = right < 0
+      ? { x: 0, y: 0, w: 0, h: 0 }
+      : { x: left, y: top, w: right - left + 1, h: bottom - top + 1 };
+    const node = document.createElement("canvas");
+    node.width = Math.max(1, box.w);
+    node.height = Math.max(1, box.h);
+    if (box.w > 0) node.getContext("2d").drawImage(src, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+    ready = { canvas: node, box };
+    person.fronts[frame] = ready;
+    return ready;
+  }
+
   // Готовим все позы по одной в паузах браузера, чтобы первая смена позы при прокрутке не тормозила кадр.
   let prewarmHandle = 0;
   function prewarmPoses() {
@@ -1629,19 +1747,23 @@
     for (const key of KEYS) {
       const person = people[key];
       // Веки готовы до запуска таймера; первая серия не считает резкость в кадре.
-      poseArt(person, "blink", person.art.canvas.width, person.art.canvas.height);
-      if (key === "amin") {
-        poseArt(person, "pleasedBlink", person.art.canvas.width, person.art.canvas.height);
+      for (const name of Object.values(BLINK_ART[key])) {
+        poseArt(person, name, person.art.canvas.width, person.art.canvas.height);
       }
+      // Blink Амина — только источник глаз, на экран не выходит.
       for (const name of Object.keys(manifest.people[key].poses)) {
         if (name !== "blink") queue.push([person, name]);
+      }
+      if (key === "amin") {
+        for (const frame of HELD) queue.push([person, frame, true]);
       }
     }
     const step = deadline => {
       prewarmHandle = 0;
       while (queue.length && deadline.timeRemaining() > 4) {
-        const [person, name] = queue.shift();
-        poseArt(person, name, person.art.canvas.width, person.art.canvas.height);
+        const [person, name, front] = queue.shift();
+        if (front) frontArt(person, name, person.art.canvas.width, person.art.canvas.height);
+        else poseArt(person, name, person.art.canvas.width, person.art.canvas.height);
       }
       if (queue.length) prewarmHandle = idle(step, { timeout: 500 });
     };
@@ -1975,7 +2097,7 @@
 
   function drawCardImage(c, st, withShadow) {
     const g = geo;
-    const place = cardPlacement(g, st.card.t);
+    const place = cardPlacement(g, st.card.frame);
     c.save();
     c.globalAlpha = st.card.alpha;
     c.translate(place.cx, place.cy);
@@ -2018,9 +2140,11 @@
     };
   }
 
+  // Карточка в руке идёт тем же целым сдвигом, что верх тела (наклонов, пока она в руке, нет).
+  // Отпущенная карточка лежит на экране и не двигается.
   function lifeCardShift(st) {
-    if (!drawingLife || st.card.alpha <= 0) return { dx: 0, dy: 0 };
-    const [x, y] = cardPlacement(geo, st.card.t).pinch;
+    if (!drawingLife || st.card.alpha <= 0 || !HELD.includes(st.amin.from)) return { dx: 0, dy: 0 };
+    const [x, y] = cardPlacement(geo, st.card.frame).pinch;
     const moved = lifeOverlaySpot("amin", { x, y });
     const dx = Math.round((moved.x - x) * geo.kx);
     const dy = Math.round((moved.y - y) * geo.ky);
@@ -2121,24 +2245,28 @@
     });
   }
 
-  // Слой 9: щепоть Амина поверх карточки.
-  function drawFingers(c, st, shift = { dx: 0, dy: 0 }) {
-    if (st.card.alpha <= 0) return;
-    const g = geo;
-    const radius = FINGERS.radius * g.s;
-    const [x, y] = cardPlacement(g, st.card.t).pinch;
-    const spots = [{ x, y, rx: radius, ry: radius, core: FINGERS.core }];
-    drawOverlay(c, "amin", spots, occluder => {
-      occluder.save();
-      const m = occluder.getTransform();
-      occluder.setTransform(m.a, m.b, m.c, m.d, m.e + shift.dx, m.f + shift.dy);
-      drawCardImage(occluder, st, false);
-      occluder.restore();
-    });
+  // Слой 9: передние пальцы Амина поверх карточки — нарисованный слой кадра (фаза 26), 1:1 на целых
+  // точках, там же, где верх фигуры: в живом пути с тем же сдвигом, что карточка.
+  function drawFront(c, st, shift = { dx: 0, dy: 0 }) {
+    const frame = st.amin.from;
+    if (st.card.alpha <= 0 || st.amin.to !== frame || !HELD.includes(frame)) return;
+    const person = people.amin;
+    const art = person.art.canvas;
+    const front = frontArt(person, frame, art.width, art.height);
+    if (front.box.w <= 0) return;
+    const r = geo.people.amin.rect;
+    const m = c.getTransform();
+    const x = drawingLife ? Math.round(geo.kx * r.x) + m.e : Math.round(m.a * r.x + m.e);
+    const y = drawingLife ? Math.round(geo.ky * r.y) + m.f : Math.round(m.d * r.y + m.f);
+    c.save();
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.imageSmoothingEnabled = false;
+    c.drawImage(front.canvas, x + front.box.x + shift.dx, y + front.box.y + shift.dy);
+    c.restore();
   }
 
   function prepareFigures(st, now) {
-    renderPerson("amin", st.amin, st.nod, now);
+    renderPerson("amin", st.amin, st.nod, now, st.face);
     renderPerson("roman", st.roman, st.romanNod, now);
   }
 
@@ -2161,7 +2289,7 @@
       drawPalm(c, st);
     }
     drawCard(c, st);
-    drawFingers(c, st);
+    drawFront(c, st);
   }
 
   function cacheLifeLayers(st, key) {
@@ -2210,7 +2338,7 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(work.lifeCard.canvas, shift.dx, shift.dy);
     ctx.restore();
-    drawFingers(ctx, st, shift);
+    drawFront(ctx, st, shift);
   }
 
   function render(force = false, now = performance.now()) {
@@ -2275,7 +2403,7 @@
     const st = typeof value === "number" ? stateAt(clamp(value)) : currentState();
     const offset = st.down * 0.10 * g.H;
     const sofa = sofaRect(g, st.move, st);
-    const place = cardPlacement(g, st.card.t);
+    const place = cardPlacement(g, st.card.frame);
     const cos = Math.cos(place.angle);
     const sin = Math.sin(place.angle);
     const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => {
@@ -2314,8 +2442,12 @@
       },
       sofaOut: rectOf(g.sofaOut),
       sofaIn: rectOf(g.sofaIn),
-      card: { alpha: st.card.alpha, center: [place.cx, place.cy], angle: place.angle, corners },
-      grips: { calm: g.grip.calm, apply: g.grip.apply },
+      card: {
+        alpha: st.card.alpha, frame: st.card.frame, held: HELD.includes(st.amin.from),
+        center: [place.cx, place.cy], angle: place.angle, pinch: place.pinch, corners
+      },
+      amin: { frame: st.amin.from, face: st.face },
+      grips: Object.fromEntries(HELD.map(frame => [frame, cardPlacement(g, frame).pinch])),
       palms: g.palms.map(spot => ({ ...spot })),
       people: Object.fromEntries(KEYS.map(key => [key, {
         rect: rectOf(g.people[key].rect),
@@ -2361,7 +2493,7 @@
       drawFrontSofa(layers.sofa.ctx, st);
       drawPalm(layers.palm.ctx, st);
       drawCard(layers.card.ctx, st);
-      drawFingers(layers.fingers.ctx, st);
+      drawFront(layers.fingers.ctx, st);
       draw(layers.all, st);
       return {
         kx: geo.kx,
