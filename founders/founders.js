@@ -70,10 +70,19 @@
   // на всех ширинах: дыра под неё в кадрах Амина вырезана ровно этим размером.
   const LAYOUTS = {
     wide: { amin: 0.18, roman: 0.82, screen: [0.29, 0.20, 0.42, 0.43], sofa: [0.25, 0.50, 0.50] },
-    tablet: { amin: 0.20, roman: 0.80, screen: [0.15, 0.28, 0.70, 0.44], sofa: [0.10, 0.59, 0.80] },
+    // Фаза 28: на планшете окно комнаты не закрывается фигурами — либо «стопкой» над головами, как на телефоне
+    // (screenWidth, roomGap, окно не площе roomAspect : 1), либо между корпусами по центру (screen: y, ширина не больше,
+    // высота; окно не уже besideMin·W, зазор besideGap·W). Берётся вариант с более крупными фигурами,
+    // «стопка» — если её масштаб не меньше stackPrefer от масштаба «между».
+    tablet: {
+      amin: 0.20, roman: 0.80, screen: [0.29, 0.20, 0.42, 0.43], sofa: [0.10, 0.59, 0.80], edge: 8,
+      screenWidth: 0.82, roomGap: 0.02, roomAspect: 2.0, besideMin: 0.36, besideGap: 0.012, stackPrefer: 0.9
+    },
     phone: {
       amin: 0.20, roman: 0.80, figureHeight: 0.84, feetY: 0.96, edge: 8,
-      screenWidth: 0.82, sofaWidth: 1000,
+      screenWidth: 0.82, sofaWidth: 1000, roomGap: 0.02, roomAspect: 2.0,
+      // Фаза 28: телефон набок (сцена шире высоты) — окно над головами не помещается, тогда окно между корпусами.
+      screen: [0.29, 0.20, 0.42, 0.43], besideMin: 0.36, besideGap: 0.012, stackPrefer: 0.9,
       sofaPalmFraction: 0.50, sofaTopFraction: 0.008,
       sofaCalmFrameY: 980, sofaPushFrameY: 878, sofaPushGap: -3,
       screenShadowBlur: 0.003, screenShadowY: 0.002
@@ -97,12 +106,13 @@
   // Фаза 26: Амин держит карточку по-настоящему — жёсткая смена кадров по q без наплыва рук
   // (content/avelio-concept/team/room-photo/grip/grip-spec.json, timeline): [начало q, кадр].
   const AMIN_FRAMES = [
-    [0, "hold"], [0.12, "lift1"], [0.17, "lift2"], [0.215, "press"],
+    [0, "hold"], [0.17, "lift2"], [0.215, "press"],
     [0.27, "release"], [0.30, "withdraw"], [0.35, "pleased"]
   ];
   // Кадры с карточкой в руке: своя карточка (manifest amin.cards) и передний слой пальцев (amin.fronts).
   // С press карточка неподвижна на экране: в release, withdraw и pleased она гаснет на месте press.
-  const HELD = ["hold", "lift1", "lift2", "press"];
+  // Фаза 28 (12.11): «я его криво держу» — карточка во всех кадрах ровно (0°), hold — рука calm, lift1 убран.
+  const HELD = ["hold", "lift2", "press"];
   // Лицо pleased проявляется овалом лица поверх лица withdraw; руки меняются сразу со сменой кадра.
   const FACE_TO_PLEASED = [0.35, 0.39];
   // Моргание — заплаткой глаз из blink поверх кадра, где карточки нет или она неподвижно в руке.
@@ -111,9 +121,6 @@
   // Всё ниже — в единицах рамки поз 1024×1536 (manifest.frame).
   // Корпус для нажатия: §3, спокойный корпус x 300…724 от волос до подошв.
   const BODY = [300, 108, 724, 1428];
-  // Низ экрана на телефоне (фаза 25) считался от щепоти apply (947; 514) и карточки шириной 112 ед.
-  // с захватом на 0,44 высоты от центра. Числа оставлены постоянными: экран не сдвигается.
-  const PHONE_SCREEN_CARD = { grip: [947, 514], width: 112, hold: 0.44 };
   // Кисть Романа поверх спинки: мягкий эллипс от точки руки к запястью.
   const PALMS = [
     { pose: "calm", dx: 8, dy: -42, rx: 64, ry: 92 },
@@ -551,7 +558,7 @@
     const text = value => typeof value === "string" && value.length > 0;
     const frame = manifest.frame;
     const poses = {
-      amin: ["blink", "hold", "lift1", "lift2", "press", "release", "withdraw", "pleased"],
+      amin: ["blink", "hold", "lift2", "press", "release", "withdraw", "pleased"],
       roman: ["calm", "blink", "push", "switch", "pleased"]
     };
     const amin = manifest.people && manifest.people.amin;
@@ -1141,29 +1148,58 @@
 
   // ---------- Геометрия (§3–§5) ----------
 
+  // Наибольший масштаб, при котором фигуры на осях layout.amin/roman не выходят за края сцены (layout.edge).
+  function widthScale(layout, W) {
+    const frame = manifest.frame;
+    let scale = Infinity;
+    for (const key of KEYS) {
+      const crop = manifest.people[key].crop;
+      const left = frame.axis - Math.min(BODY[0], crop[0]);
+      const right = Math.max(BODY[2], crop[0] + crop[2]) - frame.axis;
+      const cx = layout[key] * W;
+      scale = Math.min(scale, (cx - layout.edge) / left, (W - layout.edge - cx) / right);
+    }
+    return scale;
+  }
+
+  // Экран «стопкой»: по центру, ширина layout.screenWidth; внешний багет варианта A начинается на 5 % высоты сцены.
+  function stackScreen(layout, W, H) {
+    const sw = layout.screenWidth * W;
+    return { sx: (W - sw) / 2, sy: 0.05 * H + 0.065 * sw, sw };
+  }
+
+  // Наибольший масштаб «стопки», при котором окно комнаты над головами не площе layout.roomAspect : 1
+  // (фаза 28: на 375×667 без этого окно было полосой 29px).
+  function stackScale(layout, W, H, feetY) {
+    const frame = manifest.frame;
+    const top = stackScreen(layout, W, H);
+    const headTop = top.sy + 0.02 * top.sw + 0.96 * top.sw / layout.roomAspect + layout.roomGap * H;
+    return (feetY - headTop) / (frame.soles - frame.hairTop);
+  }
+
   function computeGeometry(W, H, layoutName, kx, ky) {
     const layout = LAYOUTS[layoutName];
     const frame = manifest.frame;
     const phone = layoutName === "phone";
-    let s = FIGURE_HEIGHT * H / (frame.soles - frame.hairTop);
-    if (phone) {
-      const heightScale = layout.figureHeight * H / (frame.soles - frame.hairTop);
-      let widthScale = Infinity;
-      for (const key of KEYS) {
-        const crop = manifest.people[key].crop;
-        const left = frame.axis - Math.min(BODY[0], crop[0]);
-        const right = Math.max(BODY[2], crop[0] + crop[2]) - frame.axis;
-        const cx = layout[key] * W;
-        widthScale = Math.min(
-          widthScale,
-          (cx - layout.edge) / left,
-          (W - layout.edge - cx) / right
-        );
-      }
-      s = Math.min(heightScale, widthScale);
-    }
+    const figure = frame.soles - frame.hairTop;
+    const half = (BODY[2] - BODY[0]) / 2;
     const feetY = (phone ? layout.feetY : FEET_Y) * H;
-    const g = { W, H, kx, ky, dpr: Math.min(window.devicePixelRatio || 1, 2), mode: layoutName, s, feetY, people: {} };
+    let s = phone ? Math.min(layout.figureHeight * H / figure, widthScale(layout, W)) : FIGURE_HEIGHT * H / figure;
+    // Фаза 28: телефон и планшет — окно комнаты не закрывается фигурами. stack — окно над головами,
+    // фигуры перед паспарту; иначе окно по центру между корпусами. Берётся вариант с более крупными фигурами.
+    let stack = false;
+    if (layout.roomAspect) {
+      const gap = layout.besideGap * W;
+      const beside = Math.min(s, ((layout.roman - layout.amin - layout.besideMin) * W - 2 * gap) / (2 * half));
+      const tall = Math.min(s, widthScale(layout, W), stackScale(layout, W, H, feetY));
+      stack = tall >= layout.stackPrefer * beside;
+      s = Math.max(0.01, stack ? tall : beside);
+    }
+    // backSofa — диван стоит на полу за фигурами и уезжает в окно за их спинами (телефон фазы 25, «стопка»).
+    const backSofa = phone || stack;
+    const g = {
+      W, H, kx, ky, dpr: Math.min(window.devicePixelRatio || 1, 2), mode: layoutName, stack, backSofa, s, feetY, people: {}
+    };
 
     for (const key of KEYS) {
       const cx = layout[key] * W;
@@ -1183,27 +1219,34 @@
     let sy;
     let sw;
     let sh;
-    if (phone) {
-      sw = layout.screenWidth * W;
+    if (stack) {
+      ({ sx, sy, sw } = stackScreen(layout, W, H));
+      // Фаза 28: низ экрана — под приложенной карточкой (кадр press), она лежит на паспарту.
+      const press = cardPlacement(g, "press");
+      sh = press.cy + 0.5 * manifest.card.frame[1] * s + 0.04 * sw - sy;
+    } else if (layout.roomAspect) {
+      // Фаза 28: окно по центру между корпусами (зазор besideGap·W), не шире layout.screen[2].
+      const free = (layout.roman - layout.amin) * W - 2 * half * s - 2 * layout.besideGap * W;
+      sw = Math.min(layout.screen[2] * W, free / 0.96);
       sx = (W - sw) / 2;
-      // У варианта A внешний багет начинается на 5% высоты сцены.
-      sy = 0.05 * H + 0.065 * sw;
-      const figureHeight = (frame.soles - frame.hairTop) * s;
-      const apply = g.people.amin.map(...PHONE_SCREEN_CARD.grip);
-      const cardHeight = PHONE_SCREEN_CARD.width * s * manifest.card.h / manifest.card.w;
-      const bottom = Math.max(
-        feetY - 0.32 * figureHeight,
-        apply[1] + (0.5 - PHONE_SCREEN_CARD.hold) * cardHeight + 12
-      );
-      sh = bottom - sy;
+      [sy, sh] = [layout.screen[1] * H, layout.screen[3] * H];
     } else {
       [sx, sy, sw, sh] = [layout.screen[0] * W, layout.screen[1] * H, layout.screen[2] * W, layout.screen[3] * H];
     }
     const small = Math.min(sw, sh);
     g.screen = { x: sx, y: sy, w: sw, h: sh, r: 0.04 * small };
     g.inner = { x: sx + 0.02 * sw, y: sy + 0.02 * sh, w: 0.96 * sw, h: 0.96 * sh, r: Math.max(0, 0.02 * small) };
+    if (stack) {
+      // Фаза 28 (12.11): «не весь интерьер виден на телефоне, мы этот интерьер закрываем» — окно комнаты
+      // кончается над головами (roomGap высоты сцены), ниже — паспарту рамки, перед ним стоят фигуры.
+      const headTop = feetY + (frame.hairTop - frame.soles) * s;
+      const top = sy + 0.02 * sw;
+      g.inner = { x: sx + 0.02 * sw, y: top, w: 0.96 * sw, h: headTop - layout.roomGap * H - top, r: Math.max(0, 0.02 * small) };
+    }
 
-    if (phone) {
+    if (backSofa) {
+      // Диван стоит на полу за фигурами, Роман поднимает его рукой (фаза 25; числа — LAYOUTS.phone).
+      const layout = LAYOUTS.phone;
       const outerWidth = layout.sofaWidth * s;
       const outerHeight = outerWidth / 2.5;
       const hand = manifest.people.roman.hand.push;
@@ -1216,6 +1259,10 @@
         w: outerWidth,
         h: outerHeight
       };
+    } else if (layout.roomAspect) {
+      // Фаза 28: планшет «между» — на 1024×768 диван 0,8W стоял на именах; низ не ниже 0,84H, диван по центру.
+      const outerWidth = Math.min(layout.sofa[2] * W, 2.5 * (0.84 - layout.sofa[1]) * H);
+      g.sofaOut = { x: (W - outerWidth) / 2, y: layout.sofa[1] * H, w: outerWidth, h: outerWidth / 2.5 };
     } else {
       const outerWidth = layout.sofa[2] * W;
       g.sofaOut = { x: layout.sofa[0] * W, y: layout.sofa[1] * H, w: outerWidth, h: outerWidth / 2.5 };
@@ -1251,7 +1298,7 @@
   }
 
   function sofaRect(g, m, st) {
-    const a = g.mode === "phone"
+    const a = g.backSofa
       ? {
         ...g.sofaOut,
         y: g.sofaOut.y - g.sofaLift * (st ? span(st.q === null ? 0 : st.q, 0.30, 0.34, E) : 1)
@@ -1333,7 +1380,8 @@
       }
     }
     Object.assign(next, variant.look);
-    if (mode === "phone") {
+    // Тень экрана — доля его высоты: у высокого экрана «стопкой» (телефон, планшет фазы 28) она короткая.
+    if (geo && geo.stack) {
       next.screenShadowBlur = LAYOUTS.phone.screenShadowBlur;
       next.screenShadowY = LAYOUTS.phone.screenShadowY;
     }
@@ -2230,7 +2278,7 @@
 
   // Слой 7: кисть Романа поверх спинки, пока диван перед героями.
   function drawPalm(c, st) {
-    if (geo.mode === "phone" || st.move >= 1) return;
+    if (geo.backSofa || st.move >= 1) return;
     const alpha = frontAlpha(geo, st.move);
     if (alpha <= 0) return;
     const r = sofaRect(geo, st.move);
@@ -2281,10 +2329,10 @@
     drawGroundShadows(c, st);
     drawScreen(c, st);
     setScene(c, geo);
-    if (geo.mode === "phone") drawFrontSofa(c, st);
+    if (geo.backSofa) drawFrontSofa(c, st);
     drawFigure(c, "amin");
     drawFigure(c, "roman");
-    if (geo.mode !== "phone") {
+    if (!geo.backSofa) {
       drawFrontSofa(c, st);
       drawPalm(c, st);
     }
@@ -2323,11 +2371,11 @@
     drawnCardShift = shift;
     clearCanvas({ canvas, ctx });
     ctx.drawImage(work.lifeLower.canvas, 0, 0);
-    if (geo.mode === "phone") ctx.drawImage(work.lifeSofa.canvas, 0, 0);
+    if (geo.backSofa) ctx.drawImage(work.lifeSofa.canvas, 0, 0);
     setScene(ctx, geo);
     drawFigure(ctx, "amin");
     drawFigure(ctx, "roman");
-    if (geo.mode !== "phone") {
+    if (!geo.backSofa) {
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(work.lifeSofa.canvas, 0, 0);
@@ -2430,6 +2478,8 @@
       W: g.W,
       H: g.H,
       mode: g.mode,
+      stack: g.stack,
+      backSofa: g.backSofa,
       scale: g.s,
       mFit: g.mFit,
       screen: { x: g.screen.x, y: g.screen.y + offset, w: g.screen.w, h: g.screen.h, visible: st.fade },
@@ -2625,8 +2675,8 @@
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
-    readLook();
     geo = computeGeometry(W, H, mode, width / W, height / H);
+    readLook();
     layerCache = null;
 
     for (const key of KEYS) {

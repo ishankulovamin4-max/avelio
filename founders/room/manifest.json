@@ -27,7 +27,6 @@
    "poses": {
     "blink": "amin-blink.webp",
     "hold": "amin-hold.webp",
-    "lift1": "amin-lift1.webp",
     "lift2": "amin-lift2.webp",
     "press": "amin-press.webp",
     "release": "amin-release.webp",
@@ -36,42 +35,30 @@
    },
    "fronts": {
     "hold": "amin-hold-front.webp",
-    "lift1": "amin-lift1-front.webp",
     "lift2": "amin-lift2-front.webp",
     "press": "amin-press-front.webp"
    },
    "cards": {
     "hold": {
      "center": [
-      816.17,
-      693.77
+      831.0,
+      629.0
      ],
-     "angle": -9.67,
+     "angle": 0.0,
      "grip": [
-      872.53,
-      738.72
-     ]
-    },
-    "lift1": {
-     "center": [
-      826.82,
-      633.23
-     ],
-     "angle": -5.02,
-     "grip": [
-      879.35,
-      682.61
+      879.0,
+      682.79
      ]
     },
     "lift2": {
      "center": [
-      862.87,
-      544.18
+      865.0,
+      542.5
      ],
-     "angle": -1.97,
+     "angle": 0.0,
      "grip": [
-      912.69,
-      596.28
+      913.0,
+      596.29
      ]
     },
     "press": {

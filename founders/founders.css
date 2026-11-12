@@ -470,7 +470,7 @@
 /* Планшет: размеры сетки и ролика сохранены. */
 @media (min-width: 700px) and (max-width: 1099px) {
   .founders.is-ready #hero {
-    --founder-content-h: min(calc(100svh - 84px), 840px);
+    --founder-content-h: min(calc(100svh - 84px), 1100px);
 
     grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
     column-gap: 20px;
@@ -522,7 +522,7 @@
 
 @media (min-width: 1000px) and (max-width: 1099px) {
   .founders.is-ready #hero {
-    --founder-content-h: min(calc(100svh - 96px), 840px);
+    --founder-content-h: min(calc(100svh - 96px), 1100px);
   }
 }
 
