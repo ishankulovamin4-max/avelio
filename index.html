@@ -2,8 +2,8 @@
 <title>Avelio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>
-/* Сцена основателей грузится первой (12.11). Отсюда, до стилей и до остальной страницы, стартуют
-   manifest, texts и картинки сцены; founders.js берёт готовое из window.__foundersBoot.
+/* Сцена основателей грузится в два шага: сначала первый кадр, после его загрузки — остальные позы.
+   manifest, texts и картинки стартуют здесь; founders.js берёт готовое из window.__foundersBoot.
    Блоки ниже сцены (витрина, пример, процесс, заказ, план) ждут avelioAfterScene: сцена готова
    или не включилась (founders.js зовёт avelioSceneDone), человек долистал до конца сцены, страховка 40 с. */
 (function () {
@@ -76,29 +76,45 @@
   });
   poster.fetchPriority = "high";
   poster.src = "video/hero.jpg";
+  var sceneManifest;
+  var finishFirst;
+  var first = new Promise(function (resolve) { finishFirst = resolve; });
   var started = Promise.all([manifest, posterDone]).then(function (result) {
     var m = result[0];
+    sceneManifest = m;
     var people = m.people || {};
     var amin = people.amin || {};
     var roman = people.roman || {};
-    var poses = function (person, first) {
-      var list = [];
-      var all = person.poses || {};
-      if (all[first]) list.push(all[first]);
-      for (var name in all) if (name !== first) list.push(all[name]);
-      return list;
-    };
-    // Сначала то, что видно в первом кадре: комната, диван, карточка, Амин с карточкой, Роман спокойно.
-    var first = [m.room && m.room.sketch, m.room && m.room.file, m.sofa && m.sofa.a && m.sofa.a.file,
+    var files = [m.room && m.room.sketch, m.sofa && m.sofa.a && m.sofa.a.file,
       m.card && m.card.file, (amin.poses || {}).hold, (amin.fronts || {}).hold, (roman.poses || {}).calm,
-      m.sofa && m.sofa.b && m.sofa.b.file];
-    first.concat(poses(amin, "hold"), poses(roman, "calm")).forEach(image);
-    var fronts = amin.fronts || {};
-    for (var frame in fronts) image(fronts[frame]);
+      m.sofa && m.sofa.b && m.sofa.b.file, m.room && m.room.file,
+      (amin.poses || {}).pleased, (amin.poses || {}).blink, (roman.poses || {}).blink];
+    var time = performance.now();
+    files.forEach(image);
+    var jobs = [];
+    files.forEach(function (file) {
+      if (typeof file === "string" && images[file]) jobs.push(images[file].catch(function () {}));
+    });
+    Promise.all(jobs).then(function () {
+      finishFirst({ ms: performance.now() - time });
+    }).catch(function () { finishFirst({ ms: null }); });
+  }).catch(function () { finishFirst({ ms: null }); });
+  var second = first.then(function () {
+    return started.then(function () {
+      if (!sceneManifest) return;
+      var people = sceneManifest.people || {};
+      var amin = people.amin || {};
+      var roman = people.roman || {};
+      var lists = [amin.poses || {}, roman.poses || {}, amin.fronts || {}];
+      for (var i = 0; i < lists.length; i++) {
+        for (var name in lists[i]) image(lists[i][name]);
+      }
+    });
   }).catch(function () {});
   texts.catch(function () {});
-  window.__foundersBoot = { manifest: manifest, texts: texts, images: images, started: started, poster: poster };
+  window.__foundersBoot = { manifest: manifest, texts: texts, images: images, started: started, poster: poster, first: first, second: second };
 })();
+
 </script>
 <link rel="preload" href="founders/founders.js" as="script" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -123,6 +123,16 @@
   const FACE_TO_PLEASED = [0.35, 0.39];
   // Моргание — заплаткой глаз из blink поверх кадра, где карточки нет или она неподвижно в руке.
   const BLINK_ART = { amin: { hold: "holdBlink", pleased: "pleasedBlink" }, roman: { calm: "blink" } };
+  // фаза 31: показ в два шага — первый кадр обязателен, остальные позы временно заменяются готовыми.
+  // На быстрой сети даём догрузке до двух секунд, чтобы сохранить прежний показ полной сцены.
+  const FIRST_POSES = { amin: ["hold", "pleased", "blink"], roman: ["calm", "blink"] };
+  const FIRST_FRONTS = ["hold"];
+  const POSE_STANDINS = {
+    amin: { lift2: ["hold"], press: ["lift2", "hold"], release: ["withdraw", "pleased"], withdraw: ["pleased"] },
+    roman: { push: ["calm"], switch: ["push", "calm"], pleased: ["calm"] }
+  };
+  const FAST_FIRST_MS = 1500;
+  const FAST_REST_WAIT_MS = 2000;
 
   // Всё ниже — в единицах рамки поз 1024×1536 (manifest.frame).
   // Корпус для нажатия: §3, спокойный корпус x 300…724 от волос до подошв.
@@ -352,6 +362,7 @@
 
   let manifest;
   let texts;
+  let rest;
   let stage;
   let canvas;
   let ctx;
@@ -394,8 +405,11 @@
     },
     state() {
       const st = currentState();
+      const missing = missingPoses();
       return {
         ready,
+        missing,
+        complete: ready && missing.length === 0,
         mode,
         static: staticMode,
         reduced: motion.matches,
@@ -619,23 +633,100 @@
     // <head> запускает картинки после обложки ролика (не дольше 3 с) — ждём запуска, чтобы не качать дважды.
     const boot = window.__foundersBoot;
     if (boot && boot.started) await boot.started.catch(() => {});
+    const started = performance.now();
     const jobs = [];
-    for (const key of KEYS) {
-      for (const [pose, file] of Object.entries(manifest.people[key].poses)) {
-        jobs.push(loadImage(file).then(image => { images[`${key}-${pose}`] = image; }));
-      }
-    }
     jobs.push(loadImage(manifest.sofa.a.file).then(image => { images.sofaA = image; }));
     jobs.push(loadImage(manifest.sofa.b.file).then(image => { images.sofaB = image; }));
     jobs.push(loadImage(manifest.room.file).then(image => { images.room = image; }));
     jobs.push(loadImage(manifest.room.sketch).then(image => { images.sketch = image; }));
     jobs.push(loadImage(manifest.card.file).then(image => { images.card = image; }));
-    for (const frame of HELD) {
+    for (const key of KEYS) {
+      for (const pose of FIRST_POSES[key]) {
+        const file = manifest.people[key].poses[pose];
+        jobs.push(loadImage(file).then(image => { images[`${key}-${pose}`] = image; }));
+      }
+    }
+    for (const frame of FIRST_FRONTS) {
       const file = manifest.people.amin.fronts[frame];
       jobs.push(loadImage(file).then(image => { images[`amin-${frame}-front`] = image; }));
     }
     await Promise.all(jobs);
+    let ms = performance.now() - started;
     prepareAminBlinks();
+    if (boot && boot.first) {
+      const first = await boot.first;
+      ms = first.ms;
+    }
+    rest = loadRest();
+    if (ms !== null && ms <= FAST_FIRST_MS) {
+      await Promise.race([rest, new Promise(resolve => setTimeout(resolve, FAST_REST_WAIT_MS))]);
+    }
+  }
+
+  async function loadRest() {
+    const boot = window.__foundersBoot;
+    if (boot && boot.second) await boot.second.catch(() => {});
+    const jobs = [];
+    const warned = new Set();
+    const load = (file, name) => {
+      jobs.push(loadImage(file).then(image => {
+        images[name] = image;
+        poseArrived();
+      }).catch(error => {
+        if (warned.has(file)) return;
+        warned.add(file);
+        console.warn(`Не загружена поза сцены: ${file}`, error);
+      }));
+    };
+    for (const key of KEYS) {
+      for (const [pose, file] of Object.entries(manifest.people[key].poses)) {
+        if (!FIRST_POSES[key].includes(pose)) load(file, `${key}-${pose}`);
+      }
+    }
+    for (const frame of HELD) {
+      if (!FIRST_FRONTS.includes(frame)) load(manifest.people.amin.fronts[frame], `amin-${frame}-front`);
+    }
+    await Promise.all(jobs);
+  }
+
+  function poseReady(key, name) {
+    return Boolean(images[`${key}-${name}`]) &&
+      (key !== "amin" || !HELD.includes(name) || Boolean(images[`amin-${name}-front`]));
+  }
+
+  function standIn(key, name) {
+    if (poseReady(key, name)) return name;
+    const list = POSE_STANDINS[key] && POSE_STANDINS[key][name];
+    if (!list) return name;
+    return list.find(pose => poseReady(key, pose)) || list[list.length - 1];
+  }
+
+  function missingPoses() {
+    if (!manifest || !manifest.people) return [];
+    const missing = [];
+    for (const key of KEYS) {
+      const data = manifest.people[key];
+      for (const pose of Object.keys(data && data.poses || {})) {
+        const name = `${key}-${pose}`;
+        if (!images[name]) missing.push(name);
+      }
+    }
+    const amin = manifest.people.amin;
+    for (const frame of HELD) {
+      const name = `amin-${frame}-front`;
+      if (amin && amin.fronts && amin.fronts[frame] && !images[name]) missing.push(name);
+    }
+    return missing;
+  }
+
+  function poseArrived() {
+    if (!ready) return;
+    prewarmPoses();
+    lastKey = "";
+    lastFrame = null;
+    render(true);
+    wake();
+    if (missingPoses().length === 0) root.classList.add("is-complete");
   }
 
   // Моргание Амина в hold и pleased: глаза из blink поверх кадра через мягкий эллипс по глазам
@@ -871,13 +962,15 @@
   }
 
   function stateAt(value) {
-    const frame = aminFrameAt(value);
+    const frame = standIn("amin", aminFrameAt(value));
     const roman = poseAt(TRACKS.roman, value);
+    roman.from = standIn("roman", roman.from);
+    roman.to = standIn("roman", roman.to);
     return {
       q: value,
       amin: { from: frame, to: frame, w: 0 },
       roman,
-      face: span(value, FACE_TO_PLEASED[0], FACE_TO_PLEASED[1], E),
+      face: poseReady("amin", "withdraw") ? span(value, FACE_TO_PLEASED[0], FACE_TO_PLEASED[1], E) : 1,
       nod: span(value, 0.80, 0.86, E) - span(value, 0.86, 0.92, E),
       romanNod: weightOf(roman, "pleased"),
       // Карточка — та, что в показанном кадре; после press — на месте press.
@@ -1852,14 +1945,16 @@
       const person = people[key];
       // Веки готовы до запуска таймера; первая серия не считает резкость в кадре.
       for (const name of Object.values(BLINK_ART[key])) {
-        poseArt(person, name, person.art.canvas.width, person.art.canvas.height);
+        if (poseReady(key, name)) poseArt(person, name, person.art.canvas.width, person.art.canvas.height);
       }
       // Blink Амина — только источник глаз, на экран не выходит.
       for (const name of Object.keys(manifest.people[key].poses)) {
-        if (name !== "blink") queue.push([person, name]);
+        if (name !== "blink" && poseReady(key, name)) queue.push([person, name]);
       }
       if (key === "amin") {
-        for (const frame of HELD) queue.push([person, frame, true]);
+        for (const frame of HELD) {
+          if (poseReady(key, frame) && images[`amin-${frame}-front`]) queue.push([person, frame, true]);
+        }
       }
     }
     const step = deadline => {
@@ -2857,6 +2952,7 @@
       root.classList.toggle("is-reduced", motion.matches);
       root.classList.add("is-ready");
       ready = true;
+      if (missingPoses().length === 0) root.classList.add("is-complete");
       visible = true;
       canvasVisible = true;
       if (shellResizeObserver) shellResizeObserver.disconnect();
@@ -2899,7 +2995,7 @@
       sleep();
       ready = false;
       sceneFailed = true;
-      root.classList.remove("is-ready", "is-reduced", "is-static");
+      root.classList.remove("is-ready", "is-complete", "is-reduced", "is-static");
       root.classList.add("is-scene-unavailable");
       staticMode = false;
       scroll = null;
@@ -2909,7 +3005,8 @@
       teardownScene();
       console.warn("Сцена основателей не включена:", error);
     }
-    // Сцена готова или не включилась — блоки ниже начинают грузиться (index.html, avelioAfterScene).
+    // Включённая сцена отпускает нижние блоки после догрузки поз; при отказе — сразу.
+    if (ready) await rest;
     if (typeof window.avelioSceneDone === "function") window.avelioSceneDone();
   }
 
