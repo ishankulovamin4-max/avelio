@@ -134,6 +134,7 @@
     let idleScheduled = false;
     let idleWorking = false;
     let firstReady = false;
+    let sceneDone = false; // сцена основателей отпустила очередь (afterScene) — до этого автолистание не качает
     let stageWidth = 450;
     const pointers = new Set();
     const loading = new Map();
@@ -524,7 +525,7 @@
     function armAuto() {
       clearTimeout(autoTimer);
       const version = ++autoVersion;
-      if (!canAuto()) return;
+      if (!sceneDone || !canAuto()) return;
 
       const index = current;
       void Promise.all([load(index), load(wrap(index + 1))]).then(results => {
@@ -733,7 +734,8 @@
         nearby = entries[0].isIntersecting;
         scheduleIdle();
       }, { rootMargin: "400px 0px", threshold: 0 });
-      preloadObserver.observe(root);
+      // Пока сцена основателей не готова, страница короче и витрина кажется близкой — ждём её.
+      afterScene(() => preloadObserver.observe(root));
     }
 
     if ("ResizeObserver" in window) {
@@ -757,13 +759,22 @@
 
     paint(0);
 
-    // Первые две начинают загрузку и decode сразу, независимо от положения блока.
-    void Promise.all([load(0), load(1)]).then(() => {
-      firstReady = true;
-      if (!busy && current === 0) nextAuto = Date.now() + AUTO_DELAY;
-      armAuto();
-      scheduleIdle();
+    // Первые две начинают загрузку и decode сразу после сцены основателей, независимо от положения блока.
+    afterScene(() => {
+      sceneDone = true;
+      void Promise.all([load(0), load(1)]).then(() => {
+        firstReady = true;
+        if (!busy && current === 0) nextAuto = Date.now() + AUTO_DELAY;
+        armAuto();
+        scheduleIdle();
+      });
     });
+  }
+
+  // Сцена основателей грузится первой: index.html, window.avelioAfterScene.
+  function afterScene(run) {
+    if (typeof window.avelioAfterScene === "function") window.avelioAfterScene(run);
+    else run();
   }
 
   function start() {

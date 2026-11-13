@@ -541,10 +541,26 @@
     });
   }
 
+  // Ранний старт из <head> (index.html, window.__foundersBoot): там те же файлы уже качаются.
+  // Не вышло там — обычная загрузка с повторами.
+  function bootLoad(promise, load) {
+    return promise ? promise.catch(load) : load();
+  }
+
   async function loadImage(file) {
+    const boot = window.__foundersBoot;
+    const early = boot && boot.images && boot.images[file];
+    return bootLoad(early && early.then(async image => {
+      await image.decode();
+      return image;
+    }), () => loadFresh(file));
+  }
+
+  async function loadFresh(file) {
     return retryLoad(async () => {
       const image = new Image();
       image.decoding = "async";
+      image.fetchPriority = "high";
       const loaded = new Promise((resolve, reject) => {
         image.onload = resolve;
         image.onerror = () => reject(new Error(`Не загружено: ${file}`));
@@ -600,6 +616,9 @@
   }
 
   async function loadImages() {
+    // <head> запускает картинки после обложки ролика (не дольше 3 с) — ждём запуска, чтобы не качать дважды.
+    const boot = window.__foundersBoot;
+    if (boot && boot.started) await boot.started.catch(() => {});
     const jobs = [];
     for (const key of KEYS) {
       for (const [pose, file] of Object.entries(manifest.people[key].poses)) {
@@ -2824,9 +2843,10 @@
     try {
       prepareShell();
 
+      const boot = window.__foundersBoot;
       [manifest, texts] = await Promise.all([
-        fetchJSON(`${ROOM_DIR}manifest.json`),
-        fetchJSON("founders/texts.json")
+        bootLoad(boot && boot.manifest, () => fetchJSON(`${ROOM_DIR}manifest.json`)),
+        bootLoad(boot && boot.texts, () => fetchJSON("founders/texts.json"))
       ]);
       validateData();
       await loadImages();
@@ -2889,6 +2909,8 @@
       teardownScene();
       console.warn("Сцена основателей не включена:", error);
     }
+    // Сцена готова или не включилась — блоки ниже начинают грузиться (index.html, avelioAfterScene).
+    if (typeof window.avelioSceneDone === "function") window.avelioSceneDone();
   }
 
   window.addEventListener("resize", scheduleMeasure, { passive: true });

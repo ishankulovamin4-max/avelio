@@ -1,6 +1,106 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="only light"><style>:root{color-scheme:only light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Avelio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<script>
+/* Сцена основателей грузится первой (12.11). Отсюда, до стилей и до остальной страницы, стартуют
+   manifest, texts и картинки сцены; founders.js берёт готовое из window.__foundersBoot.
+   Блоки ниже сцены (витрина, пример, процесс, заказ, план) ждут avelioAfterScene: сцена готова
+   или не включилась (founders.js зовёт avelioSceneDone), человек долистал до конца сцены, страховка 40 с. */
+(function () {
+  var done = false;
+  var queue = [];
+  // Все lazy-картинки ниже сцены (data-defer-src): во время разбора страница короткая, а на медленной
+  // сети браузер считает «близким» до 6000 px — lazy тянул их вместе со сценой. Адрес ставится при
+  // release, раньше скриптов блоков; lazy остаётся. Адрес, уже поставленный скриптом блока, не трогаем.
+  function undefer() {
+    var deferred = document.querySelectorAll("img[data-defer-src]");
+    for (var k = 0; k < deferred.length; k++) {
+      if (!deferred[k].getAttribute("src")) deferred[k].src = deferred[k].getAttribute("data-defer-src");
+      deferred[k].removeAttribute("data-defer-src");
+    }
+  }
+  function release() {
+    if (done) return;
+    done = true;
+    removeEventListener("scroll", check);
+    undefer();
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", undefer);
+    var list = queue;
+    queue = [];
+    for (var i = 0; i < list.length; i++) {
+      try { list[i](); } catch (error) { console.error(error); }
+    }
+  }
+  function check() {
+    var founders = document.getElementById("founders");
+    if (!founders) { if (scrollY > 0) release(); return; }
+    if (scrollY > 0 && founders.getBoundingClientRect().bottom < innerHeight) release();
+  }
+  // Отпустили во время разбора (быстрая прокрутка) — картинки, разобранные после release, ещё без адреса.
+  // Скрипт блока стоит ниже своих картинок: ставим адреса всему разобранному до его колбэка (план: ready → decode).
+  window.avelioAfterScene = function (fn) { if (done) { undefer(); fn(); } else queue.push(fn); };
+  window.avelioSceneDone = release;
+  addEventListener("scroll", check, { passive: true });
+  document.addEventListener("DOMContentLoaded", check);
+  setTimeout(release, 40000);
+
+  if (!window.fetch || !window.Promise) return;
+  var dir = "founders/room/";
+  var images = {};
+  function json(url) {
+    return fetch(url).then(function (response) {
+      if (!response.ok) throw new Error(url + ": HTTP " + response.status);
+      return response.json();
+    });
+  }
+  function image(file) {
+    if (typeof file !== "string" || images[file]) return;
+    var img = new Image();
+    img.decoding = "async";
+    img.fetchPriority = "high";
+    images[file] = new Promise(function (resolve, reject) {
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error("Не загружено: " + file)); };
+    });
+    images[file].catch(function () {});
+    img.src = dir + file;
+  }
+  var manifest = json(dir + "manifest.json");
+  var texts = json("founders/texts.json");
+  // Обложка ролика первого экрана — раньше сцены: двадцать картинок сцены разом делят канал,
+  // и на медленной сети обложка приходила последней. Ждём её не дольше 3 с.
+  var poster = new Image();
+  var posterDone = new Promise(function (resolve) {
+    poster.onload = poster.onerror = function () { resolve(); };
+    setTimeout(resolve, 3000);
+  });
+  poster.fetchPriority = "high";
+  poster.src = "video/hero.jpg";
+  var started = Promise.all([manifest, posterDone]).then(function (result) {
+    var m = result[0];
+    var people = m.people || {};
+    var amin = people.amin || {};
+    var roman = people.roman || {};
+    var poses = function (person, first) {
+      var list = [];
+      var all = person.poses || {};
+      if (all[first]) list.push(all[first]);
+      for (var name in all) if (name !== first) list.push(all[name]);
+      return list;
+    };
+    // Сначала то, что видно в первом кадре: комната, диван, карточка, Амин с карточкой, Роман спокойно.
+    var first = [m.room && m.room.sketch, m.room && m.room.file, m.sofa && m.sofa.a && m.sofa.a.file,
+      m.card && m.card.file, (amin.poses || {}).hold, (amin.fronts || {}).hold, (roman.poses || {}).calm,
+      m.sofa && m.sofa.b && m.sofa.b.file];
+    first.concat(poses(amin, "hold"), poses(roman, "calm")).forEach(image);
+    var fronts = amin.fronts || {};
+    for (var frame in fronts) image(fronts[frame]);
+  }).catch(function () {});
+  texts.catch(function () {});
+  window.__foundersBoot = { manifest: manifest, texts: texts, images: images, started: started, poster: poster };
+})();
+</script>
+<link rel="preload" href="founders/founders.js" as="script" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2912,11 +3012,11 @@
 
       <div class="exa-photo" aria-busy="false">
         <div class="exa-photo-crop">
-          <img class="exa-image exa-before" src="example/room.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="Обычная комната до подбора мебели">
+          <img class="exa-image exa-before" data-defer-src="example/room.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="Обычная комната до подбора мебели">
           <div class="exa-after">
-            <img class="exa-image exa-preset-image" data-preset="c" src="example/c.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="" role="img" aria-labelledby="examples-title exa-choice-c" hidden>
-            <img class="exa-image exa-preset-image" data-preset="a" src="example/a.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="" role="img" aria-labelledby="examples-title exa-choice-a" hidden>
-            <img class="exa-image exa-preset-image" data-preset="b" src="example/b.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="" role="img" aria-labelledby="examples-title exa-choice-b">
+            <img class="exa-image exa-preset-image" data-preset="c" data-defer-src="example/c.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="" role="img" aria-labelledby="examples-title exa-choice-c" hidden>
+            <img class="exa-image exa-preset-image" data-preset="a" data-defer-src="example/a.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="" role="img" aria-labelledby="examples-title exa-choice-a" hidden>
+            <img class="exa-image exa-preset-image" data-preset="b" data-defer-src="example/b.jpg" width="1600" height="1067" loading="lazy" decoding="async" alt="" role="img" aria-labelledby="examples-title exa-choice-b">
           </div>
         </div>
         <div class="exa-boundary" aria-hidden="true"></div>
@@ -2944,13 +3044,13 @@
 
   <div class="exa-plan-scene">
     <div class="exa-plan-panel" id="exa-plan-panel-drawing" role="tabpanel" aria-labelledby="exa-plan-tab-drawing" hidden>
-      <img class="exa-plan-image" src="apt/plan.jpg" width="2917" height="1734" loading="lazy" decoding="async" alt="Чистый чертёж квартиры">
+      <img class="exa-plan-image" data-defer-src="apt/plan.jpg" width="2917" height="1734" loading="lazy" decoding="async" alt="Чистый чертёж квартиры">
     </div>
 
     <div class="exa-plan-panel exa-plan-overview" id="exa-plan-panel-overview" role="tabpanel" aria-labelledby="exa-plan-tab-overview" tabindex="0">
       <div class="exa-plan-scroll">
         <div class="exa-plan-canvas">
-          <img class="exa-plan-image exa-plan-volume" src="apt/iso-wide.jpg" width="3072" height="1280" loading="lazy" decoding="async" alt="Дизайн-план квартиры: вид сверху">
+          <img class="exa-plan-image exa-plan-volume" data-defer-src="apt/iso-wide.jpg" width="3072" height="1280" loading="lazy" decoding="async" alt="Дизайн-план квартиры: вид сверху">
           <svg class="exa-plan-lines" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 640" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
             <g class="exa-plan-outer">
               <path d="M 55.8 289.7 L 64.0 564.1 L 1296.5 568.5 L 1291.4 309.6 L 1424.5 309.1 L 1419.3 32.0 L 384.6 31.7 L 389.6 217.2 L 176.1 217.6 L 177.1 289.9 Z" pathLength="1" />
@@ -2999,19 +3099,19 @@
     </div>
 
     <div class="exa-plan-panel" id="exa-plan-panel-living" role="tabpanel" aria-labelledby="exa-plan-tab-living" hidden>
-      <img class="exa-plan-image" src="apt/living_sofa.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Гостиная с молочным диваном">
+      <img class="exa-plan-image" data-defer-src="apt/living_sofa.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Гостиная с молочным диваном">
     </div>
     <div class="exa-plan-panel" id="exa-plan-panel-kitchen" role="tabpanel" aria-labelledby="exa-plan-tab-kitchen" hidden>
-      <img class="exa-plan-image" src="apt/dining_kitchen.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Кухня и обеденная зона">
+      <img class="exa-plan-image" data-defer-src="apt/dining_kitchen.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Кухня и обеденная зона">
     </div>
     <div class="exa-plan-panel" id="exa-plan-panel-bedroom" role="tabpanel" aria-labelledby="exa-plan-tab-bedroom" hidden>
-      <img class="exa-plan-image" src="apt/bedroom_bed.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Спальня">
+      <img class="exa-plan-image" data-defer-src="apt/bedroom_bed.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Спальня">
     </div>
     <div class="exa-plan-panel" id="exa-plan-panel-tv" role="tabpanel" aria-labelledby="exa-plan-tab-tv" hidden>
-      <img class="exa-plan-image" src="apt/living_tv.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Гостиная: зона напротив дивана">
+      <img class="exa-plan-image" data-defer-src="apt/living_tv.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Гостиная: зона напротив дивана">
     </div>
     <div class="exa-plan-panel" id="exa-plan-panel-hall" role="tabpanel" aria-labelledby="exa-plan-tab-hall" hidden>
-      <img class="exa-plan-image" src="apt/hall.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Прихожая">
+      <img class="exa-plan-image" data-defer-src="apt/hall.jpg" width="1536" height="1024" loading="lazy" decoding="async" alt="Прихожая">
     </div>
   </div>
 
@@ -3056,11 +3156,11 @@
             </div>
             <div class="p-view">
               <div class="p-panes">
-                <div class="p-pane p-paper" data-pane="empty"><img src="apt/plan-empty.jpg" alt="" width="2917" height="1734" loading="lazy" decoding="async"></div>
-                <div class="p-pane p-paper p-wipe" data-pane="plan"><img src="apt/plan.jpg" alt="" width="2917" height="1734" loading="lazy" decoding="async"></div>
+                <div class="p-pane p-paper" data-pane="empty"><img data-defer-src="apt/plan-empty.jpg" alt="" width="2917" height="1734" loading="lazy" decoding="async"></div>
+                <div class="p-pane p-paper p-wipe" data-pane="plan"><img data-defer-src="apt/plan.jpg" alt="" width="2917" height="1734" loading="lazy" decoding="async"></div>
                 <div class="p-pane p-iso" data-pane="iso">
                   <div class="p-map">
-                    <img src="apt/iso-full.jpg" alt="" width="1622" height="1282" loading="lazy" decoding="async">
+                    <img data-defer-src="apt/iso-full.jpg" alt="" width="1622" height="1282" loading="lazy" decoding="async">
                     <button class="p-spot" type="button" data-room="living" style="--x: 43%; --y: 42%; --n: 0"><span>Гостиная</span></button>
                     <button class="p-spot" type="button" data-room="bedroom" style="--x: 53%; --y: 30%; --n: 1"><span>Спальня</span></button>
                     <button class="p-spot" type="button" data-room="kitchen" style="--x: 51.5%; --y: 57.5%; --n: 2"><span>Кухня-столовая</span></button>
@@ -3068,20 +3168,20 @@
                   </div>
                 </div>
                 <div class="p-pane p-room" data-pane="living">
-                  <img src="plan/img/living_sofa.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async">
-                  <div class="p-piece" data-code="PL-045"><img src="plan/swap/living_sofa/sofa/piece-PL-045.webp" alt="" loading="lazy" decoding="async"></div>
-                  <div class="p-piece" data-code="PL-022"><img src="plan/swap/living_sofa/sofa/piece-PL-022.webp" alt="" loading="lazy" decoding="async"></div>
+                  <img data-defer-src="plan/img/living_sofa.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async">
+                  <div class="p-piece" data-code="PL-045"><img data-defer-src="plan/swap/living_sofa/sofa/piece-PL-045.webp" alt="" loading="lazy" decoding="async"></div>
+                  <div class="p-piece" data-code="PL-022"><img data-defer-src="plan/swap/living_sofa/sofa/piece-PL-022.webp" alt="" loading="lazy" decoding="async"></div>
                   <button class="p-sofa" type="button" aria-label="Сменить диван"><span class="p-spot" aria-hidden="true"><span>Сменить диван</span></span></button>
-                  <img class="p-line" src="plan/swap/living_sofa/sofa/line-PL-028.webp" alt="" loading="lazy" decoding="async">
+                  <img class="p-line" data-defer-src="plan/swap/living_sofa/sofa/line-PL-028.webp" alt="" loading="lazy" decoding="async">
                   <button class="p-plate" type="button" aria-label="Фото, код и размер дивана"><b>Трёхместный диван</b><span>PL-028 · 218 × 90 × 78 см</span></button>
                 </div>
-                <div class="p-pane p-room" data-pane="bedroom"><img src="plan/img/bedroom_bed.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></div>
-                <div class="p-pane p-room" data-pane="kitchen"><img src="plan/img/dining_kitchen.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></div>
-                <div class="p-pane p-room" data-pane="hall"><img src="plan/img/hall.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></div>
+                <div class="p-pane p-room" data-pane="bedroom"><img data-defer-src="plan/img/bedroom_bed.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></div>
+                <div class="p-pane p-room" data-pane="kitchen"><img data-defer-src="plan/img/dining_kitchen.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></div>
+                <div class="p-pane p-room" data-pane="hall"><img data-defer-src="plan/img/hall.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></div>
                 <div class="p-pane" data-pane="room">
                   <div class="p-cam">
-                    <img src="example/room.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async">
-                    <div class="p-after"><img src="example/b.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></div>
+                    <img data-defer-src="example/room.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async">
+                    <div class="p-after"><img data-defer-src="example/b.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></div>
                     <div class="p-mark"></div>
                   </div>
                   <button class="p-spot p-spot-photo" type="button"><span>Приблизить место</span></button>
@@ -3089,23 +3189,23 @@
               </div>
               <i class="p-sweep" aria-hidden="true"></i>
               <div class="p-card">
-                <img src="plan/swap/photo/PL-022.jpg" alt="" width="507" height="380" loading="lazy" decoding="async">
+                <img data-defer-src="plan/swap/photo/PL-022.jpg" alt="" width="507" height="380" loading="lazy" decoding="async">
                 <p><b>Трёхместный диван</b><span class="p-card-code">PL-022</span><span class="p-card-size">220 × 85 × 69 см</span></p>
               </div>
               <p class="p-chip">Ваш чертёж</p>
             </div>
             <ol class="p-thumbs" data-for="plan">
-              <li style="--i: 0"><button type="button" data-go="0" aria-label="Чертёж"><img src="apt/plan.jpg" alt="" width="2917" height="1734" loading="lazy" decoding="async"></button></li>
-              <li style="--i: 1" class="p-thumb-iso"><button type="button" data-go="2" aria-label="Вся квартира сверху"><img src="apt/iso-full.jpg" alt="" width="1622" height="1282" loading="lazy" decoding="async"></button></li>
-              <li style="--i: 2"><button type="button" data-go="3" aria-label="Гостиная"><img src="plan/img/living_sofa.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
-              <li style="--i: 3"><button type="button" data-go="4" aria-label="Спальня"><img src="plan/img/bedroom_bed.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
-              <li style="--i: 4"><button type="button" data-go="5" aria-label="Кухня-столовая"><img src="plan/img/dining_kitchen.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
-              <li style="--i: 5"><button type="button" data-go="6" aria-label="Прихожая"><img src="plan/img/hall.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
+              <li style="--i: 0"><button type="button" data-go="0" aria-label="Чертёж"><img data-defer-src="apt/plan.jpg" alt="" width="2917" height="1734" loading="lazy" decoding="async"></button></li>
+              <li style="--i: 1" class="p-thumb-iso"><button type="button" data-go="2" aria-label="Вся квартира сверху"><img data-defer-src="apt/iso-full.jpg" alt="" width="1622" height="1282" loading="lazy" decoding="async"></button></li>
+              <li style="--i: 2"><button type="button" data-go="3" aria-label="Гостиная"><img data-defer-src="plan/img/living_sofa.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
+              <li style="--i: 3"><button type="button" data-go="4" aria-label="Спальня"><img data-defer-src="plan/img/bedroom_bed.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
+              <li style="--i: 4"><button type="button" data-go="5" aria-label="Кухня-столовая"><img data-defer-src="plan/img/dining_kitchen.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
+              <li style="--i: 5"><button type="button" data-go="6" aria-label="Прихожая"><img data-defer-src="plan/img/hall.clean.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
             </ol>
             <ol class="p-thumbs" data-for="photo" hidden>
-              <li style="--i: 0"><button type="button" data-go="0" aria-label="Ваша комната"><img src="example/room.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
-              <li style="--i: 0" class="p-part"><button type="button" data-go="1" aria-label="Место для мебели"><img src="example/room.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
-              <li style="--i: 0" class="p-part"><button type="button" data-go="2" aria-label="С мебелью Avelio"><img src="example/b.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
+              <li style="--i: 0"><button type="button" data-go="0" aria-label="Ваша комната"><img data-defer-src="example/room.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
+              <li style="--i: 0" class="p-part"><button type="button" data-go="1" aria-label="Место для мебели"><img data-defer-src="example/room.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
+              <li style="--i: 0" class="p-part"><button type="button" data-go="2" aria-label="С мебелью Avelio"><img data-defer-src="example/b.jpg" alt="" width="1600" height="1067" loading="lazy" decoding="async"></button></li>
             </ol>
             <i class="p-frame" aria-hidden="true"></i>
             <div class="p-cursor" aria-hidden="true"></div>
@@ -3226,11 +3326,11 @@
         <div class="f-real-grid">
           <div class="f-real-pair">
             <figure>
-              <img src="example/hero-milky.jpg" alt="Молочный диван PL-028 в обычной комнате на примере показа" width="1137" height="666" loading="lazy">
+              <img data-defer-src="example/hero-milky.jpg" alt="Молочный диван PL-028 в обычной комнате на примере показа" width="1137" height="666" loading="lazy">
               <figcaption>Пример показа: диван в&nbsp;комнате</figcaption>
             </figure>
             <figure>
-              <img src="img/PL-028.jpg" alt="Настоящее фото дивана PL-028" width="1100" height="759" loading="lazy">
+              <img data-defer-src="img/PL-028.jpg" alt="Настоящее фото дивана PL-028" width="1100" height="759" loading="lazy">
               <figcaption>Настоящее фото этого дивана</figcaption>
             </figure>
           </div>
@@ -3261,43 +3361,43 @@
       </div>
       <ul class="f-strip" id="f-strip">
         <li class="f-item" style="--f-ratio: 1.317">
-          <img src="img/PL-037.jpg" alt="Диванная группа PL-037" width="1100" height="835" loading="lazy">
+          <img data-defer-src="img/PL-037.jpg" alt="Диванная группа PL-037" width="1100" height="835" loading="lazy">
           <h3 class="f-item-name">Диванная группа</h3>
           <p class="f-item-meta">395 × 110 × 63 см · PL-037</p>
           <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-037" aria-label="Примерить в моей комнате: PL-037">Примерить в&nbsp;моей комнате&nbsp;→</a>
         </li>
         <li class="f-item" style="--f-ratio: 1.385">
-          <img src="img/PB-005.jpg" alt="Кровать с широким изголовьем PB-005" width="1100" height="794" loading="lazy">
+          <img data-defer-src="img/PB-005.jpg" alt="Кровать с широким изголовьем PB-005" width="1100" height="794" loading="lazy">
           <h3 class="f-item-name">Кровать с&nbsp;широким изголовьем</h3>
           <p class="f-item-meta">360 × 240 × 97 см · PB-005</p>
           <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PB-005" aria-label="Примерить в моей комнате: PB-005">Примерить в&nbsp;моей комнате&nbsp;→</a>
         </li>
         <li class="f-item" style="--f-ratio: 1.449">
-          <img src="img/PL-028.jpg" alt="Трёхместный диван PL-028" width="1100" height="759" loading="lazy">
+          <img data-defer-src="img/PL-028.jpg" alt="Трёхместный диван PL-028" width="1100" height="759" loading="lazy">
           <h3 class="f-item-name">Трёхместный диван</h3>
           <p class="f-item-meta">218 × 90 × 78 см · PL-028</p>
           <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-028" aria-label="Примерить в моей комнате: PL-028">Примерить в&nbsp;моей комнате&nbsp;→</a>
         </li>
         <li class="f-item" style="--f-ratio: 1.705">
-          <img src="img/PD-009.jpg" alt="Обеденная группа PD-009" width="1100" height="645" loading="lazy">
+          <img data-defer-src="img/PD-009.jpg" alt="Обеденная группа PD-009" width="1100" height="645" loading="lazy">
           <h3 class="f-item-name">Обеденная группа</h3>
           <p class="f-item-meta">200 × 100 × 75 см · PD-009</p>
           <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PD-009" aria-label="Примерить в моей комнате: PD-009">Примерить в&nbsp;моей комнате&nbsp;→</a>
         </li>
         <li class="f-item" style="--f-ratio: 1.672">
-          <img src="img/PL-065.jpg" alt="Трёхместный диван PL-065" width="1100" height="658" loading="lazy">
+          <img data-defer-src="img/PL-065.jpg" alt="Трёхместный диван PL-065" width="1100" height="658" loading="lazy">
           <h3 class="f-item-name">Трёхместный диван</h3>
           <p class="f-item-meta">240 × 107 × 76 см · PL-065</p>
           <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-065" aria-label="Примерить в моей комнате: PL-065">Примерить в&nbsp;моей комнате&nbsp;→</a>
         </li>
         <li class="f-item" style="--f-ratio: 1.33; --f-focus: 50% 62%">
-          <img src="img/PD-020.jpg" alt="Обеденный стол PD-020" width="1100" height="1092" loading="lazy">
+          <img data-defer-src="img/PD-020.jpg" alt="Обеденный стол PD-020" width="1100" height="1092" loading="lazy">
           <h3 class="f-item-name">Обеденный стол</h3>
           <p class="f-item-meta">160 × 80 × 76 см · PD-020</p>
           <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PD-020" aria-label="Примерить в моей комнате: PD-020">Примерить в&nbsp;моей комнате&nbsp;→</a>
         </li>
         <li class="f-item" style="--f-ratio: 1.74">
-          <img src="img/PL-043.jpg" alt="Угловой диван PL-043" width="1100" height="632" loading="lazy">
+          <img data-defer-src="img/PL-043.jpg" alt="Угловой диван PL-043" width="1100" height="632" loading="lazy">
           <h3 class="f-item-name">Угловой диван</h3>
           <p class="f-item-meta">435 × 140 × 76 см · PL-043</p>
           <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-043" aria-label="Примерить в моей комнате: PL-043">Примерить в&nbsp;моей комнате&nbsp;→</a>
@@ -3344,7 +3444,7 @@
     <section class="f-block f-who" id="f-who" aria-labelledby="f-who-title">
       <div class="f-wrap f-who-layout">
         <div class="f-who-photo">
-          <img src="img/showroom-11.jpg" alt="Зал с мебелью: большой белый диван полукругом и подсвеченные полки" width="1400" height="1050" loading="lazy">
+          <img data-defer-src="img/showroom-11.jpg" alt="Зал с мебелью: большой белый диван полукругом и подсвеченные полки" width="1400" height="1050" loading="lazy">
         </div>
         <div class="f-who-copy">
           <!-- Сюда встанут портрет и имя владельца, когда они появятся. -->
@@ -3577,13 +3677,13 @@
                     <g data-part="document">
                       <rect class="o-paper-fill" data-check="document" width="176" height="112" rx="8"/>
                       <path class="o-highlight" d="M7 4H169"/>
-                      <image href="example/a.jpg" x="12" y="20" width="70" height="58" preserveAspectRatio="xMidYMid slice" clip-path="url(#o-order-photo-clip)"/>
+                      <image data-href="example/a.jpg" x="12" y="20" width="70" height="58" preserveAspectRatio="xMidYMid slice" clip-path="url(#o-order-photo-clip)"/>
                       <path class="o-seam" d="M96 23H160M96 34H145M96 46H153M96 58H133M13 91H76M13 99H61"/>
                       <g data-part="imprint">
                         <rect class="o-stamp" x="98" y="78" width="66" height="22" rx="11"/>
                         <text class="o-stamp-text" x="131" y="92" text-anchor="middle">Принято</text>
                       </g>
-                      <image data-part="photo" href="example/a.jpg" x="8" y="8" width="160" height="96" preserveAspectRatio="xMidYMid slice" clip-path="url(#o-photo-clip)"/>
+                      <image data-part="photo" data-href="example/a.jpg" x="8" y="8" width="160" height="96" preserveAspectRatio="xMidYMid slice" clip-path="url(#o-photo-clip)"/>
                       <g data-part="press">
                         <path class="o-brass-metal" d="M121 48Q121 41 131 41Q141 41 141 48L137 61V73H125V61Z"/>
                         <rect class="o-brass-metal" x="104" y="73" width="54" height="10" rx="3"/>
@@ -5467,7 +5567,9 @@
     }, { threshold: .15 });
     rise.observe(screen);
   }
-  new IntersectionObserver(([entry]) => { if (entry.isIntersecting) prepare(); }, { rootMargin: "600px 0px" }).observe(screen);
+  const near = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) prepare(); }, { rootMargin: "600px 0px" });
+  // Пока сцена основателей не готова, страница короче и блок кажется близким — ждём её.
+  (window.avelioAfterScene || ((run) => run()))(() => near.observe(screen));
   new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
     if (!visible && (soundState === "on" || soundState === "loading")) silence();
@@ -6208,6 +6310,11 @@
       img.src = img.dataset.src;
       img.removeAttribute("data-src");
     });
+    // Фото на карточках svg — тоже только здесь, не при разборе страницы.
+    track.querySelectorAll("image[data-href]").forEach((image) => {
+      image.setAttribute("href", image.dataset.href);
+      image.removeAttribute("data-href");
+    });
   }
 
   if (typeof IntersectionObserver === "function") {
@@ -6218,7 +6325,8 @@
       // Сеть разрешена заранее; воспроизведение — только после нажатия.
       loadVoices();
     }, { rootMargin: "800px 0px" });
-    near.observe(phone);
+    // Пока сцена основателей не готова, страница короче и блок кажется близким — ждём её.
+    (window.avelioAfterScene || ((run) => run()))(() => near.observe(phone));
     new IntersectionObserver(([entry]) => {
       visible = entry.intersectionRatio >= .35;
       if (visible && !started && !stillMode()) begin();
@@ -6241,9 +6349,12 @@
   }
 
   // Медленная сеть (github.io из Китая ~10 КБ/с): голос качается по одной фразе
-  // сразу после открытия страницы, а не у самого блока, — к нажатию 01 уже готова.
-  if (typeof requestIdleCallback === "function") requestIdleCallback(loadVoices, { timeout: 2000 });
-  else setTimeout(loadVoices, 1000);
+  // вскоре после открытия страницы, а не у самого блока, — к нажатию 01 уже готова.
+  // Но после сцены основателей (avelioAfterScene): она на первом экране и не делит с голосом канал.
+  (window.avelioAfterScene || ((run) => run()))(() => {
+    if (typeof requestIdleCallback === "function") requestIdleCallback(loadVoices, { timeout: 2000 });
+    else setTimeout(loadVoices, 1000);
+  });
 
   document.addEventListener("visibilitychange", sync);
   media.addEventListener("change", () => {
@@ -6443,7 +6554,8 @@
       preloadObserver.disconnect();
       preload().catch(() => {});
     }, { rootMargin: '900px 0px' });
-    preloadObserver.observe(section);
+    // Пока сцена основателей не готова, страница короче и блок кажется близким — ждём её.
+    (window.avelioAfterScene || (run => run()))(() => preloadObserver.observe(section));
 
     const visibilityObserver = new IntersectionObserver(entries => {
       const entry = entries[entries.length - 1];
@@ -7245,7 +7357,8 @@
       finishEntry();
     }
 
-    ready(volume).then(() => {
+    // План грузится после сцены основателей (или когда до него долистали), не вместе с ней.
+    (window.avelioAfterScene || (run => run()))(() => ready(volume).then(() => {
       imageReady = true;
       startEntry();
       // Остальные файлы не задерживают подготовку первого кадра.
@@ -7257,7 +7370,7 @@
     }).catch(() => {
       // При ошибке нового рендера остаётся контур, а вкладки продолжают работать.
       // Старого диагонального рендера в качестве подмены здесь нет.
-    });
+    }));
 
     if ('ResizeObserver' in window) {
       const observer = new ResizeObserver(resize);
@@ -7279,7 +7392,7 @@
 })();
 
 </script>
-<script src="founders/founders.js" defer></script>
+<script src="founders/founders.js" defer fetchpriority="high"></script>
 <script src="video/hero-video.js" defer></script>
 <script src="founders/hero-overlay.js" defer></script>
 </body></html>
