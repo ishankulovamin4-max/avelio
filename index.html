@@ -119,7 +119,9 @@
 <link rel="preload" href="founders/founders.js" as="script" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Шрифт не держит отрисовку: из Китая таблица Google может висеть десятки секунд — текст сразу системным, Onest подменяет его по приходу. -->
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="showcase.css">
 <style>
   /*
@@ -399,13 +401,6 @@
   .hero-action-content { position: relative; width: 100%; }
   #hero-cta { width: 100%; min-height: 52px; }
   .hero-plan-link { justify-content: center; width: 100%; }
-  .hero-facts {
-    font-size: 14px;
-    line-height: 17px;
-    text-align: center;
-    color: var(--muted);
-  }
-  .hero-facts span { display: block; }
   .hero-aside { display: none; }
 
   /* Штрих чуть длиннее линии: кольцо и контуры смыкаются без щели. */
@@ -629,7 +624,6 @@
     .hero-copy p { max-width: 460px; font-size: 16px; line-height: 1.4; }
     .hero-action-content { max-width: 390px; }
     .hero-plan-link { justify-content: flex-start; }
-    .hero-facts { text-align: left; line-height: 1.45; }
     #hero-cta { min-height: 54px; }
     .preview-file { width: calc(50% - 8px); }
     .send-section { padding-block: 120px; }
@@ -2958,7 +2952,6 @@
             </p>
             <a class="button" id="hero-cta" href="#send" data-upload-kind="photo">Пришлите фото комнаты</a>
             <a class="text-link hero-plan-link" href="#send" data-upload-kind="plan">Есть чертёж квартиры?</a>
-            <p class="hero-facts"><span>Показ&nbsp;— бесплатно.</span><span>Материалы и&nbsp;отделка&nbsp;— на&nbsp;ваш выбор.</span></p>
           </div>
         </div>
       </div>
@@ -3149,6 +3142,37 @@
   </div>
 </section>
 
+    <section class="f-block f-real" id="f-real" aria-labelledby="f-real-title">
+      <div class="f-wrap">
+        <div class="f-head">
+          <p class="eyebrow f-eyebrow">Настоящая вещь</p>
+          <h2 id="f-real-title">Диван с&nbsp;показа&nbsp;—<br>настоящий.</h2>
+        </div>
+        <div class="f-real-grid">
+          <div class="f-real-pair">
+            <figure>
+              <img data-defer-src="example/hero-milky.jpg" alt="Молочный диван PL-028 в обычной комнате на примере показа" width="1137" height="666" loading="lazy">
+              <figcaption>Пример показа: диван в&nbsp;комнате</figcaption>
+            </figure>
+            <figure>
+              <img data-defer-src="img/PL-028.jpg" alt="Настоящее фото дивана PL-028" width="1100" height="759" loading="lazy">
+              <figcaption>Настоящее фото этого дивана</figcaption>
+            </figure>
+          </div>
+          <div class="f-real-card">
+            <div>
+              <h3>Трёхместный диван</h3>
+              <dl class="f-specs">
+                <div><dt>Код</dt><dd>PL-028</dd></div>
+                <div><dt>Размер</dt><dd>218 × 90 × 78 см</dd></div>
+              </dl>
+            </div>
+            <p>Мебель на&nbsp;показе можно заказать. У&nbsp;каждой вещи есть код и&nbsp;размер, а&nbsp;заказ мы&nbsp;проверяем в&nbsp;Китае.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="f-block f-process" id="f-process" aria-labelledby="f-process-title">
       <div class="f-wrap f-process-layout">
         <div class="p-head">
@@ -3265,6 +3289,7 @@
         </div>
       </dialog>
     </section>
+
     <section class="send-section green" id="send" aria-labelledby="send-title">
       <div class="send-layout shell">
         <div class="send-intro">
@@ -3333,130 +3358,6 @@
       </div>
     </section>
 
-    <section class="f-block f-real" id="f-real" aria-labelledby="f-real-title">
-      <div class="f-wrap">
-        <div class="f-head">
-          <p class="eyebrow f-eyebrow">Настоящая вещь</p>
-          <h2 id="f-real-title">Диван с&nbsp;показа&nbsp;—<br>настоящий.</h2>
-        </div>
-        <div class="f-real-grid">
-          <div class="f-real-pair">
-            <figure>
-              <img data-defer-src="example/hero-milky.jpg" alt="Молочный диван PL-028 в обычной комнате на примере показа" width="1137" height="666" loading="lazy">
-              <figcaption>Пример показа: диван в&nbsp;комнате</figcaption>
-            </figure>
-            <figure>
-              <img data-defer-src="img/PL-028.jpg" alt="Настоящее фото дивана PL-028" width="1100" height="759" loading="lazy">
-              <figcaption>Настоящее фото этого дивана</figcaption>
-            </figure>
-          </div>
-          <div class="f-real-card">
-            <div>
-              <h3>Трёхместный диван</h3>
-              <dl class="f-specs">
-                <div><dt>Код</dt><dd>PL-028</dd></div>
-                <div><dt>Размер</dt><dd>218 × 90 × 78 см</dd></div>
-              </dl>
-            </div>
-            <p>Мебель на&nbsp;показе можно заказать. У&nbsp;каждой вещи есть код и&nbsp;размер, а&nbsp;заказ мы&nbsp;проверяем в&nbsp;Китае.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="f-block f-catalog" id="f-catalog" aria-labelledby="f-catalog-title">
-      <div class="f-wrap f-catalog-head">
-        <div>
-          <p class="eyebrow f-eyebrow">Каталог</p>
-          <h2 id="f-catalog-title">Выберите вещь&nbsp;— покажем её в&nbsp;вашей комнате.</h2>
-        </div>
-        <div class="f-arrows">
-          <button type="button" id="f-prev" aria-label="Предыдущие вещи" disabled>←</button>
-          <button type="button" id="f-next" aria-label="Следующие вещи">→</button>
-        </div>
-      </div>
-      <ul class="f-strip" id="f-strip">
-        <li class="f-item" style="--f-ratio: 1.317">
-          <img data-defer-src="img/PL-037.jpg" alt="Диванная группа PL-037" width="1100" height="835" loading="lazy">
-          <h3 class="f-item-name">Диванная группа</h3>
-          <p class="f-item-meta">395 × 110 × 63 см · PL-037</p>
-          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-037" aria-label="Примерить в моей комнате: PL-037">Примерить в&nbsp;моей комнате&nbsp;→</a>
-        </li>
-        <li class="f-item" style="--f-ratio: 1.385">
-          <img data-defer-src="img/PB-005.jpg" alt="Кровать с широким изголовьем PB-005" width="1100" height="794" loading="lazy">
-          <h3 class="f-item-name">Кровать с&nbsp;широким изголовьем</h3>
-          <p class="f-item-meta">360 × 240 × 97 см · PB-005</p>
-          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PB-005" aria-label="Примерить в моей комнате: PB-005">Примерить в&nbsp;моей комнате&nbsp;→</a>
-        </li>
-        <li class="f-item" style="--f-ratio: 1.449">
-          <img data-defer-src="img/PL-028.jpg" alt="Трёхместный диван PL-028" width="1100" height="759" loading="lazy">
-          <h3 class="f-item-name">Трёхместный диван</h3>
-          <p class="f-item-meta">218 × 90 × 78 см · PL-028</p>
-          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-028" aria-label="Примерить в моей комнате: PL-028">Примерить в&nbsp;моей комнате&nbsp;→</a>
-        </li>
-        <li class="f-item" style="--f-ratio: 1.705">
-          <img data-defer-src="img/PD-009.jpg" alt="Обеденная группа PD-009" width="1100" height="645" loading="lazy">
-          <h3 class="f-item-name">Обеденная группа</h3>
-          <p class="f-item-meta">200 × 100 × 75 см · PD-009</p>
-          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PD-009" aria-label="Примерить в моей комнате: PD-009">Примерить в&nbsp;моей комнате&nbsp;→</a>
-        </li>
-        <li class="f-item" style="--f-ratio: 1.672">
-          <img data-defer-src="img/PL-065.jpg" alt="Трёхместный диван PL-065" width="1100" height="658" loading="lazy">
-          <h3 class="f-item-name">Трёхместный диван</h3>
-          <p class="f-item-meta">240 × 107 × 76 см · PL-065</p>
-          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-065" aria-label="Примерить в моей комнате: PL-065">Примерить в&nbsp;моей комнате&nbsp;→</a>
-        </li>
-        <li class="f-item" style="--f-ratio: 1.33; --f-focus: 50% 62%">
-          <img data-defer-src="img/PD-020.jpg" alt="Обеденный стол PD-020" width="1100" height="1092" loading="lazy">
-          <h3 class="f-item-name">Обеденный стол</h3>
-          <p class="f-item-meta">160 × 80 × 76 см · PD-020</p>
-          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PD-020" aria-label="Примерить в моей комнате: PD-020">Примерить в&nbsp;моей комнате&nbsp;→</a>
-        </li>
-        <li class="f-item" style="--f-ratio: 1.74">
-          <img data-defer-src="img/PL-043.jpg" alt="Угловой диван PL-043" width="1100" height="632" loading="lazy">
-          <h3 class="f-item-name">Угловой диван</h3>
-          <p class="f-item-meta">435 × 140 × 76 см · PL-043</p>
-          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-043" aria-label="Примерить в моей комнате: PL-043">Примерить в&nbsp;моей комнате&nbsp;→</a>
-        </li>
-      </ul>
-      <div class="f-wrap f-catalog-foot">
-        <p class="f-catalog-note">У&nbsp;каждой вещи код и&nbsp;размер. Цвета, материалы и&nbsp;отделку выбираете вы.</p>
-        <ul class="f-sections" aria-label="Разделы каталога">
-          <li><button type="button" data-catalog-open="sofas">Диваны</button></li>
-          <li><button type="button" data-catalog-open="armchairs">Кресла</button></li>
-          <li><button type="button" data-catalog-open="beds">Кровати</button></li>
-          <li><button type="button" data-catalog-open="tables">Обеденные столы</button></li>
-          <li><button type="button" data-catalog-open="chairs">Стулья</button></li>
-          <li><button type="button" data-catalog-open="coffee">Журнальные столики</button></li>
-          <li><button type="button" data-catalog-open="cabinets">Тумбы и&nbsp;комоды</button></li>
-          <li><button type="button" data-catalog-open="storage">Буфеты и&nbsp;шкафы</button></li>
-          <li><button type="button" data-catalog-open="poufs">Пуфы и&nbsp;банкетки</button></li>
-          <li><button type="button" data-catalog-open="desks">Туалетные столики и&nbsp;кабинет</button></li>
-        </ul>
-        <button class="f-plan-more" type="button" data-catalog-open>Открыть весь каталог&nbsp;↗</button>
-      </div>
-      <!-- Весь каталог: вкладки и вещи строит скрипт из catalog/items.js при первом открытии. -->
-      <dialog class="f-plan-dialog f-cat-dialog" id="f-cat-dialog" aria-labelledby="f-cat-dialog-title" hidden>
-        <div class="f-plan-dialog-bar">
-          <p id="f-cat-dialog-title">Каталог</p>
-          <button class="f-plan-close" id="f-cat-close" type="button" aria-label="Закрыть каталог">×</button>
-        </div>
-        <div class="f-cat-body" id="f-cat-body">
-          <div class="f-cat-tabs" id="f-cat-tabs" role="group" aria-label="Разделы каталога"></div>
-          <div class="f-cat-inner">
-            <p class="f-cat-status" id="f-cat-status" role="status"></p>
-            <ul class="f-cat-grid" id="f-cat-grid"></ul>
-            <button class="f-cat-next" id="f-cat-next" type="button" hidden>Показать ещё</button>
-          </div>
-        </div>
-        <div class="f-plan-dialog-cta f-cat-cta">
-          <p>Нажмите «Примерить в&nbsp;моей комнате» у&nbsp;вещи&nbsp;— бесплатно покажем её в&nbsp;вашей комнате.</p>
-          <div class="f-plan-dialog-actions">
-            <a class="button" id="f-cat-send" href="#send" data-upload-kind="photo">Пришлите фото комнаты</a>
-          </div>
-        </div>
-      </dialog>
-    </section>
     <section class="f-block f-who" id="f-who" aria-labelledby="f-who-title">
       <div class="f-wrap f-who-layout">
         <div class="f-who-photo">
@@ -3913,6 +3814,101 @@
         <a class="button f-cta f-button o-cta" href="#send" data-upload-kind="photo">Пришлите фото комнаты</a>
       </div>
     </section>
+
+    <section class="f-block f-catalog" id="f-catalog" aria-labelledby="f-catalog-title">
+      <div class="f-wrap f-catalog-head">
+        <div>
+          <p class="eyebrow f-eyebrow">Каталог</p>
+          <h2 id="f-catalog-title">Выберите вещь&nbsp;— покажем её в&nbsp;вашей комнате.</h2>
+        </div>
+        <div class="f-arrows">
+          <button type="button" id="f-prev" aria-label="Предыдущие вещи" disabled>←</button>
+          <button type="button" id="f-next" aria-label="Следующие вещи">→</button>
+        </div>
+      </div>
+      <ul class="f-strip" id="f-strip">
+        <li class="f-item" style="--f-ratio: 1.317">
+          <img data-defer-src="img/PL-037.jpg" alt="Диванная группа PL-037" width="1100" height="835" loading="lazy">
+          <h3 class="f-item-name">Диванная группа</h3>
+          <p class="f-item-meta">395 × 110 × 63 см · PL-037</p>
+          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-037" aria-label="Примерить в моей комнате: PL-037">Примерить в&nbsp;моей комнате&nbsp;→</a>
+        </li>
+        <li class="f-item" style="--f-ratio: 1.385">
+          <img data-defer-src="img/PB-005.jpg" alt="Кровать с широким изголовьем PB-005" width="1100" height="794" loading="lazy">
+          <h3 class="f-item-name">Кровать с&nbsp;широким изголовьем</h3>
+          <p class="f-item-meta">360 × 240 × 97 см · PB-005</p>
+          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PB-005" aria-label="Примерить в моей комнате: PB-005">Примерить в&nbsp;моей комнате&nbsp;→</a>
+        </li>
+        <li class="f-item" style="--f-ratio: 1.449">
+          <img data-defer-src="img/PL-028.jpg" alt="Трёхместный диван PL-028" width="1100" height="759" loading="lazy">
+          <h3 class="f-item-name">Трёхместный диван</h3>
+          <p class="f-item-meta">218 × 90 × 78 см · PL-028</p>
+          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-028" aria-label="Примерить в моей комнате: PL-028">Примерить в&nbsp;моей комнате&nbsp;→</a>
+        </li>
+        <li class="f-item" style="--f-ratio: 1.705">
+          <img data-defer-src="img/PD-009.jpg" alt="Обеденная группа PD-009" width="1100" height="645" loading="lazy">
+          <h3 class="f-item-name">Обеденная группа</h3>
+          <p class="f-item-meta">200 × 100 × 75 см · PD-009</p>
+          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PD-009" aria-label="Примерить в моей комнате: PD-009">Примерить в&nbsp;моей комнате&nbsp;→</a>
+        </li>
+        <li class="f-item" style="--f-ratio: 1.672">
+          <img data-defer-src="img/PL-065.jpg" alt="Трёхместный диван PL-065" width="1100" height="658" loading="lazy">
+          <h3 class="f-item-name">Трёхместный диван</h3>
+          <p class="f-item-meta">240 × 107 × 76 см · PL-065</p>
+          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-065" aria-label="Примерить в моей комнате: PL-065">Примерить в&nbsp;моей комнате&nbsp;→</a>
+        </li>
+        <li class="f-item" style="--f-ratio: 1.33; --f-focus: 50% 62%">
+          <img data-defer-src="img/PD-020.jpg" alt="Обеденный стол PD-020" width="1100" height="1092" loading="lazy">
+          <h3 class="f-item-name">Обеденный стол</h3>
+          <p class="f-item-meta">160 × 80 × 76 см · PD-020</p>
+          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PD-020" aria-label="Примерить в моей комнате: PD-020">Примерить в&nbsp;моей комнате&nbsp;→</a>
+        </li>
+        <li class="f-item" style="--f-ratio: 1.74">
+          <img data-defer-src="img/PL-043.jpg" alt="Угловой диван PL-043" width="1100" height="632" loading="lazy">
+          <h3 class="f-item-name">Угловой диван</h3>
+          <p class="f-item-meta">435 × 140 × 76 см · PL-043</p>
+          <a class="text-link f-put" href="#send" data-upload-kind="photo" data-item-code="PL-043" aria-label="Примерить в моей комнате: PL-043">Примерить в&nbsp;моей комнате&nbsp;→</a>
+        </li>
+      </ul>
+      <div class="f-wrap f-catalog-foot">
+        <p class="f-catalog-note">У&nbsp;каждой вещи код и&nbsp;размер. Цвета, материалы и&nbsp;отделку выбираете вы.</p>
+        <ul class="f-sections" aria-label="Разделы каталога">
+          <li><button type="button" data-catalog-open="sofas">Диваны</button></li>
+          <li><button type="button" data-catalog-open="armchairs">Кресла</button></li>
+          <li><button type="button" data-catalog-open="beds">Кровати</button></li>
+          <li><button type="button" data-catalog-open="tables">Обеденные столы</button></li>
+          <li><button type="button" data-catalog-open="chairs">Стулья</button></li>
+          <li><button type="button" data-catalog-open="coffee">Журнальные столики</button></li>
+          <li><button type="button" data-catalog-open="cabinets">Тумбы и&nbsp;комоды</button></li>
+          <li><button type="button" data-catalog-open="storage">Буфеты и&nbsp;шкафы</button></li>
+          <li><button type="button" data-catalog-open="poufs">Пуфы и&nbsp;банкетки</button></li>
+          <li><button type="button" data-catalog-open="desks">Туалетные столики и&nbsp;кабинет</button></li>
+        </ul>
+        <button class="f-plan-more" type="button" data-catalog-open>Открыть весь каталог&nbsp;↗</button>
+      </div>
+      <!-- Весь каталог: вкладки и вещи строит скрипт из catalog/items.js при первом открытии. -->
+      <dialog class="f-plan-dialog f-cat-dialog" id="f-cat-dialog" aria-labelledby="f-cat-dialog-title" hidden>
+        <div class="f-plan-dialog-bar">
+          <p id="f-cat-dialog-title">Каталог</p>
+          <button class="f-plan-close" id="f-cat-close" type="button" aria-label="Закрыть каталог">×</button>
+        </div>
+        <div class="f-cat-body" id="f-cat-body">
+          <div class="f-cat-tabs" id="f-cat-tabs" role="group" aria-label="Разделы каталога"></div>
+          <div class="f-cat-inner">
+            <p class="f-cat-status" id="f-cat-status" role="status"></p>
+            <ul class="f-cat-grid" id="f-cat-grid"></ul>
+            <button class="f-cat-next" id="f-cat-next" type="button" hidden>Показать ещё</button>
+          </div>
+        </div>
+        <div class="f-plan-dialog-cta f-cat-cta">
+          <p>Нажмите «Примерить в&nbsp;моей комнате» у&nbsp;вещи&nbsp;— бесплатно покажем её в&nbsp;вашей комнате.</p>
+          <div class="f-plan-dialog-actions">
+            <a class="button" id="f-cat-send" href="#send" data-upload-kind="photo">Пришлите фото комнаты</a>
+          </div>
+        </div>
+      </dialog>
+    </section>
+
     <section class="f-block f-faq" id="f-faq" aria-labelledby="f-faq-title">
       <div class="f-wrap f-two">
         <div>
@@ -6865,6 +6861,8 @@
 
   if (document.fonts) {
     document.fonts.ready.then(moveIndicator).catch(() => {});
+    // Шрифт приходит после ready (таблица Google не держит отрисовку) — перемерить ещё раз.
+    document.fonts.addEventListener('loadingdone', () => moveIndicator());
   }
 })();
 
@@ -7397,6 +7395,7 @@
 
     if (document.fonts) {
       document.fonts.ready.then(() => moveIndicator()).catch(() => {});
+      document.fonts.addEventListener('loadingdone', () => moveIndicator());
     }
   }
 

@@ -143,21 +143,6 @@
   min-height: 40px;
 }
 
-.founders:is(.is-ready, .is-shell) #hero .hero-facts {
-  font-size: 12px;
-  line-height: 1.4;
-  text-align: left;
-  color: var(--muted);
-}
-
-.founders:is(.is-ready, .is-shell) #hero .hero-facts span {
-  display: inline;
-}
-
-.founders:is(.is-ready, .is-shell) #hero .hero-facts span + span {
-  margin-left: .4em;
-}
-
 .founders:is(.is-ready, .is-shell) #hero #hero-aside {
   display: none;
 }
@@ -905,27 +890,6 @@
     text-align: center;
   }
 
-  .founders:is(.is-ready, .is-shell) #hero .hero-facts {
-    box-sizing: border-box;
-    display: block;
-    flex: none;
-    min-height: 32px;
-    margin: 0;
-    padding: 0;
-    font-size: 11px;
-    line-height: 16px;
-    text-align: center;
-  }
-
-  .founders:is(.is-ready, .is-shell) #hero .hero-facts span {
-    display: block;
-    margin: 0;
-  }
-
-  .founders:is(.is-ready, .is-shell) #hero .hero-facts span + span {
-    margin-left: 0;
-  }
-
   .founders:is(.is-ready, .is-shell).is-static #hero .founder-track,
   .founders:is(.is-ready, .is-shell).is-reduced #hero .founder-track {
     height: auto;
@@ -961,10 +925,6 @@
   .founders:is(.is-ready, .is-shell) #hero .hero-copy p {
     font-size: 14px;
     line-height: 1.5;
-  }
-
-  .founders:is(.is-ready, .is-shell) #hero .hero-facts {
-    font-size: 10px;
   }
 }
 
@@ -1274,4 +1234,51 @@
     position: static;
     top: auto;
   }
+}
+
+/* Заглушка сцены на телефоне (фаза 34): пока нет первого кадра — размытый кадр сцены вместо пустого поля.
+   Только до .is-ready; при отказе сцены (is-scene-unavailable) не показывается. Вид — ChatGPT, 13.11. */
+@media (max-width: 699px) {
+  /* Размытый первый кадр сцены (20×35 WebP) — снимает tools/scratch/avelio/load/scene_lqip.mjs --write. */
+  .founders .founder-stage {
+    --founder-lqip: url("data:image/webp;base64,UklGRigDAABXRUJQVlA4WAoAAAAgAAAAEwAAIgAASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZWUDggOgEAABAGAJ0BKhQAIwA+nUidS6WkIqGlaZiwE4lAAHxptRB0zfZ6/9qSy5X4i3BZrFIrHZZw37GVhMW8WAD+/mOVunbiVXPrjKqRpbTvFRKnviAtJs6yImnYqpV1qpnpPWKIJ6dyoWMn3t8djyZpliktB+DqXKv1sSyqCvsD7K3hnURfHrfbXQQ/hhD/xAKZeHxEmBeC9WlYpvEXpdEuP8HBAQCB76hJtPm8FqxCoUDjrzCorfqg1Bo3ZVqHTwHP/ma4pgDrVNn9dxpGrWUCPsHkQEz4EA87B6jK9AqbvhEzl0VTwNKBNehDm5h9gGLsNi/t/hA7CNkai4C2gDVe4S+VHCtQXXVwFMcaFkd4j5+p/g8A5b0f2Xllx8kvZNS39T93se33mG0IZHBpK7lOogpfw+FS5DCxue5oAAAA");
+  }
+
+  .founders.is-shell:not(.is-ready):not(.is-scene-unavailable) .founder-stage::before,
+  .founders.is-shell:not(.is-ready):not(.is-scene-unavailable) .founder-stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .founders.is-shell:not(.is-ready):not(.is-scene-unavailable) .founder-stage::before {
+    z-index: 0;
+    /* Весь кадр виден даже на коротком экране: головы не срезаем. */
+    background: var(--founder-lqip) center top / contain no-repeat;
+    filter: blur(3px) saturate(.55);
+    opacity: .82;
+
+    /* Растворяем края, включая ореол размытия. */
+    -webkit-mask-image:
+      linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent),
+      linear-gradient(transparent, #000 5%, #000 88%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent),
+      linear-gradient(transparent, #000 5%, #000 88%, transparent);
+    mask-composite: intersect;
+  }
+
+  .founders.is-shell:not(.is-ready):not(.is-scene-unavailable) .founder-stage::after {
+    z-index: 1;
+    /* Светлая вуаль смягчает тёмные фигуры, не пряча силуэт. */
+    background: linear-gradient(
+      to bottom,
+      rgb(250 248 243 / .12),
+      rgb(250 248 243 / .24) 55%,
+      rgb(250 248 243 / .10)
+    );
+  }
+  /* При долгом ожидании вид тот же; движения нет и в reduced-режимах. */
 }

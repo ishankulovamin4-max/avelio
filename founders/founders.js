@@ -346,6 +346,8 @@
   let variant = VARIANTS[variantName];
 
   let ready = false;
+  let waiting = false;
+  let retries = 0;
   let sceneFailed = false;
   let shellResizeObserver;
   let visible = false;
@@ -408,6 +410,8 @@
       const missing = missingPoses();
       return {
         ready,
+        waiting,
+        retries,
         missing,
         complete: ready && missing.length === 0,
         mode,
@@ -535,24 +539,48 @@
   }
 
   // Две повторные попытки, включая ошибки чтения JSON и декодирования.
-  async function retryLoad(load) {
-    const delays = [1500, 4000];
+  // persistent: первый шаг продолжает попытки и отпускает нижние блоки после третьей ошибки.
+  async function retryLoad(load, { persistent = false } = {}) {
+    const delays = persistent ? [1500, 4000, 8000, 15000, 30000] : [1500, 4000];
     for (let attempt = 0; ; attempt++) {
       try {
         return await load();
       } catch (error) {
-        if (attempt >= delays.length) throw error;
-        await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+        if (!persistent && attempt >= delays.length) throw error;
+        if (persistent && attempt >= 2 && !ready && !waiting && !sceneFailed) {
+          waiting = true;
+          root.classList.add("is-scene-waiting");
+          if (typeof window.avelioSceneDone === "function") window.avelioSceneDone();
+        }
+        await new Promise(resolve => {
+          const finish = () => {
+            clearTimeout(timer);
+            if (persistent) {
+              window.removeEventListener("online", finish);
+              document.removeEventListener("visibilitychange", onVisibility);
+            }
+            resolve();
+          };
+          const onVisibility = () => {
+            if (!document.hidden) finish();
+          };
+          const timer = setTimeout(finish, delays[Math.min(attempt, delays.length - 1)]);
+          if (persistent) {
+            window.addEventListener("online", finish);
+            document.addEventListener("visibilitychange", onVisibility);
+          }
+        });
+        if (persistent) retries++;
       }
     }
   }
 
-  async function fetchJSON(url) {
+  async function fetchJSON(url, persistent = false) {
     return retryLoad(async () => {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
       return response.json();
-    });
+    }, { persistent });
   }
 
   // Ранний старт из <head> (index.html, window.__foundersBoot): там те же файлы уже качаются.
@@ -561,16 +589,16 @@
     return promise ? promise.catch(load) : load();
   }
 
-  async function loadImage(file) {
+  async function loadImage(file, persistent = false) {
     const boot = window.__foundersBoot;
     const early = boot && boot.images && boot.images[file];
     return bootLoad(early && early.then(async image => {
       await image.decode();
       return image;
-    }), () => loadFresh(file));
+    }), () => loadFresh(file, persistent));
   }
 
-  async function loadFresh(file) {
+  async function loadFresh(file, persistent = false) {
     return retryLoad(async () => {
       const image = new Image();
       image.decoding = "async";
@@ -583,7 +611,7 @@
       await loaded;
       await image.decode();
       return image;
-    });
+    }, { persistent });
   }
 
   function validateData() {
@@ -635,26 +663,26 @@
     if (boot && boot.started) await boot.started.catch(() => {});
     const started = performance.now();
     const jobs = [];
-    jobs.push(loadImage(manifest.sofa.a.file).then(image => { images.sofaA = image; }));
-    jobs.push(loadImage(manifest.sofa.b.file).then(image => { images.sofaB = image; }));
-    jobs.push(loadImage(manifest.room.file).then(image => { images.room = image; }));
-    jobs.push(loadImage(manifest.room.sketch).then(image => { images.sketch = image; }));
-    jobs.push(loadImage(manifest.card.file).then(image => { images.card = image; }));
+    jobs.push(loadImage(manifest.sofa.a.file, true).then(image => { images.sofaA = image; }));
+    jobs.push(loadImage(manifest.sofa.b.file, true).then(image => { images.sofaB = image; }));
+    jobs.push(loadImage(manifest.room.file, true).then(image => { images.room = image; }));
+    jobs.push(loadImage(manifest.room.sketch, true).then(image => { images.sketch = image; }));
+    jobs.push(loadImage(manifest.card.file, true).then(image => { images.card = image; }));
     for (const key of KEYS) {
       for (const pose of FIRST_POSES[key]) {
         const file = manifest.people[key].poses[pose];
-        jobs.push(loadImage(file).then(image => { images[`${key}-${pose}`] = image; }));
+        jobs.push(loadImage(file, true).then(image => { images[`${key}-${pose}`] = image; }));
       }
     }
     for (const frame of FIRST_FRONTS) {
       const file = manifest.people.amin.fronts[frame];
-      jobs.push(loadImage(file).then(image => { images[`amin-${frame}-front`] = image; }));
+      jobs.push(loadImage(file, true).then(image => { images[`amin-${frame}-front`] = image; }));
     }
     await Promise.all(jobs);
     let ms = performance.now() - started;
     prepareAminBlinks();
     if (boot && boot.first) {
-      const first = await boot.first;
+      const first = await boot.first.catch(() => ({ ms: null }));
       ms = first.ms;
     }
     rest = loadRest();
@@ -2940,8 +2968,8 @@
 
       const boot = window.__foundersBoot;
       [manifest, texts] = await Promise.all([
-        bootLoad(boot && boot.manifest, () => fetchJSON(`${ROOM_DIR}manifest.json`)),
-        bootLoad(boot && boot.texts, () => fetchJSON("founders/texts.json"))
+        bootLoad(boot && boot.manifest, () => fetchJSON(`${ROOM_DIR}manifest.json`, true)),
+        bootLoad(boot && boot.texts, () => fetchJSON("founders/texts.json", true))
       ]);
       validateData();
       await loadImages();
@@ -2952,6 +2980,8 @@
       root.classList.toggle("is-reduced", motion.matches);
       root.classList.add("is-ready");
       ready = true;
+      waiting = false;
+      root.classList.remove("is-scene-waiting");
       if (missingPoses().length === 0) root.classList.add("is-complete");
       visible = true;
       canvasVisible = true;
@@ -2994,6 +3024,8 @@
     } catch (error) {
       sleep();
       ready = false;
+      waiting = false;
+      root.classList.remove("is-scene-waiting");
       sceneFailed = true;
       root.classList.remove("is-ready", "is-complete", "is-reduced", "is-static");
       root.classList.add("is-scene-unavailable");
@@ -3021,6 +3053,7 @@
     if (!ready && phoneQuery.matches) prepareShell();
   });
   if (document.fonts) {
+    document.fonts.addEventListener("loadingdone", scheduleMeasure);
     document.fonts.ready.then(() => {
       if (!ready && phoneQuery.matches) scheduleMeasure();
     });
