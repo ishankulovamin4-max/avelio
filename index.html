@@ -552,6 +552,30 @@
     color: var(--ink);
   }
   #send-submit { width: 100%; }
+  #send-submit:disabled { opacity: 0.65; cursor: wait; }
+  #send-form input[name="website"] {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+  }
+  #form-error .form-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--white);
+    color: var(--white);
+    text-align: center;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  #form-error .form-fallback:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: 4px;
+  }
   .demo-note { margin-top: 16px; font-size: 14px; color: var(--dark-muted); }
   .form-error {
     margin-block: 16px;
@@ -3194,6 +3218,7 @@
 
         <div>
           <form id="send-form">
+            <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <fieldset>
               <legend>Что у вас сейчас?</legend>
               <div class="branch-options">
@@ -3240,12 +3265,12 @@
             </label>
             <p class="form-error" id="form-error" role="alert" hidden></p>
             <button class="button" type="submit" id="send-submit">Отправить снимок</button>
-            <p class="demo-note">Это образец страницы. Файлы и&nbsp;контакты никуда не&nbsp;отправляются.</p>
+            <p class="demo-note">Фото и&nbsp;контакт увидит команда Avelio, чтобы ответить вам.</p>
           </form>
 
           <div class="done-panel" id="send-done" tabindex="-1" hidden>
             <h3>Готово</h3>
-            <p>Это образец страницы. Снимок никуда не&nbsp;ушёл, контакт тоже не&nbsp;отправлен.</p>
+            <p>Заявка принята. Команда Avelio ответит вам по&nbsp;указанному контакту.</p>
             <button class="button" type="button" id="back-to-form">Вернуться к форме</button>
           </div>
         </div>
@@ -3857,11 +3882,89 @@
 
 
 
+  const LEAD_URL = "https://avelio.srv2045356.hstgr.cloud/miniapp/events";
+  const FALLBACK_TG = "https://t.me/avelio_premium_bot?start=site";
   const fileInput = $("room-files");
   const form = $("send-form");
   const photoAccept = ".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif";
+  const leadMB = 1024 * 1024;
   let selectedFiles = [];
   let objectURLs = [];
+  let sendingLead = false;
+
+  // Свои короткие сообщения показываем и для обязательных полей.
+  form.noValidate = true;
+
+  function showLeadError(code) {
+    const messages = {
+      too_large: "Выберите файлы до 19,5 МБ каждый и до 38 МБ вместе.",
+      too_many_files: "Выберите не больше 10 файлов.",
+      bad_file: "Не удалось принять файл. Для фото выберите JPEG, PNG, WebP или HEIC; для чертежа подойдёт и PDF.",
+      no_files: "Сначала выберите фото комнаты или чертёж.",
+      no_contact: "Укажите номер телефона или имя пользователя, чтобы мы могли ответить.",
+      no_consent: "Для отправки нужно согласие на обработку данных.",
+      rate: "Сейчас заявок с вашего адреса слишком много. Попробуйте позже или напишите в Telegram.",
+      busy: "Сейчас не удалось принять заявку. Попробуйте ещё раз или напишите в Telegram.",
+      server: "Не удалось принять заявку. Попробуйте ещё раз или напишите в Telegram.",
+      unavailable: "Приём заявок через форму сейчас недоступен. Напишите нам в Telegram.",
+      network: "Не удалось получить подтверждение отправки. Попробуйте ещё раз или напишите в Telegram.",
+      empty: "Адрес отправки ещё не подключён. Фото и контакт можно прислать в Telegram.",
+      bad_form: "Не удалось принять данные формы. Проверьте их или напишите в Telegram.",
+      origin: "Отправка с этой страницы недоступна. Напишите нам в Telegram."
+    };
+    const error = $("form-error");
+    const link = document.createElement("a");
+    link.className = "form-fallback";
+    link.href = FALLBACK_TG;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "Отправить фото и контакт в Telegram";
+    error.replaceChildren(document.createTextNode(messages[code] || messages.server), link);
+    error.hidden = false;
+  }
+
+  function leadSizeError(files) {
+    if (files.length > 10) return "too_many_files";
+    if (files.some((file) => file.size > 19.5 * leadMB) ||
+        files.reduce((sum, file) => sum + file.size, 0) > 38 * leadMB) {
+      return "too_large";
+    }
+    return null;
+  }
+
+  async function prepareLeadPhoto(file, index) {
+    const image = /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name) ||
+      /^(image\/jpeg|image\/png|image\/webp|image\/heic|image\/heif)$/i.test(file.type);
+    if (!image) return file;
+    let bitmap;
+    let canvas;
+    try {
+      bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+      const longest = Math.max(bitmap.width, bitmap.height);
+      if (!longest || (file.size <= 1.5 * leadMB && longest <= 2560)) return file;
+      const scale = Math.min(1, 2560 / longest);
+      canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) return file;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+      if (!blob || blob.type !== "image/jpeg" || blob.size > file.size) return file;
+      return new File([blob], "photo-" + (index + 1) + ".jpg", { type: "image/jpeg" });
+    } catch {
+      // В том числе HEIC на устройствах без декодера.
+      return file;
+    } finally {
+      if (bitmap) bitmap.close();
+      if (canvas) {
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+    }
+  }
 
   function returnToForm(focus = false) {
     $("send-done").hidden = true;
@@ -3870,6 +3973,7 @@
   }
 
   function setBranch(kind) {
+    if (sendingLead) return;
     const plan = kind === "plan";
     $("branch-plan").checked = plan;
     $("branch-photo").checked = !plan;
@@ -3995,6 +4099,7 @@
     $("selected-files-note").textContent = "Файлы выбраны. Теперь укажите, куда ответить.";
     $("selected-files-note").hidden = false;
     $("form-error").hidden = true;
+    if (selectedFiles.length > 10) showLeadError("too_many_files");
     $("choose-files-text").textContent = "Выбрать другие файлы";
     returnToForm();
     scrollToForm();
@@ -4008,27 +4113,117 @@
     });
   });
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (sendingLead) return;
     $("form-error").hidden = true;
 
+    if (!LEAD_URL) {
+      showLeadError("empty");
+      return;
+    }
     if (!selectedFiles.length) {
-      $("form-error").textContent = "Сначала выберите фото комнаты или чертёж.";
-      $("form-error").hidden = false;
+      showLeadError("no_files");
       $("choose-files").focus();
       return;
     }
-    if (!$("reply-address").value.trim()) {
-      $("form-error").textContent = "Укажите, куда ответить.";
-      $("form-error").hidden = false;
+    // Фото сжимаются перед отправкой: до сжатия — только число файлов, размеры — после подготовки.
+    const sizeError = $("branch-plan").checked
+      ? leadSizeError(selectedFiles)
+      : (selectedFiles.length > 10 ? "too_many_files" : null);
+    if (sizeError) {
+      showLeadError(sizeError);
+      return;
+    }
+    const address = $("reply-address").value.trim();
+    if (Array.from(address).length < 3 || Array.from(address).length > 160) {
+      showLeadError("no_contact");
       $("reply-address").focus();
+      return;
+    }
+    if (!$("data-consent").checked) {
+      showLeadError("no_consent");
+      $("data-consent").focus();
       return;
     }
     if (!form.reportValidity()) return;
 
-    form.hidden = true;
-    $("send-done").hidden = false;
-    $("send-done").focus();
+    const project = $("branch-plan").checked ? "plan" : "photo";
+    const messenger = form.querySelector('input[name="messenger"]:checked').value;
+    const itemInput = document.querySelector('#send input[name="item"]');
+    const item = itemInput ? itemInput.value.trim() : "";
+    const website = form.querySelector('input[name="website"]').value;
+    const originals = selectedFiles.slice();
+    const submit = $("send-submit");
+    const controls = Array.from(form.elements)
+      .filter((control) => "disabled" in control)
+      .map((control) => [control, control.disabled]);
+
+    sendingLead = true;
+    controls.forEach(([control]) => { control.disabled = true; });
+    submit.disabled = true;
+    submit.textContent = "Отправляем…";
+    form.setAttribute("aria-busy", "true");
+
+    let timer;
+    try {
+      const files = [];
+      // Один bitmap и один canvas за раз, независимо от числа файлов.
+      for (let index = 0; index < originals.length; index++) {
+        files.push(project === "photo"
+          ? await prepareLeadPhoto(originals[index], index)
+          : originals[index]);
+      }
+      const preparedSizeError = leadSizeError(files);
+      if (preparedSizeError) {
+        showLeadError(preparedSizeError);
+        return;
+      }
+
+      const body = new FormData();
+      files.forEach((file) => body.append("files", file, file.name));
+      body.append("project", project);
+      body.append("messenger", messenger);
+      body.append("reply-address", address);
+      body.append("data-consent", "on");
+      if (item) body.append("item", item);
+      body.append("website", website);
+
+      const controller = new AbortController();
+      timer = setTimeout(() => controller.abort(), 120000);
+      const res = await fetch(LEAD_URL, {
+        method: "POST",
+        body,
+        mode: "cors",
+        credentials: "omit",
+        signal: controller.signal
+      });
+      const data = await res.json();
+      if (!res.ok || data?.ok !== true) {
+        showLeadError(typeof data?.error === "string" ? data.error : "network");
+        return;
+      }
+
+      clearSelectedFiles();
+      $("reply-address").value = "";
+      if (itemInput) {
+        itemInput.value = "";
+        const picked = itemInput.closest(".f-picked");
+        if (picked) picked.hidden = true;
+      }
+      form.hidden = true;
+      $("send-done").hidden = false;
+      $("send-done").focus();
+    } catch {
+      showLeadError("network");
+    } finally {
+      clearTimeout(timer);
+      controls.forEach(([control, disabled]) => { control.disabled = disabled; });
+      submit.disabled = false;
+      submit.textContent = $("branch-plan").checked ? "Отправить чертёж" : "Отправить снимок";
+      form.removeAttribute("aria-busy");
+      sendingLead = false;
+    }
   });
 
   $("back-to-form").addEventListener("click", () => returnToForm(true));
