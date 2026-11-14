@@ -578,44 +578,6 @@
     line-height: 1.45;
   }
 
-  .item-dialog {
-    width: calc(100% - 32px);
-    max-width: 600px;
-    max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-    margin: auto;
-    padding: 24px;
-    border: 0;
-    border-radius: 0;
-    background: var(--modal-color);
-    color: var(--modal-ink);
-    overflow-y: auto;
-  }
-  .item-dialog::backdrop { background: var(--backdrop); }
-  .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .modal-header p { font-size: 14px; font-weight: 400; }
-  #modal-close {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 8px 12px;
-    background: var(--clear);
-    color: var(--modal-ink);
-    font-size: 24px;
-  }
-  .modal-photo {
-    width: auto;
-    height: auto;
-    max-width: min(100%, 220px);
-    max-height: 220px;
-    margin: 24px auto;
-    object-fit: contain;
-  }
-  .item-dialog h3 { font-size: 34px; }
-  .modal-details { margin-top: 12px; font-size: 16px; line-height: 1.5; }
-  .modal-description { margin-block: 24px; font-size: 14px; color: var(--muted); }
-  .item-dialog .button { width: 100%; }
-  .item-dialog :focus-visible { outline-color: var(--modal-ink); }
-
-
   @media (min-width: 600px) {
     .site-header { min-height: 52px; }
     .brand svg { width: 136px; height: 34px; }
@@ -688,7 +650,6 @@
     .send-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10%; }
     .send-intro { padding-top: 8px; }
     .send-intro h2 { font-size: clamp(48px, 4.3vw, 64px); }
-    .item-dialog { padding: 32px; }
   }
 
   @media (min-width: 1280px) {
@@ -1821,6 +1782,511 @@
     transition: none;
   }
 }
+/* Фаза 35, Task 2 (вид ChatGPT): «По фото — бесплатно» — тихая строка, кнопка ушла под строку вещей. */
+.examples-ac .exa-photo-intro {
+  display: block;
+  min-height: 0;
+}
+
+.examples-ac .exa-photo-subtitle {
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+/* Строка вещей выбранного подбора. */
+.examples-ac .exa-products {
+  width: 100%;
+  max-width: 900px;
+  min-width: 0;
+  margin: 16px auto 0;
+}
+
+.examples-ac .exa-products-title {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font: 500 16px/22px "Onest", Arial, sans-serif;
+  letter-spacing: -.02em;
+}
+
+.examples-ac .exa-products-set {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.examples-ac .exa-products-set[hidden] {
+  display: none;
+}
+
+.examples-ac .exa-product {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 88px minmax(32px, auto) 1fr 20px;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 0 6px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: none;
+  appearance: none;
+  font: 400 12px/16px "Onest", Arial, sans-serif;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+  transition: border-color 120ms ease-out;
+}
+
+.examples-ac .exa-product-media {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--white);
+  overflow: hidden;
+}
+
+.examples-ac .exa-product-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center;
+}
+
+.examples-ac .exa-product-name {
+  display: block;
+  padding-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.examples-ac .exa-product-size {
+  display: block;
+  min-height: 45px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.examples-ac .exa-measure {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.examples-ac .exa-product-size-set .exa-measure {
+  display: block;
+}
+
+.examples-ac .exa-product-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+}
+
+.examples-ac .exa-product-code {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.examples-ac .exa-product-open {
+  flex: none;
+  color: var(--brass);
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.examples-ac .exa-product:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.examples-ac .exa-product:focus-visible .exa-product-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Основное действие — в том же виде, что «Прислать чертёж». */
+.examples-ac .exa-photo-actions {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 900px;
+  margin: 20px auto 0;
+}
+
+.examples-ac .exa-photo-actions .exa-upload-photo {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  margin: 0;
+  background: var(--ink);
+  color: var(--white);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .examples-ac .exa-product:hover {
+    border-bottom-color: var(--ink);
+  }
+
+  .examples-ac .exa-product:hover .exa-product-name {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+@media (min-width: 600px) {
+  .examples-ac .exa-photo-subtitle {
+    font-size: 18px;
+    line-height: 26px;
+  }
+
+  .examples-ac .exa-products {
+    margin-top: 24px;
+  }
+
+  .examples-ac .exa-products-title {
+    margin-bottom: 16px;
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .examples-ac .exa-products-set {
+    gap: 24px;
+  }
+
+  .examples-ac .exa-product {
+    grid-template-rows: 156px minmax(40px, auto) 1fr 20px;
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+
+  .examples-ac .exa-product-media {
+    padding: 10px;
+  }
+
+  .examples-ac .exa-product-name {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .examples-ac .exa-product-size {
+    min-height: 54px;
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .examples-ac .exa-photo-actions {
+    margin-top: 24px;
+  }
+
+  .examples-ac .exa-photo-actions .exa-upload-photo {
+    width: 256px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .examples-ac .exa-products {
+    margin-top: 28px;
+  }
+
+  .examples-ac .exa-products-title {
+    font-size: 20px;
+    line-height: 26px;
+  }
+
+  .examples-ac .exa-products-set {
+    gap: 32px;
+  }
+
+  .examples-ac .exa-product {
+    grid-template-rows: 196px minmax(24px, auto) 1fr 20px;
+  }
+
+  .examples-ac .exa-product-media {
+    padding: 12px;
+  }
+
+  .examples-ac .exa-product-name {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .examples-ac .exa-product-size {
+    min-height: 60px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .examples-ac .exa-product {
+    transition: none;
+  }
+}
+
+/* Окно вещи из строки примера. */
+.examples-ac .exa-item-dialog {
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  max-width: 900px;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  margin: auto;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: none;
+  font-family: "Onest", Arial, sans-serif;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.examples-ac .exa-item-dialog::backdrop {
+  background: var(--backdrop);
+}
+
+.examples-ac .exa-item-dialog[hidden],
+.examples-ac .exa-item-photo[hidden],
+.examples-ac .exa-item-image-note[hidden] {
+  display: none;
+}
+
+.examples-ac .exa-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.examples-ac .exa-item-variant {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.examples-ac .exa-item-close {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.examples-ac .exa-item-body {
+  display: grid;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.examples-ac .exa-item-media {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  height: 200px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+
+.examples-ac .exa-item-photo {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center;
+}
+
+.examples-ac .exa-item-image-note {
+  grid-area: 1 / 1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.examples-ac .exa-item-info {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.examples-ac .exa-item-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 32px;
+  letter-spacing: -.035em;
+}
+
+.examples-ac .exa-item-details {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 24px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.examples-ac .exa-item-dimensions,
+.examples-ac .exa-item-code {
+  display: block;
+}
+
+.examples-ac .exa-item-code {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.examples-ac .exa-item-upload {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  margin: auto 0 0;
+  padding: 13px 12px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--white);
+  box-shadow: none;
+  appearance: none;
+  font: 400 16px/22px "Onest", Arial, sans-serif;
+  text-align: center;
+  cursor: pointer;
+}
+
+.examples-ac .exa-item-close:focus-visible,
+.examples-ac .exa-item-upload:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .examples-ac .exa-item-close:hover {
+    border-color: var(--ink);
+  }
+
+  .examples-ac .exa-item-upload:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+@media (min-width: 600px) {
+  .examples-ac .exa-item-dialog {
+    width: calc(100% - 48px);
+    padding: 24px;
+  }
+
+  .examples-ac .exa-item-body {
+    gap: 24px;
+    margin-top: 24px;
+  }
+
+  .examples-ac .exa-item-media {
+    height: 280px;
+    padding: 16px;
+  }
+
+  .examples-ac .exa-item-title {
+    font-size: 32px;
+    line-height: 36px;
+  }
+
+  .examples-ac .exa-item-details {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .examples-ac .exa-item-dialog {
+    padding: 32px;
+  }
+
+  .examples-ac .exa-item-body {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .examples-ac .exa-item-media {
+    height: 320px;
+  }
+
+  .examples-ac .exa-item-info {
+    padding-block: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .examples-ac .exa-item-dialog,
+  .examples-ac .exa-item-dialog::backdrop,
+  .examples-ac .exa-item-close,
+  .examples-ac .exa-item-upload {
+    animation: none;
+    transition: none;
+  }
+}
 /* Интервал между актами и нижний padding уже заданы в examples.css. */
 .examples-ac .exa-plan-act {
   display: flex;
@@ -2304,7 +2770,6 @@
         <h2 class="exa-title" id="examples-title"><span class="exa-title-first">Та же комната.</span> <span class="exa-title-second">Уже с нашей</span> <span class="exa-title-last">мебелью.</span></h2>
         <div class="exa-photo-intro">
           <p class="exa-photo-subtitle">По фото — бесплатно</p>
-          <a class="button exa-upload" href="#send" data-upload-kind="photo">Прислать фото</a>
         </div>
       </header>
 
@@ -2332,7 +2797,171 @@
         <button class="exa-choice" id="exa-choice-b" type="button" data-preset="b" aria-pressed="true"><span class="exa-choice-label">Изумрудный</span></button>
         <span class="exa-choice-indicator" aria-hidden="true"></span>
       </div>
+      <section class="exa-products" aria-labelledby="exa-products-title">
+        <h3 class="exa-products-title" id="exa-products-title">Эту мебель можно заказать</h3>
+
+        <div class="exa-products-set" data-preset="c" role="group" aria-label="Коньячный подбор" hidden>
+          <button type="button" class="exa-product" data-item-code="PL-054" aria-haspopup="dialog">
+            <span class="exa-product-media">
+              <img data-defer-src="example/items/PL-054.jpg" width="535" height="280" loading="lazy" decoding="async" alt="Диван PL-054">
+            </span>
+            <span class="exa-product-name">Диван</span>
+            <span class="exa-product-size">
+              <span class="exa-measure">235 × 98</span> <span class="exa-measure">× 83 см</span>
+            </span>
+            <span class="exa-product-foot">
+              <span class="exa-product-code">PL-054</span>
+              <span class="exa-product-open" aria-hidden="true">↗</span>
+            </span>
+          </button>
+
+          <button type="button" class="exa-product" data-item-code="PL-124" aria-haspopup="dialog">
+            <span class="exa-product-media">
+              <img data-defer-src="example/items/PL-124.jpg" width="418" height="460" loading="lazy" decoding="async" alt="Кресло PL-124">
+            </span>
+            <span class="exa-product-name">Кресло</span>
+            <span class="exa-product-size">
+              <span class="exa-measure">75 × 65</span> <span class="exa-measure">× 70 см</span>
+            </span>
+            <span class="exa-product-foot">
+              <span class="exa-product-code">PL-124</span>
+              <span class="exa-product-open" aria-hidden="true">↗</span>
+            </span>
+          </button>
+
+          <button type="button" class="exa-product" data-item-code="PL-286" aria-haspopup="dialog">
+            <span class="exa-product-media">
+              <img data-defer-src="example/items/PL-286.jpg" width="460" height="376" loading="lazy" decoding="async" alt="Журнальный стол PL-286">
+            </span>
+            <span class="exa-product-name">Журнальный стол</span>
+            <span class="exa-product-size">
+              <span class="exa-measure">140 × 80</span> <span class="exa-measure">× 45 см</span>
+            </span>
+            <span class="exa-product-foot">
+              <span class="exa-product-code">PL-286</span>
+              <span class="exa-product-open" aria-hidden="true">↗</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="exa-products-set" data-preset="a" role="group" aria-label="Молочный подбор" hidden>
+          <button type="button" class="exa-product" data-item-code="PL-028" aria-haspopup="dialog">
+            <span class="exa-product-media">
+              <img data-defer-src="example/items/PL-028.jpg" width="1100" height="759" loading="lazy" decoding="async" alt="Трёхместный диван PL-028">
+            </span>
+            <span class="exa-product-name">Трёхместный диван</span>
+            <span class="exa-product-size">
+              <span class="exa-measure">218 × 90</span> <span class="exa-measure">× 78 см</span>
+            </span>
+            <span class="exa-product-foot">
+              <span class="exa-product-code">PL-028</span>
+              <span class="exa-product-open" aria-hidden="true">↗</span>
+            </span>
+          </button>
+
+          <button type="button" class="exa-product" data-item-code="PL-125" aria-haspopup="dialog">
+            <span class="exa-product-media">
+              <img data-defer-src="example/items/PL-125.jpg" width="435" height="460" loading="lazy" decoding="async" alt="Кресло PL-125">
+            </span>
+            <span class="exa-product-name">Кресло</span>
+            <span class="exa-product-size">
+              <span class="exa-measure">80 × 75</span> <span class="exa-measure">× 69 см</span>
+            </span>
+            <span class="exa-product-foot">
+              <span class="exa-product-code">PL-125</span>
+              <span class="exa-product-open" aria-hidden="true">↗</span>
+            </span>
+          </button>
+
+          <button type="button" class="exa-product" data-item-code="PL-264" data-item-note="Комплект из трёх столиков" aria-haspopup="dialog">
+            <span class="exa-product-media">
+              <img data-defer-src="example/items/PL-264.jpg" width="460" height="225" loading="lazy" decoding="async" alt="Журнальный стол PL-264 — комплект из трёх столиков">
+            </span>
+            <span class="exa-product-name">Журнальный стол</span>
+            <span class="exa-product-size exa-product-size-set">
+              <span class="exa-measure">Ø90 × 44 см;</span>
+              <span class="exa-measure">Ø60 × 54 см;</span>
+              <span class="exa-measure">Ø50 × 54 см</span>
+            </span>
+            <span class="exa-product-foot">
+              <span class="exa-product-code">PL-264</span>
+              <span class="exa-product-open" aria-hidden="true">↗</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="exa-products-set" data-preset="b" role="group" aria-label="Изумрудный подбор">
+          <button type="button" class="exa-product" data-item-code="PL-063" aria-haspopup="dialog">
+            <span class="exa-product-media">
+              <img data-defer-src="example/items/PL-063.jpg" width="1000" height="460" loading="lazy" decoding="async" alt="Трёхместный диван PL-063">
+            </span>
+            <span class="exa-product-name">Трёхместный диван</span>
+            <span class="exa-product-size">
+              <span class="exa-measure">210 × 105</span> <span class="exa-measure">× 85 см</span>
+            </span>
+            <span class="exa-product-foot">
+              <span class="exa-product-code">PL-063</span>
+              <span class="exa-product-open" aria-hidden="true">↗</span>
+            </span>
+          </button>
+
+          <button type="button" class="exa-product" data-item-code="PL-161" aria-haspopup="dialog">
+            <span class="exa-product-media">
+              <img data-defer-src="example/items/PL-161.jpg" width="460" height="422" loading="lazy" decoding="async" alt="Кресло PL-161">
+            </span>
+            <span class="exa-product-name">Кресло</span>
+            <span class="exa-product-size">
+              <span class="exa-measure">81 × 84</span> <span class="exa-measure">× 73 см</span>
+            </span>
+            <span class="exa-product-foot">
+              <span class="exa-product-code">PL-161</span>
+              <span class="exa-product-open" aria-hidden="true">↗</span>
+            </span>
+          </button>
+
+          <button type="button" class="exa-product" data-item-code="PL-283" aria-haspopup="dialog">
+            <span class="exa-product-media">
+              <img data-defer-src="example/items/PL-283.jpg" width="460" height="228" loading="lazy" decoding="async" alt="Журнальный стол PL-283">
+            </span>
+            <span class="exa-product-name">Журнальный стол</span>
+            <span class="exa-product-size">
+              <span class="exa-measure">140 × 42 см</span>
+            </span>
+            <span class="exa-product-foot">
+              <span class="exa-product-code">PL-283</span>
+              <span class="exa-product-open" aria-hidden="true">↗</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <div class="exa-photo-actions">
+        <a class="button exa-upload exa-upload-photo" href="#send" data-upload-kind="photo">Прислать фото</a>
+      </div>
       <p class="exa-sr-only exa-photo-status" role="status" aria-live="polite" aria-atomic="true">Подбор 3 из 3</p>
+      <dialog class="exa-item-dialog" id="item-dialog" aria-labelledby="modal-title" aria-describedby="modal-details" hidden>
+        <div class="exa-item-header">
+          <p class="exa-item-variant" id="modal-variant"></p>
+          <button class="exa-item-close" type="button" id="modal-close" aria-label="Закрыть окно вещи">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+              <path d="m4 4 12 12M16 4 4 16" stroke="currentColor" stroke-width="1.5"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="exa-item-body">
+          <div class="exa-item-media">
+            <img class="exa-item-photo" id="modal-photo" decoding="async" alt="">
+            <p class="exa-item-image-note" id="modal-image-note" role="status" hidden>Фото вещи сейчас недоступно.</p>
+          </div>
+
+          <div class="exa-item-info">
+            <h3 class="exa-item-title" id="modal-title"></h3>
+            <p class="exa-item-details" id="modal-details"></p>
+            <button class="exa-item-upload" id="modal-upload" type="button" data-upload-kind="photo">Примерить в моей комнате</button>
+          </div>
+        </div>
+      </dialog>
     </div>
     <div class="exa-plan-act">
   <header class="exa-plan-header">
@@ -3040,19 +3669,6 @@
   </dialog>
 
   <p class="notice" id="catalog-note" role="status" hidden></p>
-
-  <dialog class="item-dialog" id="item-dialog" aria-labelledby="modal-title" aria-describedby="modal-details" hidden>
-    <div class="modal-header">
-      <p id="modal-variant">Подбор 1 из 3</p>
-      <button type="button" id="modal-close" aria-label="Закрыть окно вещи">×</button>
-    </div>
-    <img class="modal-photo" id="modal-photo" alt="" width="220" height="220">
-    <p id="modal-image-note" role="status" hidden>Фото вещи сейчас недоступно.</p>
-    <h3 id="modal-title"></h3>
-    <p class="modal-details" id="modal-details"></p>
-    <p class="modal-description">Цвет, материал и&nbsp;отделку можно выбрать. Посмотрим, как эта вещь будет смотреться в&nbsp;вашей комнате.</p>
-    <button class="button white" id="modal-upload" type="button">Подобрать для моей комнаты</button>
-  </dialog>
 </div>
 
 <script src="showcase.js" defer></script>
@@ -3594,6 +4210,94 @@
   }, true);
   $("f-plan-page").addEventListener("click", () => {
     try { sessionStorage.setItem("avelio-plan-from", "1"); } catch (error) {}
+  });
+
+  // Строка вещей примера: карточка открывает окно вещи, «Примерить в моей комнате» ставит вещь над формой.
+  const itemDialog = $("item-dialog");
+  const itemPhoto = $("modal-photo");
+  const itemNote = $("modal-image-note");
+  let itemOpener = null;
+  let itemPicked = null;
+
+  itemPhoto.addEventListener("error", () => {
+    if (!itemPhoto.getAttribute("src")) return;
+    itemPhoto.hidden = true;
+    itemNote.hidden = false;
+  });
+
+  function openItem(card) {
+    const thumb = card.querySelector(".exa-product-media img");
+    // До отпускания очереди у миниатюры ещё нет src — путь берём из data-defer-src.
+    const image = thumb.getAttribute("src") || thumb.getAttribute("data-defer-src");
+    const name = card.querySelector(".exa-product-name").textContent.trim();
+    const code = card.dataset.itemCode;
+    itemOpener = card;
+    itemPicked = { name, code, image };
+
+    $("modal-variant").textContent = card.closest(".exa-products-set").getAttribute("aria-label");
+    itemNote.hidden = true;
+    itemPhoto.hidden = false;
+    itemPhoto.alt = thumb.alt;
+    itemPhoto.setAttribute("width", thumb.getAttribute("width"));
+    itemPhoto.setAttribute("height", thumb.getAttribute("height"));
+    itemPhoto.src = image;
+    $("modal-title").textContent = name;
+
+    const size = document.createElement("span");
+    size.className = "exa-item-dimensions";
+    if (card.dataset.itemNote) size.append(card.dataset.itemNote, document.createElement("br"));
+    card.querySelectorAll(".exa-measure").forEach((measure, index) => {
+      if (index) size.append(" ");
+      size.append(measure.cloneNode(true));
+    });
+    const codeLine = document.createElement("span");
+    codeLine.className = "exa-item-code";
+    const codeText = document.createElement("span");
+    codeText.className = "exa-product-code";
+    codeText.textContent = code;
+    codeLine.append("Код ", codeText);
+    $("modal-details").replaceChildren(size, codeLine);
+
+    itemDialog.hidden = false;
+    itemDialog.showModal();
+    document.documentElement.classList.add("f-plan-locked");
+    $("modal-close").focus();
+  }
+
+  function closeItem(restoreFocus = true) {
+    if (!itemDialog.open) return;
+    itemDialog.close();
+    itemDialog.hidden = true;
+    document.documentElement.classList.remove("f-plan-locked");
+    if (restoreFocus && itemOpener && itemOpener.isConnected) itemOpener.focus({ preventScroll: true });
+  }
+
+  document.querySelectorAll("#examples .exa-product").forEach((card) => {
+    card.addEventListener("click", () => openItem(card));
+  });
+  $("modal-close").addEventListener("click", () => closeItem());
+  itemDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeItem();
+  });
+  // Кнопку окна ведёт к форме обработчик страницы. Окно закрываем раньше него, на погружении.
+  itemDialog.addEventListener("click", (event) => {
+    if (event.target.closest("[data-upload-kind]")) {
+      closeItem(false);
+      return;
+    }
+    if (event.target !== itemDialog) return;
+    const rect = itemDialog.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeItem();
+  }, true);
+  // После перехода к форме — вещь строкой над ней, как у витрины и каталога.
+  $("modal-upload").addEventListener("click", () => {
+    if (!itemPicked) return;
+    pick(itemPicked.name, itemPicked.code, {
+      backgroundImage: `url("${itemPicked.image}")`,
+      backgroundSize: "contain",
+      backgroundPosition: "50% 50%"
+    });
   });
 
   // Пришли с отдельной страницы плана: ветку формы она оставляет в sessionStorage.
@@ -4460,6 +5164,10 @@
     selected = code;
     buttons.forEach(button => {
       button.setAttribute('aria-pressed', String(button.dataset.preset === code));
+    });
+    // Под ползунком — настоящие вещи выбранного подбора.
+    section.querySelectorAll('.exa-products-set').forEach(set => {
+      set.hidden = set.dataset.preset !== code;
     });
     moveIndicator();
   }
