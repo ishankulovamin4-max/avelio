@@ -1363,6 +1363,109 @@
     .f-order .o-voice-toggle .o-equalizer i { animation: none; }
     .f-order[data-voice="loading"] .o-equalizer { display: none; }
   }
+
+  /* Фаза 35, Task 3 (вид ChatGPT): проверка в Китае у шага 4, короткий телефон до 599 px. */
+  /* Проверка в Китае: постоянная заметка под четвёртой остановкой.
+     Кнопка остаётся единственной в li; её геометрия не меняется.
+     Отступ совмещает заметку с текстом остановки, справа от линии пути. */
+  .f-order .o-china {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    max-width: 440px;
+    margin: 2px 0 14px 37px;
+  }
+
+  /* Размер места под фото известен до загрузки.
+     Пропорции исходника сохранены, обрезки и новых теней нет. */
+  .f-order .o-china img {
+    display: block;
+    width: 104px;
+    height: 78px;
+    aspect-ratio: 4 / 3;
+    border-radius: 8px;
+    background: var(--plate);
+  }
+
+  .f-order .o-china p {
+    min-width: 0;
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    text-wrap: pretty;
+  }
+
+  /* Только мобильный телефон: сохраняем ширину и размер текста,
+     но заменяем вытянутый корпус компактным.
+     Телефон на планшете и компьютере остаётся без изменений. */
+  @media (max-width: 599px) {
+    .f-order .o-phone {
+      box-sizing: border-box;
+      width: min(100%, 360px);
+      height: 464px;
+      aspect-ratio: auto;
+    }
+
+    /* Шапка занимает 80 px вместо 96 px.
+       Кнопка озвучки сохраняет область нажатия 100 × 40 px. */
+    .f-order .o-status {
+      box-sizing: border-box;
+      height: 30px;
+      padding-top: 2px;
+    }
+
+    .f-order .o-island {
+      top: 6px;
+      height: 18px;
+    }
+
+    .f-order .o-bar {
+      box-sizing: border-box;
+      top: 30px;
+      height: 50px;
+    }
+
+    /* Лента остаётся абсолютной и прижатой к низу.
+       Доступно 320 px: пузырь высотой 275 px, нижний отступ
+       и край предыдущего сообщения. Затухание сокращено до 12 px. */
+    .f-order .o-feed {
+      top: 80px;
+      bottom: 44px;
+      -webkit-mask-image: linear-gradient(var(--clear), var(--ink) 12px);
+      mask-image: linear-gradient(var(--clear), var(--ink) 12px);
+    }
+
+    /* Компактная декоративная строка ввода без изменения вложенности. */
+    .f-order .o-input {
+      box-sizing: border-box;
+      height: 44px;
+      padding: 4px 12px 10px;
+    }
+
+    .f-order .o-field {
+      box-sizing: border-box;
+      height: 28px;
+    }
+
+    .f-order .o-send {
+      width: 28px;
+      height: 28px;
+    }
+
+    .f-order .o-input::after {
+      bottom: 3px;
+      height: 3px;
+    }
+
+    /* При однострочной подписи фигура занимает 500 px:
+       корпус 464 px + существующий зазор 16 px + подпись 20 px. */
+    .f-order .o-figure figcaption {
+      line-height: 20px;
+    }
+  }
 </style>
 <style id="examples-ac-css">
 /* Общая секция и акт 1. Глобальные токены и .shell не переопределяются. */
@@ -3301,10 +3404,10 @@
             <audio class="o-voice" preload="none" hidden></audio>
             <div class="o-feed" aria-hidden="true">
               <div class="o-track">
-                <div class="o-intro"><b class="o-avatar">A</b><strong>Avelio</strong><span>Мебель с&nbsp;китайских фабрик появляется прямо в&nbsp;вашей комнате.</span></div>
+                <div class="o-intro"><b class="o-avatar">A</b><strong>Avelio</strong><span>Мебель с&nbsp;фабрик Китая. Здесь&nbsp;— ваш заказ, шаг за&nbsp;шагом.</span></div>
                 <div class="o-note" data-stage="0" data-wait="1200" hidden><img data-src="example/room.jpg" alt="" width="1600" height="1067"><span>Заявка с&nbsp;сайта · фото комнаты</span></div>
                 <div class="o-msg" data-stage="0" data-wait="1600" hidden><p>Здравствуйте! Это Avelio. Получили фото вашей комнаты.</p></div>
-                <div class="o-msg" data-stage="0" data-wait="1800" hidden><p>Подготовим дизайн-план с&nbsp;нашей мебелью и&nbsp;пришлём сюда.</p></div>
+                <div class="o-msg" data-stage="0" data-wait="1800" hidden><p>Покажем, как наша мебель будет смотреться у&nbsp;вас.</p></div>
                 <div class="o-typing" data-stage="1" data-wait="900" data-transient hidden><i></i><i></i><i></i></div>
                 <div class="o-msg o-photo" data-stage="1" data-wait="2400" hidden><img data-src="example/a.jpg" alt="" width="1600" height="1067"><p>Вот ваша комната с&nbsp;нашей мебелью.</p></div>
                 <div class="o-msg o-mine" data-stage="1" data-wait="1300" hidden><p>Нравится. Оформляем!</p></div>
@@ -3544,7 +3647,13 @@
           <li><button class="o-stop" type="button" aria-current="step">Присылаете фото или&nbsp;чертёж</button></li>
           <li><button class="o-stop" type="button">Показываем вашу комнату с&nbsp;нашей мебелью</button></li>
           <li><button class="o-stop" type="button">Заказ уходит на&nbsp;фабрику</button></li>
-          <li><button class="o-stop" type="button">Собираем, проверяем и&nbsp;упаковываем</button></li>
+          <li>
+            <button class="o-stop" type="button">Собираем, проверяем и&nbsp;упаковываем</button>
+            <div class="o-china">
+              <img data-defer-src="order/crate.jpg" alt="Деревянная обрешётка на&nbsp;складе в&nbsp;Китае" width="640" height="480" loading="lazy" decoding="async">
+              <p>Мебель проверяет наша команда в&nbsp;Фошане, Китай.</p>
+            </div>
+          </li>
           <li><button class="o-stop" type="button">Фура едет к&nbsp;вам</button></li>
           <li><button class="o-stop" type="button">Получаете по&nbsp;адресу</button></li>
         </ol>
@@ -4338,7 +4447,7 @@
   const soft = "cubic-bezier(0.16, 1, 0.3, 1)";
   const carry = "cubic-bezier(0.65, 0, 0.35, 1)";
   const accelerate = "cubic-bezier(0.42, 0, 1, 1)";
-  const texts = ["на связи", "дизайн-план", "заказ в работе", "сборка и упаковка", "в пути", "по вашему адресу"];
+  const texts = ["на\u00a0связи", "ваша комната", "заказ в\u00a0работе", "сборка и упаковка", "в\u00a0пути", "по\u00a0вашему адресу"];
   const stages = items.map((item) => Number(item.dataset.stage));
   const waits = items.map((item) => Number(item.dataset.wait));
   const ends = stops.map((_, stage) => stages.lastIndexOf(stage));
