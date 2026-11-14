@@ -437,6 +437,7 @@
     font-size: 18px;
   }
   #send { scroll-margin-top: 16px; }
+  #send-form { scroll-margin-top: 16px; }
   #send-form { min-width: 0; }
   fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
   legend { padding: 0; margin-bottom: 12px; font-size: 16px; font-weight: 400; }
@@ -972,6 +973,25 @@
   @media (min-width: 1280px) {
     .f-head { display: flex; align-items: flex-start; gap: 64px; }
     .f-head .f-eyebrow { min-width: 180px; margin-bottom: 0; padding-top: 10px; }
+  }
+
+  /* Вопросы (фаза 35, Task 4): 4 вопроса одной колонкой; на компьютере заголовок слева, вопросы справа. */
+  .f-faq .f-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .f-faq .f-faq-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+    align-items: start;
+  }
+
+  @media (min-width: 1000px) {
+    .f-faq .f-two {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+      align-items: start;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -3660,8 +3680,8 @@
         <ul class="f-terms o-terms">
           <li>Минимального заказа нет</li>
           <li>Цвета, материалы и&nbsp;отделку выбираете вы</li>
-          <li>Цена без наценок магазинов</li>
-          <li>Без созвонов и&nbsp;без поездок по&nbsp;фабрикам</li>
+          <li>Цена без&nbsp;наценок магазинов</li>
+          <li>Без&nbsp;созвонов и&nbsp;без&nbsp;поездок по&nbsp;фабрикам</li>
         </ul>
         <a class="button f-cta f-button o-cta" href="#send" data-upload-kind="photo">Пришлите фото комнаты</a>
       </div>
@@ -3674,50 +3694,27 @@
           <h2 id="f-faq-title">Что важно знать.</h2>
         </div>
         <div>
-          <!-- На компьютере вопросы в две колонки, на телефоне одним списком. -->
+          <!-- На компьютере заголовок слева, вопросы одной колонкой справа. -->
           <div class="f-faq-list">
             <div class="f-faq-col">
               <details>
+                <summary>Как узнать цену мебели?</summary>
+                <p>Пришлите код из&nbsp;каталога или&nbsp;скриншот — назовём цену.</p>
+              </details>
+              <details>
+                <summary>Консультация обязывает к&nbsp;покупке?</summary>
+                <p>Нет, вы можете проконсультироваться без&nbsp;обязательств.</p>
+              </details>
+              <details>
+                <summary>Кто будет вести мой заказ?</summary>
+                <p>С&nbsp;вами будет общаться личный менеджер.</p>
+              </details>
+              <details>
                 <summary>Сколько стоит показ по&nbsp;фото?</summary>
-                <p>Показ бесплатный. Пришлите фото комнаты&nbsp;— покажем её с&nbsp;нашей мебелью.</p>
-              </details>
-              <details>
-                <summary>Есть минимальный заказ?</summary>
-                <p>Минимального заказа нет.</p>
-              </details>
-              <details>
-                <summary>Нужно созваниваться или ехать на&nbsp;фабрику?</summary>
-                <p>Без созвонов и&nbsp;без поездок по&nbsp;фабрикам.</p>
-              </details>
-              <details>
-                <summary>Можно выбрать цвет и&nbsp;ткань?</summary>
-                <p>Цвета, материалы и&nbsp;отделку выбираете вы.</p>
-              </details>
-              <details>
-                <summary>Кто подбирает мебель?</summary>
-                <p>Мы сами подберём под ваш интерьер мебель.</p>
-              </details>
-            </div>
-            <div class="f-faq-col">
-              <details>
-                <summary>Можно показать вещь из&nbsp;каталога?</summary>
-                <p>Да. Нажмите «Примерить в&nbsp;моей комнате» у&nbsp;вещи и&nbsp;пришлите фото комнаты.</p>
-              </details>
-              <details>
-                <summary>Ремонта ещё нет, есть только чертёж?</summary>
-                <p>По&nbsp;чертежу бесплатно делаем полный <span class="nowrap">дизайн-план</span> всей квартиры с&nbsp;нашей мебелью.</p>
-              </details>
-              <details>
-                <summary>Как идёт заказ?</summary>
-                <p>Собираем заказ вместе, проверяем в&nbsp;Китае, отправляем вам.</p>
-              </details>
-              <details>
-                <summary>Есть наценка магазина?</summary>
-                <p>Нет, цена без наценок магазинов.</p>
+                <p>Вы можете бесплатно увидеть, как наша мебель выглядит в&nbsp;вашей комнате.</p>
               </details>
             </div>
           </div>
-          <a class="button f-cta f-button" href="#send" data-upload-kind="photo">Пришлите фото комнаты</a>
         </div>
       </div>
     </section>
@@ -3896,10 +3893,17 @@
   $("branch-photo").addEventListener("change", () => setBranch("photo"));
   $("branch-plan").addEventListener("change", () => setBranch("plan"));
 
+  // Кнопки заявки ведут к полю «Выбрать фото» (фаза 35, Task 4). Одна колонка (телефон, планшет): наверх окна —
+  // форма: строка выбранной вещи, «Что у вас сейчас?» и поле целиком. Две колонки: начало #send, поле и так в окне.
+  const formTwoCols = matchMedia("(min-width: 1000px)"); // та же граница, что у .send-layout в две колонки
+  function scrollToForm() {
+    (formTwoCols.matches ? $("send") : $("send-form")).scrollIntoView({ behavior: "auto", block: "start" });
+  }
+
   function goToSend(kind) {
     returnToForm();
     setBranch(kind);
-    $("send").scrollIntoView({ behavior: "auto", block: "start" });
+    scrollToForm();
   }
 
   document.querySelectorAll("[data-upload-kind]").forEach((link) => {
@@ -3993,7 +3997,7 @@
     $("form-error").hidden = true;
     $("choose-files-text").textContent = "Выбрать другие файлы";
     returnToForm();
-    $("send").scrollIntoView({ behavior: "auto", block: "start" });
+    scrollToForm();
   });
 
   document.querySelectorAll('input[name="messenger"]').forEach((input) => {
