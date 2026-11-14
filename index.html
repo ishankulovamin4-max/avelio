@@ -742,9 +742,8 @@
     padding-left: max(20px, env(safe-area-inset-left, 0px));
     padding-right: max(20px, env(safe-area-inset-right, 0px));
   }
-  /* Зазор между блоками один: нижний отступ, верхний есть только у первого. */
+  /* Зазор между блоками один: нижний отступ, верхнего нет. */
   .f-block { padding-block: 0 96px; background: var(--white); color: var(--ink); }
-  .f-real { padding-top: 96px; }
   .f-head { padding-bottom: 36px; }
   .f-eyebrow { margin-bottom: 16px; color: var(--muted); }
   .f-head h2 { max-width: 850px; }
@@ -1138,7 +1137,6 @@
 
   @media (min-width: 600px) {
     .f-block { padding-bottom: 110px; }
-    .f-real { padding-top: 110px; }
     .f-cta { width: auto; min-width: 300px; }
     .f-plan-dialog { width: calc(100% - 48px); max-width: 1440px; height: calc(100dvh - 48px); margin: auto; border: 1px solid var(--line); }
     .f-plan-dialog-bar { padding-top: 0; }
@@ -1164,7 +1162,6 @@
       padding-right: max(64px, env(safe-area-inset-right, 0px));
     }
     .f-block { padding-bottom: 140px; }
-    .f-real { padding-top: 140px; }
     .f-head { padding-bottom: 56px; }
     .f-lead { font-size: 17px; }
     .f-who-layout { grid-template-columns: minmax(0, 700px) minmax(280px, 1fr); gap: 64px; }
