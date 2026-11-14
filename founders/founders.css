@@ -349,10 +349,7 @@
   background: transparent;
   box-shadow: none;
   font-family: inherit;
-  cursor: pointer;
-  pointer-events: auto;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  pointer-events: none;
   appearance: none;
 }
 
@@ -381,11 +378,7 @@
   text-align: center;
   white-space: nowrap;
   transform: translateX(-50%);
-  cursor: pointer;
-  pointer-events: auto;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  appearance: none;
+  pointer-events: none;
 }
 
 .founders.is-ready .founder-name--amin {
@@ -403,10 +396,6 @@
   font-weight: 500;
   line-height: 22px;
   color: #30291f;
-  text-decoration-line: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-  text-decoration-color: #b9aa96;
 }
 
 .founders.is-ready .founder-name-role {
@@ -416,15 +405,6 @@
   font-weight: 400;
   line-height: 14px;
   color: #6c6256;
-}
-
-.founders.is-ready .founder-name:hover .founder-name-title {
-  text-decoration-color: #30291f;
-}
-
-.founders.is-ready .founder-name:focus-visible {
-  outline: 2px solid #30291f;
-  outline-offset: 2px;
 }
 
 /* Горизонтальный исходник не меняет порядок правой колонки. */

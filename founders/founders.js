@@ -842,22 +842,16 @@
     for (const key of KEYS) {
       const copy = texts.people[key];
 
-      // Неподвижный корпус: нажатие мышью или пальцем. С клавиатуры — подпись имени.
-      const body = decorative(element("button", `founder-body founder-body--${key}`));
-      body.type = "button";
-      body.tabIndex = -1;
+      // 14.11: биография убрана до нового текста — корпус и подпись не нажимаются, окна нет.
+      // Вернуть: снова button с type, aria-label, aria-haspopup и click → openDialog(key, name), вызов buildDialog().
+      const body = decorative(element("div", `founder-body founder-body--${key}`));
 
-      const name = element("button", `founder-name founder-name--${key}`);
-      name.type = "button";
-      name.setAttribute("aria-label", copy.aria);
-      name.setAttribute("aria-haspopup", "dialog");
+      const name = element("div", `founder-name founder-name--${key}`);
       name.append(
         element("span", "founder-name-title", copy.name),
         element("span", "founder-name-role", copy.role)
       );
 
-      body.addEventListener("click", () => openDialog(key, name));
-      name.addEventListener("click", () => openDialog(key, name));
       stage.append(body, name);
 
       const art = scratch();
@@ -2975,7 +2969,6 @@
       await loadImages();
 
       buildScene();
-      buildDialog();
 
       root.classList.toggle("is-reduced", motion.matches);
       root.classList.add("is-ready");
