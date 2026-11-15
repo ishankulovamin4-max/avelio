@@ -173,6 +173,9 @@
     let picked = 0;
     let direction = 1;
     let busy = false;
+    let runId = 0;
+    let transition = null;
+    let liveTimer = 0;
     let visible = !("IntersectionObserver" in window);
     let nearby = visible;
     let hovering = false;
@@ -271,9 +274,20 @@
       return promise;
     }
 
+    // Сначала ближайшие соседи текущей вещи, затем остальные по кругу.
+    function preloadOrder() {
+      const order = [];
+      for (let distance = 1; distance < ITEMS.length; distance++) {
+        for (const index of [wrap(current + distance), wrap(current - distance)]) {
+          if (index !== current && !order.includes(index)) order.push(index);
+        }
+      }
+      return order;
+    }
+
     /*
-     * После первых двух — строго одна фоновая загрузка за раз.
-     * Вне окрестности экрана, в фоне и во время перехода очередь не запускается.
+     * До трёх фоновых загрузок с decode за раз.
+     * Условия запуска прежние: рядом с экраном, не в фоне и не во время перехода.
      */
     function scheduleIdle() {
       if (
@@ -285,7 +299,7 @@
         idleWorking
       ) return;
 
-      if (!ITEMS.some((item, index) => index >= 2 && !loading.has(index))) return;
+      if (!preloadOrder().some(index => !loading.has(index))) return;
 
       idleScheduled = true;
       const work = deadline => {
@@ -297,11 +311,11 @@
           return;
         }
 
-        const index = ITEMS.findIndex((item, at) => at >= 2 && !loading.has(at));
-        if (index < 0) return;
+        const batch = preloadOrder().filter(index => !loading.has(index)).slice(0, 3);
+        if (!batch.length) return;
 
         idleWorking = true;
-        void load(index).finally(() => {
+        void Promise.all(batch.map(load)).finally(() => {
           idleWorking = false;
           scheduleIdle();
         });
@@ -336,6 +350,16 @@
       if (scroll !== viewLeft) marksBox.scrollLeft = scroll;
     }
 
+    // Управление показывает запрос, а не окончание анимации подписи.
+    function select(index) {
+      counter.textContent = `${number(index + 1)} / ${number(ITEMS.length)}`;
+      marks.forEach((button, at) => {
+        if (at === index) button.setAttribute("aria-current", "true");
+        else button.removeAttribute("aria-current");
+      });
+      void revealMark(index);
+    }
+
     function paint(index) {
       const item = ITEMS[index];
       picked = index;
@@ -349,18 +373,14 @@
 
       put.dataset.itemCode = item.code;
       put.setAttribute("aria-label", `Примерить в моей комнате: ${item.name} ${item.code}`);
-      counter.textContent = `${number(index + 1)} / ${number(ITEMS.length)}`;
-
-      marks.forEach((button, at) => {
-        if (at === index) button.setAttribute("aria-current", "true");
-        else button.removeAttribute("aria-current");
-      });
-      void revealMark(index);
     }
 
     function announce(index) {
-      const item = ITEMS[index];
-      live.textContent = `${item.name} ${item.code}. ${index + 1} из ${ITEMS.length}.`;
+      clearTimeout(liveTimer);
+      liveTimer = window.setTimeout(() => {
+        const item = ITEMS[index];
+        live.textContent = `${item.name} ${item.code}. ${index + 1} из ${ITEMS.length}.`;
+      }, 400);
     }
 
     function motion(node, frames, options = {}) {
@@ -425,7 +445,57 @@
       resetTrack();
     }
 
-    async function changeCopy(index, dir) {
+    function clearMotion(index) {
+      slides.forEach((record, at) => {
+        record.slide.hidden = at !== index;
+        record.slide.setAttribute("aria-hidden", String(at !== index));
+        record.visual.style.opacity = "";
+        record.visual.style.transform = "";
+        record.visual.style.willChange = "";
+      });
+      activeAnimations.forEach(animation => animation.cancel());
+      activeAnimations = [];
+      info.style.willChange = "";
+    }
+
+    function commit(index) {
+      clearMotion(index);
+      current = index;
+      nextAuto = Date.now() + AUTO_DELAY;
+    }
+
+    /*
+     * Инвалидация предшествует finish/cancel: продолжения старых await уже
+     * не могут записать состояние. Подготовленный, но ещё не летящий слой
+     * убирается без изменения current.
+     */
+    function interrupt() {
+      if (!busy) return;
+
+      const previous = transition;
+      ++runId;
+
+      if (previous && previous.phase === "animating") {
+        activeAnimations.forEach(animation => {
+          if (animation.playState !== "finished" && animation.playState !== "idle") {
+            animation.finish();
+          }
+        });
+        // В том числе случай перехвата до замены уходящих строк.
+        paint(previous.target);
+        commit(previous.target);
+        resetTrack();
+      } else {
+        clearMotion(current);
+        // Смещение незавершённого свайпа сохраняется для snapBack в run().
+      }
+
+      transition = null;
+      busy = false;
+      settling = false;
+    }
+
+    async function changeCopy(index, dir, id) {
       // Старые строки уходят вслед за вещью; управление остаётся неподвижным.
       const outgoing = Array.from(copy.children, node => motion(node, [
         { opacity: 1, transform: "translate3d(0, 0, 0)" },
@@ -433,6 +503,7 @@
       ], { duration: 140, easing: EXIT_EASE }));
 
       await Promise.all(outgoing.map(finished));
+      if (id !== runId) return;
       paint(index);
 
       // Лёгкая лесенка на входе, но общее окончание движения у всех строк.
@@ -446,6 +517,7 @@
 
       // Завершённые анимации очищаются вместе с мебелью в run().
       await Promise.all(incoming.map(finished));
+      if (id !== runId) return;
     }
 
     function fly(from, to, dir, offset) {
@@ -469,91 +541,87 @@
 
     async function run() {
       if (busy) return;
+
+      if (wanted === current) {
+        if (trackOffset !== 0 && !(drag && !drag.locked)) {
+          // Выбор вернулся к текущей вещи до подлёта — возвращаем ленту.
+          snapBack(trackOffset);
+        }
+        armAuto();
+        scheduleIdle();
+        return;
+      }
+
+      const id = ++runId;
+      const target = wanted;
+      const from = current;
+      const dir = direction;
+      transition = { target, phase: "waiting" };
       busy = true;
+      settling = false;
       armAuto();
 
       try {
-        while (wanted !== current) {
-          const target = wanted;
-          const dir = direction;
+        // Загрузка может закончиться позднее перехвата; она не владеет run().
+        // Ждём только цель: неготовая текущая картинка не держит нажатия (load не бросает).
+        load(from);
+        await load(target);
+        if (id !== runId) return;
 
-          // Запрос пользователя остаётся в wanted до завершения decode.
-          await Promise.all([load(current), load(target)]);
-          if (target !== wanted) continue;
+        transition.phase = "preparing";
+        const old = slides[from];
+        const next = slides[target];
+        next.visual.style.opacity = "0";
+        next.slide.hidden = false;
 
-          settling = false;
-          activeAnimations = [];
-
-          const old = slides[current];
-          const next = slides[target];
-          next.visual.style.opacity = "0";
-          next.slide.hidden = false;
-
-          if (!reduced.matches && typeof stage.animate === "function") {
-            old.visual.style.willChange = "transform, opacity";
-            next.visual.style.willChange = "transform, opacity";
-            info.style.willChange = "transform, opacity";
-            await painted();
-          }
-
-          // Выбор мог измениться и во время подготовки слоя.
-          if (target !== wanted) {
-            next.slide.hidden = true;
-            next.visual.style.opacity = "";
-            next.visual.style.willChange = "";
-            old.visual.style.willChange = "";
-            info.style.willChange = "";
-            continue;
-          }
-
-          const offset = trackOffset;
-          resetTrack();
-
-          if (
-            reduced.matches ||
-            settling ||
-            document.hidden ||
-            typeof stage.animate !== "function"
-          ) {
-            paint(target);
-          } else {
-            await Promise.all([
-              fly(current, target, dir, offset),
-              changeCopy(target, dir)
-            ]);
-          }
-
-          slides.forEach((record, index) => {
-            record.slide.hidden = index !== target;
-            record.slide.setAttribute("aria-hidden", String(index !== target));
-            record.visual.style.opacity = "";
-            record.visual.style.willChange = "";
-          });
-
-          activeAnimations.forEach(animation => animation.cancel());
-          activeAnimations = [];
-          info.style.willChange = "";
-          current = target;
-          announce(current);
-          nextAuto = Date.now() + AUTO_DELAY;
+        if (!reduced.matches && typeof stage.animate === "function") {
+          old.visual.style.willChange = "transform, opacity";
+          next.visual.style.willChange = "transform, opacity";
+          info.style.willChange = "transform, opacity";
+          await frame();
+          if (id !== runId) return;
+          await frame();
+          if (id !== runId) return;
         }
 
-        if (trackOffset !== 0 && !(drag && !drag.locked)) {
-          const offset = trackOffset;
-          // Выбор вернулся к текущей вещи до подлёта — возвращаем ленту.
-          snapBack(offset);
+        const offset = trackOffset;
+        resetTrack();
+
+        if (
+          reduced.matches ||
+          settling ||
+          document.hidden ||
+          typeof stage.animate !== "function"
+        ) {
+          paint(target);
+        } else {
+          transition.phase = "animating";
+          await Promise.all([
+            fly(from, target, dir, offset),
+            changeCopy(target, dir, id)
+          ]);
+          if (id !== runId) return;
         }
+
+        commit(target);
       } finally {
-        busy = false;
-        settling = false;
-        armAuto();
-        scheduleIdle();
+        // Старый переход не освобождает busy и не трогает новый трек.
+        if (id === runId) {
+          transition = null;
+          busy = false;
+          settling = false;
+          armAuto();
+          scheduleIdle();
+        }
       }
     }
 
     function request(index, dir) {
       wanted = wrap(index);
       direction = dir;
+      select(wanted);
+      announce(wanted);
+      interrupt();
       void run();
     }
 
@@ -675,7 +743,8 @@
     // Захват указателя — только после определения горизонтального жеста.
     stage.addEventListener("pointerdown", event => {
       if (!event.isPrimary || event.button !== 0 || drag) return;
-      if (!busy) resetTrack();
+      interrupt();
+      resetTrack();
 
       drag = {
         id: event.pointerId,
@@ -683,7 +752,7 @@
         y: event.clientY,
         dx: 0,
         offset: 0,
-        locked: busy,
+        locked: false,
         axis: ""
       };
       armAuto();
@@ -743,7 +812,12 @@
         }
       }
 
-      if (advance) step(gesture.dx < 0 ? 1 : -1);
+      if (advance) {
+        step(gesture.dx < 0 ? 1 : -1);
+      } else if (!busy && wanted !== current) {
+        // Короткий/отменённый жест не теряет ранее запрошенную загрузку.
+        void run();
+      }
       interact();
     }
 
@@ -808,22 +882,25 @@
         }
         previousWidth = width;
         previousHeight = height;
-        void revealMark(picked);
+        void revealMark(wanted);
       });
       observer.observe(stage);
     }
 
     paint(0);
+    select(0);
 
     // Первые две начинают загрузку и decode сразу после сцены основателей, независимо от положения блока.
     afterScene(() => {
       sceneDone = true;
-      void Promise.all([load(0), load(1)]).then(() => {
+      void load(0).then(() => {
+        // Медленный сосед не блокирует фоновую подготовку остальных вещей.
         firstReady = true;
         if (!busy && current === 0) nextAuto = Date.now() + AUTO_DELAY;
         armAuto();
         scheduleIdle();
       });
+      void load(1);
     });
   }
 
