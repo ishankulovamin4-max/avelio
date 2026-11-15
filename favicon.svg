@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="-14 -6 112 112"
+     role="img"
+     aria-label="Avelio">
+  <path fill="#FFFFFF" d="M-14 -6 H98 V106 H-14 Z"/>
+  <path fill="#161616"
+        fill-rule="evenodd"
+        stroke="#161616"
+        stroke-width="4"
+        stroke-linejoin="round"
+        d="
+      M0 98
+      H8
+      L40 0
+      H43
+      L77 98
+      H84
+      V100
+      H55
+      V98
+      H64
+      L53.25 67
+      H20.75
+      L10.6 98
+      H22
+      V100
+      H0
+      Z
+      M21.4 65
+      H52.56
+      L36.5 18
+      Z"/>
+</svg>
